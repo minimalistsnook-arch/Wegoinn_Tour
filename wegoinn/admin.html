@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="robots" content="noindex, nofollow" />
+  <title>Wegoinn · Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;1,9..144,400;1,9..144,500&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/admin.css" />
+</head>
+<body data-app="admin">
+
+  <!-- ADMIN SIGN-IN -->
+  <section id="adminLogin" class="admin-login" hidden>
+    <form id="adminLoginForm" class="admin-login__card" novalidate>
+      <span class="wordmark">Wegoinn</span>
+      <p class="eyebrow">Staff dashboard</p>
+      <h1>Sign in</h1>
+
+      <label class="a-field">
+        <span>Email</span>
+        <input name="email" type="email" autocomplete="username" required />
+      </label>
+      <label class="a-field">
+        <span>Password</span>
+        <input name="password" type="password" autocomplete="current-password" required />
+      </label>
+
+      <p id="adminLoginError" class="a-alert" hidden></p>
+      <button class="a-btn a-btn--dark a-btn--block" type="submit">SIGN IN</button>
+      <p class="a-fine">Access is granted only to accounts with the <b>admin</b> role in the database.</p>
+    </form>
+  </section>
+
+  <!-- DASHBOARD -->
+  <div id="adminApp" class="admin" hidden>
+    <aside class="sidebar">
+      <div class="sidebar__brand">
+        <span class="wordmark">Wegoinn</span>
+        <small>Admin</small>
+      </div>
+      <nav class="sidebar__nav" aria-label="Admin sections">
+        <button type="button" data-view="posts" class="is-active"><i data-icon="book"></i><span>Guestbook</span></button>
+        <button type="button" data-view="comments"><i data-icon="message"></i><span>Comments</span></button>
+        <button type="button" data-view="communities"><i data-icon="calendar"></i><span>Communities</span></button>
+        <button type="button" data-view="applications"><i data-icon="inbox"></i><span>Applications</span></button>
+        <button type="button" data-view="guests"><i data-icon="users"></i><span>Guests</span></button>
+      </nav>
+      <div class="sidebar__foot">
+        <span id="adminName" class="sidebar__me"></span>
+        <button id="adminSignOut" type="button" class="sidebar__out"><i data-icon="logout"></i><span>Sign out</span></button>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="main__head">
+        <div>
+          <p class="eyebrow" id="viewEyebrow"></p>
+          <h1 id="viewTitle"></h1>
+          <p id="viewMeta" class="main__meta"></p>
+        </div>
+        <button id="refreshView" type="button" class="a-btn a-btn--ghost"><i data-icon="refresh"></i> Refresh</button>
+      </header>
+
+      <section id="adminContent" class="panel" aria-live="polite"></section>
+    </main>
+  </div>
+
+  <!-- COMMUNITY DETAIL DRAWER -->
+  <div id="drawer" class="drawer" hidden>
+    <div class="drawer__backdrop" data-close-drawer></div>
+    <aside class="drawer__panel" role="dialog" aria-modal="true" aria-labelledby="drawerTitle">
+      <button type="button" class="drawer__close" data-close-drawer aria-label="Close"><i data-icon="close"></i></button>
+      <div id="drawerContent"></div>
+    </aside>
+  </div>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <script type="module" src="js/admin.js"></script>
+</body>
+</html>
