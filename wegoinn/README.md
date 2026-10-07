@@ -43,7 +43,7 @@ Hello, {Nickname}
    └ CREATE COMMUNITY (바텀시트 폼)
 Community 상세 바텀시트 — Creator 본인에게만 관리 영역(승인 수 · 대기 수 · 신청자 + APPROVE/DECLINE)
 ```
-PC(≥1040px)에서는 Guestbook(좌) + Community(우, sticky) 2단 배치.
+PC에서도 같은 세로 순서(Guestbook 아래 Community Calendar)를 유지하고, 가운데 760px 컬럼으로 넓게 보여줍니다.
 
 **Admin (admin.html, Desktop First)** — Sidebar + Main
 `Guestbook` · `Comments` · `Communities`(예약번호/생성자/상세 Drawer) · `Applications` · `Guests`(예약번호)
