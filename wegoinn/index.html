@@ -76,8 +76,10 @@
     </header>
 
     <nav class="section-nav" aria-label="Sections">
-      <a href="#guestbook" class="is-active"><i data-icon="book"></i> Guestbook</a>
-      <a href="#community"><i data-icon="calendar"></i> Community</a>
+      <div class="section-nav__inner">
+        <a href="#guestbook" class="is-active"><i data-icon="book"></i> Guestbook</a>
+        <a href="#community"><i data-icon="calendar"></i> Community</a>
+      </div>
     </nav>
 
     <main id="top" class="layout">
@@ -92,78 +94,76 @@
         </div>
       </section>
 
-      <div class="layout__cols">
-        <!-- WEGOINN GUESTBOOK -->
-        <section id="guestbook" class="block" data-section>
-          <div class="block__head">
-            <div>
-              <p class="eyebrow">01 — Wegoinn Guestbook</p>
-              <h2>Wegoinn <em>Guestbook</em></h2>
-            </div>
-            <span id="postCount" class="count">0 stories</span>
+            <!-- WEGOINN GUESTBOOK -->
+      <section id="guestbook" class="block" data-section>
+        <div class="block__head">
+          <div>
+            <p class="eyebrow">01 — Wegoinn Guestbook</p>
+            <h2>Wegoinn <em>Guestbook</em></h2>
           </div>
+          <span id="postCount" class="count">0 stories</span>
+        </div>
 
-          <div class="composer card">
-            <div class="composer__row">
-              <span id="composerAvatar"></span>
-              <textarea id="postInput" rows="3" maxlength="1000" placeholder="Leave a note, a tip, a memory…" aria-label="Write a post"></textarea>
-            </div>
-            <div id="postPreview" class="composer__preview" hidden>
-              <img id="postPreviewImg" alt="Selected photo preview" />
-              <button id="removePostImage" type="button" class="icon-btn icon-btn--overlay" aria-label="Remove photo"><i data-icon="close"></i></button>
-            </div>
-            <div class="composer__bar">
-              <label class="pill-btn pill-btn--file">
-                <i data-icon="image"></i> Photo
-                <input id="postImageInput" type="file" accept="image/*" hidden />
-              </label>
-              <span id="postCounter" class="composer__counter">0 / 1000</span>
-              <button id="publishPostBtn" class="btn btn--primary" type="button">POST</button>
-            </div>
+        <div class="composer card">
+          <div class="composer__row">
+            <span id="composerAvatar"></span>
+            <textarea id="postInput" rows="3" maxlength="1000" placeholder="Leave a note, a tip, a memory…" aria-label="Write a post"></textarea>
           </div>
-
-          <div id="feed" class="feed" aria-live="polite"><span class="loader"></span></div>
-        </section>
-
-        <!-- COMMUNITY CALENDAR -->
-        <section id="community" class="block block--community" data-section>
-          <div class="block__head">
-            <div>
-              <p class="eyebrow">02 — Community Calendar</p>
-              <h2>Community <em>Calendar</em></h2>
-            </div>
+          <div id="postPreview" class="composer__preview" hidden>
+            <img id="postPreviewImg" alt="Selected photo preview" />
+            <button id="removePostImage" type="button" class="icon-btn icon-btn--overlay" aria-label="Remove photo"><i data-icon="close"></i></button>
           </div>
-
-          <div class="calendar card">
-            <div class="calendar__head">
-              <button id="prevMonth" class="icon-btn" type="button" aria-label="Previous month"><i data-icon="left"></i></button>
-              <h3 id="calendarMonth" class="calendar__month" aria-live="polite"></h3>
-              <button id="nextMonth" class="icon-btn" type="button" aria-label="Next month"><i data-icon="right"></i></button>
-            </div>
-            <div class="calendar__weekdays" aria-hidden="true">
-              <span>Sun</span><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span>
-            </div>
-            <div id="calendarGrid" class="calendar__grid"></div>
-            <p class="calendar__legend"><span class="legend-dot"></span> A community is planned</p>
+          <div class="composer__bar">
+            <label class="pill-btn pill-btn--file">
+              <i data-icon="image"></i> Photo
+              <input id="postImageInput" type="file" accept="image/*" hidden />
+            </label>
+            <span id="postCounter" class="composer__counter">0 / 1000</span>
+            <button id="publishPostBtn" class="btn btn--primary" type="button">POST</button>
           </div>
+        </div>
 
-          <div class="day-head">
-            <div>
-              <p class="eyebrow">Selected date</p>
-              <h3 id="selectedDateTitle"></h3>
-            </div>
-            <span id="selectedDateCount" class="count"></span>
+        <div id="feed" class="feed" aria-live="polite"><span class="loader"></span></div>
+      </section>
+
+      <!-- COMMUNITY CALENDAR -->
+      <section id="community" class="block block--community" data-section>
+        <div class="block__head">
+          <div>
+            <p class="eyebrow">02 — Community Calendar</p>
+            <h2>Community <em>Calendar</em></h2>
           </div>
+        </div>
 
-          <div id="communityList" class="community-list"></div>
+        <div class="calendar card">
+          <div class="calendar__head">
+            <button id="prevMonth" class="icon-btn" type="button" aria-label="Previous month"><i data-icon="left"></i></button>
+            <h3 id="calendarMonth" class="calendar__month" aria-live="polite"></h3>
+            <button id="nextMonth" class="icon-btn" type="button" aria-label="Next month"><i data-icon="right"></i></button>
+          </div>
+          <div class="calendar__weekdays" aria-hidden="true">
+            <span>Sun</span><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span>
+          </div>
+          <div id="calendarGrid" class="calendar__grid"></div>
+          <p class="calendar__legend"><span class="legend-dot"></span> A community is planned</p>
+        </div>
 
-          <button id="openCreateCommunity" class="create-cta" type="button">
-            <span class="create-cta__icon"><i data-icon="plus"></i></span>
-            <span class="create-cta__text"><b>CREATE COMMUNITY</b><small>for <span id="createDateLabel"></span></small></span>
-            <i data-icon="arrow" class="create-cta__arrow"></i>
-          </button>
-        </section>
-      </div>
+        <div class="day-head">
+          <div>
+            <p class="eyebrow">Selected date</p>
+            <h3 id="selectedDateTitle"></h3>
+          </div>
+          <span id="selectedDateCount" class="count"></span>
+        </div>
+
+        <div id="communityList" class="community-list"></div>
+
+        <button id="openCreateCommunity" class="create-cta" type="button">
+          <span class="create-cta__icon"><i data-icon="plus"></i></span>
+          <span class="create-cta__text"><b>CREATE COMMUNITY</b><small>for <span id="createDateLabel"></span></small></span>
+          <i data-icon="arrow" class="create-cta__arrow"></i>
+        </button>
+      </section>
     </main>
 
     <footer class="app-foot">
