@@ -1,9 +1,9 @@
 // Public configuration only.
-// The anon key is designed to be public — security comes from RLS.
+// Publishable and anon keys are designed to be public — security comes from RLS.
 // NEVER put the service_role key in this file or anywhere in the browser.
 export const CONFIG = {
-  SUPABASE_URL: "",       // e.g. "https://abcdefgh.supabase.co"
-  SUPABASE_ANON_KEY: "",  // Dashboard → Project Settings → API → anon public
+  SUPABASE_URL: "https://rnhnbuwbivqqqwngelid.supabase.co",
+  SUPABASE_ANON_KEY: "sb_publishable_cV5RQIOW0dpzJ5JBBHo0UQ_nuv0eKfP",  // Publishable or anon public key
 
   // Endpoint (e.g. a Cloudflare Worker) that receives the compressed image
   // and returns { url }. Leave empty until R2 is connected.
