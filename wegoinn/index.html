@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#FBF6F2" />
+  <title>Wegoinn · Guestbook & Community</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400;1,9..144,500&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body data-app="guest">
+
+  <!-- LOADING -->
+  <div id="loadingView" class="loading-screen">
+    <span class="wordmark">Wegoinn</span>
+    <span class="loader"></span>
+  </div>
+
+  <!-- LOGIN -->
+  <section id="loginView" class="login" hidden>
+    <div class="login__bg" aria-hidden="true">
+      <span class="blob blob--rose"></span>
+      <span class="blob blob--peach"></span>
+      <span class="blob blob--lilac"></span>
+    </div>
+
+    <div class="login__inner">
+      <div class="login__brand">
+        <div class="arch" aria-hidden="true"><i data-icon="sparkle"></i></div>
+        <p class="eyebrow">Guestbook &amp; Community</p>
+        <h1 class="wordmark wordmark--xl">Wegoinn</h1>
+        <p class="login__tagline">Stay <span>·</span> Meet <span>·</span> Remember</p>
+      </div>
+
+      <form id="loginForm" class="login-card" novalidate>
+        <h2>Welcome in</h2>
+        <p class="login-card__sub">Check in with your reservation and choose a nickname for the guestbook.</p>
+
+        <label class="field">
+          <span class="field__label">Reservation Number</span>
+          <span class="field__box">
+            <i data-icon="key"></i>
+            <input name="reservation" type="text" inputmode="text" placeholder="e.g. AGD12345678" autocomplete="off" autocapitalize="characters" spellcheck="false" required />
+          </span>
+        </label>
+
+        <label class="field">
+          <span class="field__label">English Nickname</span>
+          <span class="field__box">
+            <i data-icon="user"></i>
+            <input name="nickname" type="text" placeholder="e.g. SunnyMina" maxlength="20" autocomplete="nickname" spellcheck="false" required />
+          </span>
+          <small class="field__hint">English letters &amp; numbers · this is the only name other guests see.</small>
+        </label>
+
+        <button type="submit" class="btn btn--dark btn--block btn--lg">ENTER <i data-icon="arrow"></i></button>
+
+        <p id="setupNotice" class="setup-notice" hidden>
+          Supabase isn't connected yet — add your project URL and anon key in <code>js/config.js</code>.
+        </p>
+        <p class="login-card__fine"><i data-icon="shield"></i> Your reservation number is never shown to other guests.</p>
+      </form>
+    </div>
+  </section>
+
+  <!-- GUEST APP -->
+  <div id="appView" class="app" hidden>
+    <header class="topbar">
+      <a class="wordmark topbar__brand" href="#top">Wegoinn</a>
+      <div class="topbar__me">
+        <span id="headerAvatar"></span>
+        <span id="headerNickname" class="topbar__name"></span>
+      </div>
+    </header>
+
+    <nav class="section-nav" aria-label="Sections">
+      <a href="#guestbook" class="is-active"><i data-icon="book"></i> Guestbook</a>
+      <a href="#community"><i data-icon="calendar"></i> Community</a>
+    </nav>
+
+    <main id="top" class="layout">
+      <section class="hello">
+        <div class="hello__copy">
+          <p class="eyebrow">Welcome home</p>
+          <h1>Hello, <em id="greetingName">traveler</em></h1>
+          <p>Share a little moment from your stay — and find people to explore Seoul with.</p>
+        </div>
+        <div class="hello__art" aria-hidden="true">
+          <span class="arch arch--hello"><i data-icon="sparkle"></i></span>
+        </div>
+      </section>
+
+      <div class="layout__cols">
+        <!-- WEGOINN GUESTBOOK -->
+        <section id="guestbook" class="block" data-section>
+          <div class="block__head">
+            <div>
+              <p class="eyebrow">01 — Wegoinn Guestbook</p>
+              <h2>Wegoinn <em>Guestbook</em></h2>
+            </div>
+            <span id="postCount" class="count">0 stories</span>
+          </div>
+
+          <div class="composer card">
+            <div class="composer__row">
+              <span id="composerAvatar"></span>
+              <textarea id="postInput" rows="3" maxlength="1000" placeholder="Leave a note, a tip, a memory…" aria-label="Write a post"></textarea>
+            </div>
+            <div id="postPreview" class="composer__preview" hidden>
+              <img id="postPreviewImg" alt="Selected photo preview" />
+              <button id="removePostImage" type="button" class="icon-btn icon-btn--overlay" aria-label="Remove photo"><i data-icon="close"></i></button>
+            </div>
+            <div class="composer__bar">
+              <label class="pill-btn pill-btn--file">
+                <i data-icon="image"></i> Photo
+                <input id="postImageInput" type="file" accept="image/*" hidden />
+              </label>
+              <span id="postCounter" class="composer__counter">0 / 1000</span>
+              <button id="publishPostBtn" class="btn btn--primary" type="button">POST</button>
+            </div>
+          </div>
+
+          <div id="feed" class="feed" aria-live="polite"><span class="loader"></span></div>
+        </section>
+
+        <!-- COMMUNITY CALENDAR -->
+        <section id="community" class="block block--community" data-section>
+          <div class="block__head">
+            <div>
+              <p class="eyebrow">02 — Community Calendar</p>
+              <h2>Community <em>Calendar</em></h2>
+            </div>
+          </div>
+
+          <div class="calendar card">
+            <div class="calendar__head">
+              <button id="prevMonth" class="icon-btn" type="button" aria-label="Previous month"><i data-icon="left"></i></button>
+              <h3 id="calendarMonth" class="calendar__month" aria-live="polite"></h3>
+              <button id="nextMonth" class="icon-btn" type="button" aria-label="Next month"><i data-icon="right"></i></button>
+            </div>
+            <div class="calendar__weekdays" aria-hidden="true">
+              <span>Sun</span><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span>
+            </div>
+            <div id="calendarGrid" class="calendar__grid"></div>
+            <p class="calendar__legend"><span class="legend-dot"></span> A community is planned</p>
+          </div>
+
+          <div class="day-head">
+            <div>
+              <p class="eyebrow">Selected date</p>
+              <h3 id="selectedDateTitle"></h3>
+            </div>
+            <span id="selectedDateCount" class="count"></span>
+          </div>
+
+          <div id="communityList" class="community-list"></div>
+
+          <button id="openCreateCommunity" class="create-cta" type="button">
+            <span class="create-cta__icon"><i data-icon="plus"></i></span>
+            <span class="create-cta__text"><b>CREATE COMMUNITY</b><small>for <span id="createDateLabel"></span></small></span>
+            <i data-icon="arrow" class="create-cta__arrow"></i>
+          </button>
+        </section>
+      </div>
+    </main>
+
+    <footer class="app-foot">
+      <span class="wordmark">Wegoinn</span>
+      <p>Hostel guestbook &amp; community · Seoul</p>
+    </footer>
+  </div>
+
+  <!-- COMMUNITY DETAIL -->
+  <div id="communitySheet" class="sheet" hidden>
+    <div class="sheet__backdrop" data-close-sheet></div>
+    <div class="sheet__panel" role="dialog" aria-modal="true" aria-labelledby="communitySheetTitle" tabindex="-1">
+      <span class="sheet__grabber" aria-hidden="true"></span>
+      <button class="icon-btn sheet__close" type="button" data-close-sheet aria-label="Close"><i data-icon="close"></i></button>
+      <div id="communityDetail" class="detail"></div>
+    </div>
+  </div>
+
+  <!-- CREATE COMMUNITY -->
+  <div id="createSheet" class="sheet" hidden>
+    <div class="sheet__backdrop" data-close-sheet></div>
+    <div class="sheet__panel" role="dialog" aria-modal="true" aria-labelledby="createTitle" tabindex="-1">
+      <span class="sheet__grabber" aria-hidden="true"></span>
+      <button class="icon-btn sheet__close" type="button" data-close-sheet aria-label="Close"><i data-icon="close"></i></button>
+
+      <div class="sheet__intro">
+        <p class="eyebrow">Host your own activity</p>
+        <h2 id="createTitle">Create <em>Community</em></h2>
+      </div>
+
+      <form id="communityForm" class="form" novalidate>
+        <div class="form__row">
+          <label class="field">
+            <span class="field__label">Date</span>
+            <span class="field__box"><i data-icon="calendar"></i><input name="community_date" type="date" required /></span>
+          </label>
+          <label class="field">
+            <span class="field__label">Time</span>
+            <span class="field__box"><i data-icon="clock"></i><input name="community_time" type="time" required /></span>
+          </label>
+        </div>
+
+        <label class="field">
+          <span class="field__label">Community Name</span>
+          <span class="field__box"><i data-icon="pen"></i><input name="title" type="text" maxlength="60" placeholder="e.g. Hongdae Night Walk" required /></span>
+        </label>
+
+        <label class="field">
+          <span class="field__label">Activity · What are you going to do?</span>
+          <textarea name="activity" class="field__area" rows="3" maxlength="500" placeholder="Street food, music, and a slow walk around Hongdae…" required></textarea>
+        </label>
+
+        <label class="field">
+          <span class="field__label">What kind of people would you like to join?</span>
+          <textarea name="preferred_participants" class="field__area" rows="2" maxlength="500" placeholder="Anyone who loves meeting new people!" required></textarea>
+        </label>
+
+        <label class="field">
+          <span class="field__label">Activity Schedule / Plan</span>
+          <textarea name="schedule" class="field__area" rows="4" maxlength="1000" placeholder="19:30  Meet at the Wegoinn lobby&#10;20:00  Walk to Hongdae&#10;21:00  Dinner together" required></textarea>
+        </label>
+
+        <label class="field">
+          <span class="field__label">Maximum Participants <small>1 – 30 people</small></span>
+          <span class="field__box"><i data-icon="users"></i><input name="max_participants" type="number" min="1" max="30" step="1" value="8" inputmode="numeric" required /></span>
+        </label>
+
+        <fieldset class="field fee">
+          <legend class="field__label">Participation Fee</legend>
+          <div class="segmented">
+            <label><input type="radio" name="feeType" value="free" checked /><span>FREE</span></label>
+            <label><input type="radio" name="feeType" value="paid" /><span>PAID</span></label>
+          </div>
+          <label id="feeAmountWrap" class="field" hidden>
+            <span class="field__box field__box--money"><span class="field__prefix">₩</span><input id="communityFee" name="participation_fee" type="number" min="1000" step="1000" placeholder="10,000" inputmode="numeric" /><span class="field__suffix">KRW</span></span>
+            <small class="field__hint">For information only — guests pay the host directly, not in this app.</small>
+          </label>
+        </fieldset>
+
+        <label class="field">
+          <span class="field__label">Reservation Number</span>
+          <span class="field__box"><i data-icon="key"></i><input name="reservation_number" type="text" autocomplete="off" spellcheck="false" required /></span>
+          <small class="field__hint"><i data-icon="shield"></i> Only Wegoinn staff can see this. Other guests never will.</small>
+        </label>
+
+        <button type="submit" class="btn btn--dark btn--block btn--lg">CREATE COMMUNITY</button>
+      </form>
+    </div>
+  </div>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
