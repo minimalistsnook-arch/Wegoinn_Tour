@@ -23,7 +23,7 @@ HTML · CSS · Vanilla JS (ES Modules) + Supabase (Auth / PostgreSQL / RLS / Rea
 
 - **Guest 로그인**: `signInAnonymously()` → 익명 auth user UUID 생성 → `register_guest()` RPC가 그 UUID와 profile(예약번호·닉네임)을 연결.
 - **권한 판단은 전부 DB**: `profiles.role`이 유일한 Admin 판단 기준. 클라이언트는 `role` 컬럼을 쓸 권한 자체가 없음(컬럼 권한 + RLS).
-- **사진**: 브라우저에서 압축(긴 변 1600px, WebP 0.78) → `uploadImageToR2()` → 반환된 https URL만 `posts.image_url`에 저장.
+- **사진**: 브라우저에서 압축(긴 변 ≤1280px, WebP, 장당 ~150KB 목표로 품질·크기 자동 조절) → `uploadImage()` (Supabase Storage `post-images` 버킷) → 공개 https URL만 `posts.image_url`에 저장.
 - **번역**: `translateText()` 구조만 존재. API 미연결 시 원문 유지 + 안내 토스트(가짜 번역 없음).
 
 ## 2. 화면 구조
@@ -105,7 +105,7 @@ wegoinn/
 │  ├ comments.js        댓글·답글
 │  ├ community.js       달력, 카드, 생성, JOIN, Creator 관리
 │  ├ translation.js     translateText(), detectLanguage()
-│  ├ image-upload.js    compressImage(), uploadImageToR2()
+│  ├ image-upload.js    compressImage(), uploadImage()
 │  ├ sheet.js           바텀시트
 │  ├ icons.js           라인 아이콘
 │  ├ utils.js           공통 유틸
@@ -138,7 +138,6 @@ wegoinn/
 |---|---|
 | `js/auth.js`, `register_guest()` | `// TODO: Connect reservation verification API` — 실제 검증은 반드시 서버(Edge Function)에서도 |
 | `js/translation.js` | `// TODO: Connect translation API` — `TRANSLATION_ENDPOINT`가 `{ text, target }` → `{ translatedText }` |
-| `js/image-upload.js` | `// TODO: Connect Cloudflare R2 upload API` — Worker가 Supabase JWT 검증 후 R2 저장, `{ url }` 반환 |
 | `js/admin.js`, `schema.sql §7` | `// TODO: Configure real admin authentication` |
 
-사진 업로드 endpoint가 비어 있는 동안에는 Photo 버튼을 누르면 "아직 연결되지 않음" 안내가 나오고 텍스트 게시는 정상 동작합니다.
+사진은 `schema.sql` §8이 만드는 Supabase Storage `post-images` 버킷에 저장됩니다(본인 폴더에만 업로드 가능, WebP/JPEG ≤ 1MB).

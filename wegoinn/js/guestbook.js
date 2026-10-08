@@ -1,6 +1,6 @@
 import { supabase, errorMessage } from "./supabase.js";
 import { $, escapeHtml, avatarHtml, formatDateTime, toast, setBusy, debounce } from "./utils.js";
-import { compressImage, uploadImageToR2, isImageUploadConfigured } from "./image-upload.js";
+import { compressImage, uploadImage, isImageUploadConfigured } from "./image-upload.js";
 import { detectLanguage, translationToggleHtml, handleTranslationToggle } from "./translation.js";
 import { commentsSectionHtml, addComment, deleteComment } from "./comments.js";
 import { icon } from "./icons.js";
@@ -106,7 +106,7 @@ async function publishPost() {
   setBusy(els.publish, true, "Posting…");
   try {
     let imageUrl = null;
-    if (state.draftImage) imageUrl = await uploadImageToR2(state.draftImage);
+    if (state.draftImage) imageUrl = await uploadImage(state.draftImage);
 
     const { error } = await supabase.from("posts").insert({
       content,
