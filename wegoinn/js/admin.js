@@ -12,8 +12,10 @@ import { isSupabaseConfigured } from "./config.js";
 import { getMyProfile } from "./auth.js";
 import { $, $$, escapeHtml, formatDateTime, formatDateKey, shortTime, formatFee, toast } from "./utils.js";
 import { icon, hydrateIcons } from "./icons.js";
+import { initTheme } from "./theme.js";
 
 hydrateIcons();
+initTheme();
 
 const els = {
   login: $("#adminLogin"),

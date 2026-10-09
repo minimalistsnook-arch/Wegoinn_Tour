@@ -4,7 +4,13 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="robots" content="noindex, nofollow" />
+  <meta name="theme-color" content="#f3ecdf" />
   <title>Wegoinn · Admin</title>
+  <script>
+    try {
+      if (localStorage.getItem("wegoinn-theme") === "dark") document.documentElement.dataset.theme = "dark";
+    } catch (e) {}
+  </script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;1,9..144,400;1,9..144,500&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
@@ -14,6 +20,7 @@
 
   <!-- ADMIN SIGN-IN -->
   <section id="adminLogin" class="admin-login" hidden>
+    <button type="button" class="theme-toggle theme-toggle--float" data-theme-toggle aria-pressed="false">Dark</button>
     <form id="adminLoginForm" class="admin-login__card" novalidate>
       <span class="wordmark">Wegoinn</span>
       <p class="eyebrow">Staff dashboard</p>
@@ -49,6 +56,7 @@
         <button type="button" data-view="guests"><i data-icon="users"></i><span>Guests</span></button>
       </nav>
       <div class="sidebar__foot">
+        <button type="button" class="theme-toggle theme-toggle--on-pine" data-theme-toggle aria-pressed="false">Dark</button>
         <span id="adminName" class="sidebar__me"></span>
         <button id="adminSignOut" type="button" class="sidebar__out"><i data-icon="logout"></i><span>Sign out</span></button>
       </div>

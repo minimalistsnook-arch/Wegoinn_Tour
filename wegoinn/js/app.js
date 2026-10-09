@@ -5,8 +5,10 @@ import { initGuestbook, scheduleFeedRefresh } from "./guestbook.js";
 import { initCommunity, scheduleCommunityRefresh } from "./community.js";
 import { $, $$, avatarHtml, toast, setBusy } from "./utils.js";
 import { hydrateIcons } from "./icons.js";
+import { initTheme } from "./theme.js";
 
 hydrateIcons();
+initTheme();
 
 const views = { login: $("#loginView"), app: $("#appView"), loading: $("#loadingView") };
 
