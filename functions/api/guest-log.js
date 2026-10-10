@@ -16,7 +16,13 @@ export async function onRequest({ request, env }) {
   try {
     // Nickname and profile id come from the database, not from the browser.
     const profile = await fetch(`${env.SUPABASE_URL}/rest/v1/rpc/get_my_profile`, { method: 'POST', headers: { authorization, apikey: env.SUPABASE_ANON_KEY, 'Content-Type': 'application/json' }, body: '{}', signal: AbortSignal.timeout(5000) });
-    const me = profile.ok ? (await profile.json())[0] : null;
+    const profileText = profile.ok ? await profile.text() : '';
+    let me = null;
+    try { me = profileText ? JSON.parse(profileText)[0] : null; } catch {
+      let host = 'invalid URL';
+      try { host = new URL(env.SUPABASE_URL).host; } catch { /* reported as invalid */ }
+      return json({ error: 'Guest log unavailable', reason: `profile: non-JSON reply (HTTP ${profile.status}, ${profile.headers.get('Content-Type') || 'no type'}) from ${host}` }, 502);
+    }
     if (!me) return json({ error: 'Guest profile required' }, 403);
     const raw = await request.text();
     if (raw.length > 4000) return json({ error: 'Request too long' }, 413);
