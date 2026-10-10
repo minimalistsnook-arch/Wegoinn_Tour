@@ -5,7 +5,7 @@ import { isSupabaseConfigured } from "./config.js";
 import { signInGuest, getMyProfile } from "./auth.js";
 import { initGuestbook, scheduleFeedRefresh } from "./guestbook.js";
 import { initCommunity, scheduleCommunityRefresh } from "./community.js";
-import { initChat, onChatInsert, onChatDelete } from "./chat.js";
+import { initChat } from "./chat.js";
 import { $, $$, avatarHtml, toast, setBusy } from "./utils.js";
 import { hydrateIcons } from "./icons.js";
 import { initTheme } from "./theme.js";
@@ -83,7 +83,7 @@ async function enterApp(profile) {
   subscribeRealtime();
 }
 
-// One channel for every table. Events are only a "something changed" signal —
+// One channel for the other tables (chat subscribes on its own in chat.js). Events are only a "something changed" signal —
 // we re-fetch through the normal RLS-protected queries.
 function subscribeRealtime() {
   supabase
@@ -93,8 +93,6 @@ function subscribeRealtime() {
     .on("postgres_changes", { event: "*", schema: "public", table: "communities" }, scheduleCommunityRefresh)
     .on("postgres_changes", { event: "*", schema: "public", table: "community_applications" }, scheduleCommunityRefresh)
     .on("postgres_changes", { event: "INSERT", schema: "public", table: "notifications" }, refreshNotifications)
-    .on("postgres_changes", { event: "INSERT", schema: "public", table: "chat_messages" }, onChatInsert)
-    .on("postgres_changes", { event: "DELETE", schema: "public", table: "chat_messages" }, onChatDelete)
     .subscribe();
 }
 

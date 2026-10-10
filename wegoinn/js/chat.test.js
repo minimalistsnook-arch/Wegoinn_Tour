@@ -1,10 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { readFileSync } from 'node:fs';
-const mock = vi.hoisted(() => ({ rows: [], inserted: null, query: [] }));
+const mock = vi.hoisted(() => ({ rows: [], inserted: null, query: [], subscribed: null }));
 vi.mock('./supabase.js', () => {
   const chain = () => {
     const c = {};
-    for (const op of ['select', 'is', 'eq', 'order', 'delete']) c[op] = vi.fn((...args) => { mock.query.push([op, ...args]); return c; });
+    for (const op of ['select', 'is', 'eq', 'gte', 'order', 'delete']) c[op] = vi.fn((...args) => { mock.query.push([op, ...args]); return c; });
     c.limit = vi.fn(() => c);
     c.insert = vi.fn((row) => { mock.inserted = row; return c; });
     c.single = vi.fn(async () => ({ data: { id: 'm-new', author_id: 'me', created_at: '2026-10-09T10:00:00Z', author: { nickname: 'Mina' }, ...mock.inserted }, error: null }));
@@ -12,8 +12,8 @@ vi.mock('./supabase.js', () => {
     c.then = (resolve, reject) => Promise.resolve({ data: [...mock.rows], error: null }).then(resolve, reject);
     return c;
   };
-  const channel = { on: vi.fn(() => channel), subscribe: vi.fn(() => channel), track: vi.fn(), presenceState: () => ({}) };
-  return { supabase: { from: vi.fn(chain), channel: vi.fn(() => channel) }, errorMessage: (err) => err.message };
+  const channel = { on: vi.fn(() => channel), subscribe: vi.fn((cb) => { mock.subscribed = cb; return channel; }), track: vi.fn(), presenceState: () => ({}) };
+  return { supabase: { from: vi.fn(chain), channel: vi.fn(() => channel), removeChannel: vi.fn() }, errorMessage: (err) => err.message };
 });
 import { initChat, openChat, onChatInsert, onChatDelete } from './chat.js';
 const html = readFileSync(`${process.cwd()}/wegoinn/index.html`, 'utf8');
@@ -63,5 +63,33 @@ describe('live chat', () => {
     expect(document.getElementById('chatBackBtn').hidden).toBe(true);
     onChatDelete({ old: { id: 'm1' } });
     expect(document.querySelector('[data-msg-id="m1"]')).toBeNull();
+  });
+
+  it('shows a message from another guest in the open room right away, once', async () => {
+    const row = { id: 'm5', community_id: null, author_id: 'u2', content: 'Live!', created_at: '2026-10-09T11:00:00Z' };
+    await onChatInsert({ new: row });
+    await onChatInsert({ new: row });
+    expect(document.querySelectorAll('[data-msg-id="m5"]')).toHaveLength(1);
+    expect(document.querySelector('[data-msg-id="m5"] .chat-msg__text').textContent).toBe('Live!');
+  });
+
+  it('catches up on missed messages after (re)subscribing without duplicates', async () => {
+    mock.rows = [
+      { id: 'm1', community_id: null, author_id: 'u2', content: 'Anyone going to Hongdae? <b>', created_at: '2026-10-09T09:00:00Z', author: { nickname: 'Emma' } },
+      { id: 'm6', community_id: null, author_id: 'u3', content: 'missed while offline', created_at: '2026-10-09T12:00:00Z', author: { nickname: 'Leo' } },
+    ];
+    mock.query = [];
+    mock.subscribed('SUBSCRIBED');
+    await settle();
+    expect(mock.query).toContainEqual(['gte', 'created_at', '2026-10-09T09:00:00Z']);
+    expect(document.querySelectorAll('[data-msg-id="m1"]')).toHaveLength(1);
+    expect(document.querySelectorAll('[data-msg-id="m6"]')).toHaveLength(1);
+  });
+
+  it('keeps messages that arrive while a room is still loading', async () => {
+    const opening = openChat({ id: 'c1', title: 'Night Walk' });
+    await onChatInsert({ new: { id: 'm7', community_id: 'c1', author_id: 'u2', content: 'early', created_at: '2026-10-09T13:00:00Z' } });
+    await opening;
+    expect(document.querySelectorAll('[data-msg-id="m7"]')).toHaveLength(1);
   });
 });

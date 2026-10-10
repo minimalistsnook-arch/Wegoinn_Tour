@@ -19,6 +19,10 @@ const state = {
   lastDay: "",
   unread: 0,
   nicknames: new Map(),
+  loading: false,      // history for the open room is being fetched
+  pending: [],         // realtime rows that arrived while history was loading
+  lastAt: null,        // created_at of the newest rendered message (for resync)
+  channel: null,
 };
 
 const els = {};
@@ -51,6 +55,10 @@ export function initChat(me) {
   els.input.addEventListener("input", onInput);
   els.list.addEventListener("click", onListClick);
   trackPresence();
+  subscribeChat();
+  // Back online / back to the tab: catch up on anything the socket missed.
+  window.addEventListener("online", syncMissed);
+  document.addEventListener("visibilitychange", () => document.visibilityState === "visible" && syncMissed());
   watchVisibility();
   showRoom(null);
   return loadMessages();
@@ -95,20 +103,27 @@ function showRoom(room) {
 
 async function loadMessages() {
   const room = state.room;
+  state.loading = true;
+  state.pending = [];
   els.list.innerHTML = `<span class="loader"></span>`;
   let query = supabase.from("chat_messages").select(CHAT_COLUMNS);
   query = state.room ? query.eq("community_id", state.room.id) : query.is("community_id", null);
   const { data, error } = await query.order("created_at", { ascending: false }).limit(HISTORY_LIMIT);
   if (room !== state.room) return; // the guest switched rooms while this was loading
+  state.loading = false;
   if (error) {
     els.list.innerHTML = `<div class="empty-state">${escapeHtml(errorMessage(error, "Messages could not be loaded."))}</div>`;
     return;
   }
   state.ids.clear();
   state.lastDay = "";
+  state.lastAt = null;
   els.list.innerHTML = "";
   if (!data.length) els.list.innerHTML = `<p class="chat-empty">No messages yet — say hello 👋</p>`;
   data.reverse().forEach(appendMessage);
+  // Messages that arrived over realtime while the history was loading.
+  state.pending.filter(inCurrentRoom).forEach(appendMessage);
+  state.pending = [];
   scrollToEnd(true);
 }
 
@@ -119,6 +134,7 @@ function inCurrentRoom(row) {
 function appendMessage(row) {
   if (state.ids.has(row.id)) return;
   state.ids.add(row.id);
+  if (!state.lastAt || Date.parse(row.created_at) > Date.parse(state.lastAt)) state.lastAt = row.created_at;
   const nickname = row.author?.nickname ?? state.nicknames.get(row.author_id) ?? "Guest";
   state.nicknames.set(row.author_id, nickname);
   els.list.querySelector(".chat-empty")?.remove();
@@ -194,6 +210,44 @@ function removeMessage(id) {
 
 /* ---------------- Realtime ---------------- */
 
+// Chat has its own channel so a problem with another table's subscription
+// can't stop chat messages, and it starts without waiting for the rest of the page.
+// RLS (chat_select) still decides which rows reach this guest; rooms are
+// filtered client-side because Global Chat rows have community_id = null.
+function subscribeChat() {
+  const channel = supabase
+    .channel("wegoinn-chat")
+    .on("postgres_changes", { event: "INSERT", schema: "public", table: "chat_messages" }, onChatInsert)
+    .on("postgres_changes", { event: "DELETE", schema: "public", table: "chat_messages" }, onChatDelete);
+  state.channel = channel;
+  channel.subscribe((status, err) => {
+    if (status === "SUBSCRIBED") console.info("[chat] realtime SUBSCRIBED");
+    else console.warn(`[chat] realtime ${status}`, err ?? "");
+    // Connected (or reconnected): fetch anything sent while we weren't listening.
+    if (status === "SUBSCRIBED") syncMissed();
+    // CHANNEL_ERROR / TIMED_OUT are retried by supabase-js; a CLOSED channel is not.
+    if (status === "CLOSED" && state.channel === channel) {
+      state.channel = null;
+      supabase.removeChannel(channel);
+      setTimeout(subscribeChat, 3000);
+    }
+  });
+}
+
+/** Appends messages newer than the last one shown in the open room (duplicates are skipped). */
+export async function syncMissed() {
+  if (state.loading || !els.list) return;
+  const room = state.room;
+  let query = supabase.from("chat_messages").select(CHAT_COLUMNS);
+  query = room ? query.eq("community_id", room.id) : query.is("community_id", null);
+  if (state.lastAt) query = query.gte("created_at", state.lastAt);
+  const { data, error } = await query.order("created_at", { ascending: true }).limit(HISTORY_LIMIT);
+  if (error || room !== state.room || state.loading) return;
+  const stick = nearBottom();
+  data.forEach(appendMessage);
+  scrollToEnd(stick);
+}
+
 // Realtime only delivers rows this guest may SELECT (chat_select RLS policy).
 export async function onChatInsert(payload) {
   const row = payload.new;
@@ -202,7 +256,8 @@ export async function onChatInsert(payload) {
     if (row.community_id == null && row.author_id !== state.me?.id) setUnread(state.unread + 1);
     return;
   }
-  if (!state.visible && row.author_id !== state.me?.id) setUnread(state.unread + 1);
+  if (!state.visible && row.author_id !== state.me?.id && !state.ids.has(row.id)) setUnread(state.unread + 1);
+  if (state.loading) { state.pending.push(row); return; }
   if (!state.nicknames.has(row.author_id)) {
     const { data } = await supabase.from("profiles").select("nickname").eq("id", row.author_id).maybeSingle();
     if (data) state.nicknames.set(row.author_id, data.nickname);
