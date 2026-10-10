@@ -23,7 +23,7 @@ export function closeSheet(id) {
   }, 260);
   onCloseHandlers.get(id)?.();
   onCloseHandlers.delete(id);
-  lastFocus?.focus?.({ preventScroll: true });
+  if (!document.querySelector(".sheet.is-open")) lastFocus?.focus?.({ preventScroll: true });
 }
 
 document.addEventListener("click", (event) => {

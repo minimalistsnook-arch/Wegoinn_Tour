@@ -16,6 +16,7 @@
   <link rel="stylesheet" href="css/style.css" />
 </head>
 <body data-app="guest">
+  <div class="language-bar"><label>Language <select id="siteLanguage" aria-label="Language"><option value="en">English</option><option value="ko">한국어</option><option value="ja">日本語</option><option value="zh">中文</option></select></label><span id="translationStatus" role="status"></span></div>
 
   <!-- LOADING -->
   <div id="loadingView" class="loading-screen">
@@ -77,6 +78,8 @@
       <a class="wordmark topbar__brand" href="#top">Wegoinn</a>
       <div class="topbar__actions">
         <button type="button" class="theme-toggle theme-toggle--on-pine" data-theme-toggle aria-pressed="false">Dark</button>
+        <button id="notificationBtn" type="button" class="pill-btn">Notifications <span id="notificationCount">0</span></button>
+        <button id="logoutBtn" type="button" class="pill-btn">Log out</button>
         <div class="topbar__me">
           <span id="headerAvatar"></span>
           <span id="headerNickname" class="topbar__name"></span>
@@ -133,6 +136,7 @@
         </div>
 
         <div id="feed" class="feed" aria-live="polite"><span class="loader"></span></div>
+        <button id="loadMorePosts" type="button" class="btn btn--ghost btn--block" hidden>Load more</button>
       </section>
 
       <!-- COMMUNITY CALENDAR -->
@@ -144,6 +148,7 @@
           </div>
         </div>
 
+        <div class="card my-communities"><h3>My communities</h3><p>Hosting, applications and history · All times KST (UTC+9)</p><div id="myCommunityList" class="community-list"></div></div>
         <div class="calendar card">
           <div class="calendar__head">
             <button id="prevMonth" class="icon-btn" type="button" aria-label="Previous month"><i data-icon="left"></i></button>
@@ -210,7 +215,7 @@
             <span class="field__box"><i data-icon="calendar"></i><input name="community_date" type="date" required /></span>
           </label>
           <label class="field">
-            <span class="field__label">Time</span>
+            <span class="field__label">Time · KST (UTC+9)</span>
             <span class="field__box"><i data-icon="clock"></i><input name="community_time" type="time" required /></span>
           </label>
         </div>
@@ -235,6 +240,9 @@
           <textarea name="schedule" class="field__area" rows="4" maxlength="1000" placeholder="19:30  Meet at the Wegoinn lobby&#10;20:00  Walk to Hongdae&#10;21:00  Dinner together" required></textarea>
         </label>
 
+        <label class="field"><span class="field__label">Meeting place</span><span class="field__box"><input name="meeting_place" type="text" maxlength="200" placeholder="e.g. Wegoinn lobby" required /></span></label>
+        <label class="field"><span class="field__label">Map link</span><span class="field__box"><input name="map_url" type="url" maxlength="2000" placeholder="https://maps.google.com/…" /></span><small class="field__hint">Paste a Google, Naver or Kakao Maps HTTPS link.</small></label>
+
         <label class="field">
           <span class="field__label">Maximum Participants <small>1 – 30 people</small></span>
           <span class="field__box"><i data-icon="users"></i><input name="max_participants" type="number" min="1" max="30" step="1" value="8" inputmode="numeric" required /></span>
@@ -252,13 +260,36 @@
           </label>
         </fieldset>
 
-        <label class="field">
+        <label class="field" id="communityReservationField">
           <span class="field__label">Reservation Number</span>
           <span class="field__box"><i data-icon="key"></i><input name="reservation_number" type="text" autocomplete="off" spellcheck="false" required /></span>
           <small class="field__hint"><i data-icon="shield"></i> Only Wegoinn staff can see this. Other guests never will.</small>
         </label>
 
         <button type="submit" class="btn btn--dark btn--block btn--lg">CREATE COMMUNITY</button>
+      </form>
+    </div>
+  </div>
+
+  <div id="notificationSheet" class="sheet" hidden><div class="sheet__backdrop" data-close-sheet></div><div class="sheet__panel" role="dialog" aria-modal="true" aria-labelledby="notificationTitle" tabindex="-1"><button class="icon-btn sheet__close" type="button" data-close-sheet aria-label="Close">×</button><h2 id="notificationTitle">Notifications</h2><p>Notifications are saved here. Push notifications while the site is closed are not connected.</p><button id="markNotificationsRead" class="btn btn--ghost" type="button">Mark shown as read</button><div id="notificationList"></div></div></div>
+
+  <!-- LIVE CHAT -->
+  <button id="chatFab" class="chat-fab" type="button" hidden><i data-icon="message"></i> Chat <span id="chatUnread" class="chat-fab__badge" hidden>0</span></button>
+
+  <div id="chatSheet" class="sheet" hidden>
+    <div class="sheet__backdrop" data-close-sheet></div>
+    <div class="sheet__panel chat-panel" role="dialog" aria-modal="true" aria-labelledby="chatTitle" tabindex="-1">
+      <span class="sheet__grabber" aria-hidden="true"></span>
+      <button class="icon-btn sheet__close" type="button" data-close-sheet aria-label="Close"><i data-icon="close"></i></button>
+      <div class="chat-head">
+        <p id="chatEyebrow" class="eyebrow">Everyone at Wegoinn</p>
+        <h2 id="chatTitle">Global Chat</h2>
+        <p id="chatOnlineWrap" class="chat-online"><span class="chat-online__dot"></span> <b id="chatOnline">1</b> <span>online now</span></p>
+      </div>
+      <div id="chatMessages" class="chat-messages" aria-live="polite"></div>
+      <form id="chatForm" class="chat-composer" novalidate>
+        <textarea id="chatInput" rows="1" maxlength="500" placeholder="Type a message…" aria-label="Type a message"></textarea>
+        <button id="chatSend" class="btn btn--primary chat-composer__send" type="submit" aria-label="Send" disabled><i data-icon="send"></i></button>
       </form>
     </div>
   </div>

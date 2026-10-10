@@ -15,6 +15,7 @@ export const supabase = isSupabaseConfigured()
 export function errorMessage(error, fallback = "Something went wrong. Please try again.") {
   if (!error) return fallback;
   const msg = String(error.message || error);
+  if (/SLOW_DOWN/.test(msg)) return "You're sending messages too fast. Please wait a moment.";
   if (/FULL/.test(msg)) return "This community is already full.";
   if (/duplicate key|unique/i.test(msg)) return "You already sent a request.";
   if (/row-level security|permission denied|42501/i.test(msg)) return "You don't have permission to do that.";

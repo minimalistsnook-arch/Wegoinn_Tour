@@ -141,3 +141,44 @@ wegoinn/
 | `js/admin.js`, `schema.sql §7` | `// TODO: Configure real admin authentication` |
 
 사진은 `schema.sql` §8이 만드는 Supabase Storage `post-images` 버킷에 저장됩니다(본인 폴더에만 업로드 가능, WebP/JPEG ≤ 1MB).
+
+
+## 8. 모임 운영·언어·알림 업데이트 (2026-10-08)
+
+기존 프로젝트는 Supabase SQL Editor에서 `supabase/migrations/20261008_community_lifecycle.sql`을 실행하세요. 신규 프로젝트는 전체 `schema.sql`을 실행하면 이 변경도 포함됩니다. **DB 변경을 먼저 적용하고 프런트엔드를 배포해야 합니다.**
+
+- 주최자: 미래 모임 수정·취소. 취소는 삭제가 아닌 `status=cancelled` 처리입니다.
+- 참가자: 대기·승인 상태의 신청 철회. 승인된 신청을 철회하면 승인 인원이 감소합니다. 신청 행은 `withdrawn` 상태로 남습니다. 철회·거절 후 재신청은 지원하지 않습니다.
+- **시작 시각부터 읽기 전용**: 한국 시간 `Asia/Seoul` 기준으로 생성·수정·취소·신청·철회·승인을 DB에서도 차단합니다. 지난 모임과 취소된 모임은 모든 로그인 투숙객이 달력에서 계속 조회할 수 있습니다.
+- 내 모임: 현재 달에 관계없이 주최·신청·지난 모임을 함께 조회합니다.
+- 장소: 만남 장소와 HTTPS 지도 링크를 저장하고 상세 화면에서 지도를 엽니다.
+- 방명록: 20개씩 더보기. 새로고침할 때도 펼친 범위를 유지합니다.
+- 게스트 로그아웃: 관리자 세션과 분리된 게스트 세션을 종료합니다. 익명 로그인 특성상 재로그인 시 기존 계정 복구는 별도 기능이 필요합니다.
+
+### 알림
+
+`notifications` 테이블에 신청, 승인, 거절, 철회, 일정/장소 변경, 모임 취소 알림을 저장합니다. 본인 알림만 조회하며 Realtime 및 화면 복귀 시 갱신합니다. 우측 상단에서 최근 100개를 조회하고 읽음 처리하거나 해당 모임을 열 수 있습니다. **사이트를 닫은 상태의 OS 푸시·이메일·SMS는 구현되지 않았습니다.**
+
+### 네 가지 언어와 게시글 자동 번역
+
+우측 상단에서 영어(기본), 한국어, 일본어, 중국어를 선택합니다. 화면 문구는 로컬 번역으로 즉시 전환됩니다. 게시글·댓글·모임 이름/설명/장소·알림 모임명은 서버 번역을 사용합니다. 이용자 닉네임은 번역하지 않습니다. API가 미연결되거나 실패하면 원문과 연결 상태를 표시합니다.
+
+Cloudflare Pages의 `/api/translate` 함수는 저장소의 `functions/api/translate.js`입니다. Pages 환경 변수에 다음을 설정한 뒤 프런트엔드와 함수를 함께 배포하세요:
+
+- `GOOGLE_TRANSLATE_API_KEY`: Cloud Translation Basic v2 사용이 가능한 서버 전용 API 키
+- `SUPABASE_URL`: 현재 Supabase 프로젝트 URL
+- `SUPABASE_ANON_KEY`: 현재 프로젝트의 공개 키
+
+Google API 키는 브라우저 설정 파일에 넣지 마세요. 요청은 Supabase 세션과 등록된 투숙객 프로필을 검증한 뒤 번역합니다. 언어 자동 감지와 번역은 [Google Cloud Translation v2](https://docs.cloud.google.com/translate/docs/reference/rest/v2/translate)를 사용합니다. 공급자 호출은 연결 후 발생합니다.
+
+### 검증
+
+`npm test -- --run`은 한국 시간 경계, 지난 모임 변경 차단 화면, 모임 수정·신청 철회, 안전한 지도 링크, 방명록 더보기, 알림 읽음 처리, 4개 언어 전환, 번역 API 인증을 확인합니다. `npm run build`는 테스트 파일을 제외한 게스트/관리자 파일을 `dist/`에 복사합니다.
+
+## Live Chat (실시간 채팅)
+
+- **Global Chat**: 우측 하단 `Chat` 버튼 → 로그인한 모든 투숙객이 함께 대화. 상단에 현재 접속자 수(Realtime Presence) 표시, 채팅창이 닫혀 있을 때 새 메시지 수 배지.
+- **Group chat**: 모임 상세에서 `Open group chat` → 주최자 + 승인된 참가자만 읽기/쓰기 (RLS `can_access_chat_room`).
+- 저장: `chat_messages` 테이블 (메시지 500자, 10초에 5개 제한 trigger). 본인 메시지 삭제 가능, Admin은 `admin.html` → **Chat** 탭에서 모든 메시지 삭제 가능.
+- 번역: 메시지는 `data-user-content`라서 사이트 언어 선택 시 기존 번역 API로 자동 번역됩니다.
+- 적용: Supabase SQL Editor에서 `supabase/migrations/20261009_live_chat.sql` 실행.

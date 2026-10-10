@@ -17,10 +17,19 @@ export function detectLanguage(text = "") {
 }
 
 export function viewerLanguage() {
-  return (navigator.language || "en").slice(0, 2).toLowerCase();
+  return localStorage.getItem("wegoinn-language") || "en";
 }
 
-export const isTranslationConfigured = () => Boolean(CONFIG.TRANSLATION_ENDPOINT);
+let serviceAvailable = false;
+export const isTranslationConfigured = () => Boolean(CONFIG.TRANSLATION_ENDPOINT) && serviceAvailable;
+export async function checkTranslationService() {
+  if (!CONFIG.TRANSLATION_ENDPOINT) return false;
+  try {
+    const response = await fetch(CONFIG.TRANSLATION_ENDPOINT, { signal: AbortSignal.timeout(5000) });
+    serviceAvailable = response.ok && (await response.json()).configured === true;
+  } catch { serviceAvailable = false; }
+  return serviceAvailable;
+}
 
 const cache = new Map();
 
@@ -43,6 +52,7 @@ export async function translateText(text, targetLanguage = viewerLanguage()) {
       Authorization: `Bearer ${session?.access_token ?? ""}`,
     },
     body: JSON.stringify({ text, target: targetLanguage }),
+    signal: AbortSignal.timeout(15000),
   });
   if (!res.ok) throw new Error("Translation failed");
   const { translatedText } = await res.json();
@@ -68,6 +78,7 @@ export async function handleTranslationToggle(button, textEl, onUnavailable) {
     group.querySelectorAll("[data-lang-mode]").forEach((b) => b.classList.toggle("is-active", b.dataset.langMode === mode));
 
   const original = textEl.dataset.original ?? "";
+  textEl.dataset.translationMode = button.dataset.langMode;
   if (button.dataset.langMode === "original") {
     textEl.textContent = original;
     setActive("original");
@@ -84,6 +95,7 @@ export async function handleTranslationToggle(button, textEl, onUnavailable) {
       return;
     }
     textEl.textContent = translated;
+    textEl.dataset.siteTranslated = "true";
   } catch {
     setActive("original");
     textEl.textContent = original;

@@ -9,8 +9,8 @@ export const CONFIG = {
   IMAGE_BUCKET: "post-images",
 
   // Endpoint that receives { text, target } and returns { translatedText }.
-  // Leave empty until a translation API is connected.
-  TRANSLATION_ENDPOINT: "",
+  // Cloudflare Pages Function; it reports availability after server secrets are set.
+  TRANSLATION_ENDPOINT: "/api/translate",
 
   HOSTEL_TIME_ZONE: "Asia/Seoul",
 };

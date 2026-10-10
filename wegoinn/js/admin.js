@@ -91,6 +91,7 @@ function enter(profile) {
 const VIEWS = {
   posts:        { eyebrow: "Guestbook",  title: "Guestbook posts",        load: loadPosts },
   comments:     { eyebrow: "Guestbook",  title: "Comments & replies",     load: loadComments },
+  chat:         { eyebrow: "Chat",       title: "Chat messages",          load: loadChat },
   communities:  { eyebrow: "Community",  title: "Communities",            load: loadCommunities },
   applications: { eyebrow: "Community",  title: "Community applications", load: loadApplications },
   guests:       { eyebrow: "People",     title: "Guests",                 load: loadGuests },
@@ -180,6 +181,23 @@ async function loadComments() {
   ], data, "No comments yet.");
 }
 
+async function loadChat() {
+  const { data, error } = await supabase
+    .from("chat_messages")
+    .select("id, content, created_at, author:profiles ( nickname ), community:communities ( title )")
+    .order("created_at", { ascending: false })
+    .limit(1000);
+  if (error) throw error;
+
+  table([
+    { label: "Sent", cls: "nowrap", render: (r) => text(formatDateTime(r.created_at), "muted") },
+    { label: "Author", render: (r) => `<b>${escapeHtml(r.author?.nickname ?? "—")}</b>` },
+    { label: "Room", render: (r) => r.community ? `<div class="clamp muted">${escapeHtml(r.community.title)}</div>` : `<span class="a-tag">Global</span>` },
+    { label: "Message", cls: "wide", render: (r) => clamp(r.content) },
+    { label: "", cls: "actions", render: (r) => deleteBtn("chat_messages", r.id) },
+  ], data, "No chat messages yet.");
+}
+
 async function loadCommunities() {
   const { data, error } = await supabase.rpc("admin_list_communities");
   if (error) throw error;
@@ -233,7 +251,7 @@ els.content.addEventListener("click", async (event) => {
   const del = event.target.closest("[data-delete]");
   if (del) {
     const kind = del.dataset.delete;
-    const label = kind === "posts" ? "this post (and all its comments)" : "this comment (and its replies)";
+    const label = { posts: "this post (and all its comments)", comments: "this comment (and its replies)", chat_messages: "this chat message" }[kind];
     if (!confirm(`Delete ${label}? This cannot be undone.`)) return;
     del.disabled = true;
     const { data, error } = await supabase.from(kind).delete().eq("id", del.dataset.id).select("id");

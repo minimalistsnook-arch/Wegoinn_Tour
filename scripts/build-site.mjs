@@ -7,6 +7,6 @@ for (const file of files) await access(new URL(file, source));
 await rm(output, { recursive: true, force: true });
 await mkdir(output, { recursive: true });
 for (const file of files) {
-  await cp(new URL(file, source), new URL(file, output), { recursive: true });
+  await cp(new URL(file, source), new URL(file, output), { recursive: true, filter: (path) => !/\.(test|spec)\.js$/.test(path) });
 }
 console.log('Wegoinn guest/admin pages and assets built into dist/');

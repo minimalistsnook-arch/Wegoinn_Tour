@@ -1,3 +1,4 @@
+import { CONFIG } from "./config.js";
 export function escapeHtml(value = "") {
   return String(value)
     .replaceAll("&", "&amp;")
@@ -27,15 +28,15 @@ export function avatarHtml(name, size = "") {
 }
 
 export function formatDate(iso) {
-  return new Intl.DateTimeFormat("en", { month: "short", day: "numeric", year: "numeric" }).format(new Date(iso));
+  return new Intl.DateTimeFormat(displayLocale(), { month: "short", day: "numeric", year: "numeric", timeZone: CONFIG.HOSTEL_TIME_ZONE }).format(new Date(iso));
 }
 
 export function formatTime(iso) {
-  return new Intl.DateTimeFormat("en", { hour: "2-digit", minute: "2-digit", hour12: false }).format(new Date(iso));
+  return new Intl.DateTimeFormat(displayLocale(), { hour: "2-digit", minute: "2-digit", hour12: false, timeZone: CONFIG.HOSTEL_TIME_ZONE }).format(new Date(iso));
 }
 
 export function formatDateTime(iso) {
-  return `${formatDate(iso)} · ${formatTime(iso)}`;
+  return `${formatDate(iso)} · ${formatTime(iso)} KST`;
 }
 
 // "2026-10-12" → Date at local midnight (no UTC shift).
@@ -52,7 +53,7 @@ export function toDateKey(date) {
 }
 
 export function formatDateKey(key, opts = { weekday: "short", month: "long", day: "numeric" }) {
-  return new Intl.DateTimeFormat("en", opts).format(parseDateKey(key));
+  return new Intl.DateTimeFormat(displayLocale(), opts).format(parseDateKey(key));
 }
 
 // "19:30:00" → "19:30"
@@ -91,3 +92,20 @@ export function setBusy(button, busy, busyLabel = "…") {
     button.disabled = false;
   }
 }
+
+export function koreaToday(now = new Date()) {
+  const parts = new Intl.DateTimeFormat("en-CA", { timeZone: CONFIG.HOSTEL_TIME_ZONE, year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(now);
+  const get = (key) => parts.find((p) => p.type === key).value;
+  return `${get("year")}-${get("month")}-${get("day")}`;
+}
+export function communityIsLocked(c, now = Date.now()) {
+  if (!c) return true;
+  const start = new Date(`${c.community_date}T${c.community_time}+09:00`).getTime();
+  return c.status === "cancelled" || !Number.isFinite(start) || start <= now;
+}
+export function safeMapUrl(value) {
+  if (!value) return "";
+  try { const url = new URL(value); return url.protocol === "https:" && !url.username && !url.password ? url.href : ""; } catch { return ""; }
+}
+
+export function displayLocale() { return ({ en: "en", ko: "ko-KR", ja: "ja-JP", zh: "zh-CN" })[localStorage.getItem("wegoinn-language") || "en"] || "en"; }

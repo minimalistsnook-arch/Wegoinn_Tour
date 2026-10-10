@@ -5,7 +5,7 @@ import { detectLanguage, translationToggleHtml, handleTranslationToggle } from "
 import { commentsSectionHtml, addComment, deleteComment } from "./comments.js";
 import { icon } from "./icons.js";
 
-const FEED_LIMIT = 50;
+const FEED_LIMIT = 20;
 
 const POST_COLUMNS = `
   id, content, original_language, image_url, created_at, author_id,
@@ -15,6 +15,8 @@ const POST_COLUMNS = `
 
 const state = {
   me: null,
+  visibleLimit: FEED_LIMIT,
+  loading: false,
   posts: [],
   openComments: new Set(),
   replyingTo: null,        // top-level comment id currently being replied to
@@ -52,6 +54,11 @@ export function initGuestbook(me) {
     if (state.refreshPending) setTimeout(() => !isTypingInFeed() && loadFeed(), 50);
   });
 
+  $("#loadMorePosts").addEventListener("click", async () => {
+    if (state.loading) return;
+    state.visibleLimit += FEED_LIMIT;
+    await loadFeed();
+  });
   updateComposer();
   return loadFeed();
 }
@@ -130,19 +137,30 @@ async function publishPost() {
 /* ---------------- Feed ---------------- */
 
 export async function loadFeed() {
+  if (state.loading) { state.refreshPending = true; return; }
+  state.loading = true;
   state.refreshPending = false;
-  const { data, error } = await supabase
+  const more = $("#loadMorePosts");
+  more.disabled = true;
+  let result;
+  try { result = await supabase
     .from("posts")
     .select(POST_COLUMNS)
     .order("created_at", { ascending: false })
-    .limit(FEED_LIMIT);
+    .order("id", { ascending: false })
+    .limit(state.visibleLimit + 1);
+  } catch (err) { result = { error: err }; }
+  finally { state.loading = false; more.disabled = false; }
+  const { data, error } = result;
 
   if (error) {
     els.feed.innerHTML = `<div class="empty-state">${escapeHtml(errorMessage(error, "Couldn't load the guestbook."))}</div>`;
     return;
   }
-  state.posts = data;
+  more.hidden = data.length <= state.visibleLimit;
+  state.posts = data.slice(0, state.visibleLimit);
   renderFeed();
+  if (state.refreshPending) scheduleFeedRefresh();
 }
 
 function isTypingInFeed() {

@@ -1,14 +1,22 @@
+import { initSiteLanguage } from "./i18n.js";
+import { initNotifications, refreshNotifications } from "./notifications.js";
 import { supabase, errorMessage } from "./supabase.js";
 import { isSupabaseConfigured } from "./config.js";
 import { signInGuest, getMyProfile } from "./auth.js";
 import { initGuestbook, scheduleFeedRefresh } from "./guestbook.js";
 import { initCommunity, scheduleCommunityRefresh } from "./community.js";
+import { initChat, onChatInsert, onChatDelete } from "./chat.js";
 import { $, $$, avatarHtml, toast, setBusy } from "./utils.js";
 import { hydrateIcons } from "./icons.js";
 import { initTheme } from "./theme.js";
 
 hydrateIcons();
 initTheme();
+initSiteLanguage();
+$("#logoutBtn").addEventListener("click", async () => {
+  const { error } = await supabase.auth.signOut();
+  if (error) toast(errorMessage(error), "error");
+});
 
 const views = { login: $("#loginView"), app: $("#appView"), loading: $("#loadingView") };
 
@@ -65,12 +73,17 @@ async function enterApp(profile) {
   $("#greetingName").textContent = profile.nickname;
 
   show("app");
+  const header = $(".topbar");
+  if (typeof ResizeObserver !== "undefined") {
+    new ResizeObserver(() => document.documentElement.style.setProperty("--measured-topbar-h", `${header.getBoundingClientRect().height}px`)).observe(header);
+  }
   setupSectionNav();
-  await Promise.all([initGuestbook(profile), initCommunity(profile)]);
+  initChat(profile);
+  await Promise.all([initGuestbook(profile), initCommunity(profile), initNotifications()]);
   subscribeRealtime();
 }
 
-// One channel, four tables. Events are only a "something changed" signal —
+// One channel for every table. Events are only a "something changed" signal —
 // we re-fetch through the normal RLS-protected queries.
 function subscribeRealtime() {
   supabase
@@ -79,6 +92,9 @@ function subscribeRealtime() {
     .on("postgres_changes", { event: "*", schema: "public", table: "comments" }, scheduleFeedRefresh)
     .on("postgres_changes", { event: "*", schema: "public", table: "communities" }, scheduleCommunityRefresh)
     .on("postgres_changes", { event: "*", schema: "public", table: "community_applications" }, scheduleCommunityRefresh)
+    .on("postgres_changes", { event: "INSERT", schema: "public", table: "notifications" }, refreshNotifications)
+    .on("postgres_changes", { event: "INSERT", schema: "public", table: "chat_messages" }, onChatInsert)
+    .on("postgres_changes", { event: "DELETE", schema: "public", table: "chat_messages" }, onChatDelete)
     .subscribe();
 }
 
