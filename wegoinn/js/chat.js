@@ -1,11 +1,11 @@
-// Live chat — Global Chat for every guest, plus a group chat per community
+// Live chat — the "Chat" section of the page. Global Chat for every guest, plus a group chat per community
 // (host + approved members; the database decides who may read or write).
 // Messages are stored in chat_messages and pushed through Supabase Realtime;
 // "online now" uses Realtime Presence.
 import { supabase, errorMessage } from "./supabase.js";
 import { $, escapeHtml, avatarHtml, formatDate, formatTime, toast, setBusy } from "./utils.js";
 import { detectLanguage } from "./translation.js";
-import { openSheet } from "./sheet.js";
+import { closeSheet } from "./sheet.js";
 import { icon } from "./icons.js";
 
 const HISTORY_LIMIT = 100;
@@ -14,7 +14,7 @@ const CHAT_COLUMNS = "id, community_id, author_id, content, created_at, author:p
 const state = {
   me: null,
   room: null,          // null = Global Chat, otherwise { id, title }
-  open: false,
+  visible: false,      // is the Chat section on screen?
   ids: new Set(),      // message ids currently rendered
   lastDay: "",
   unread: 0,
@@ -27,7 +27,8 @@ export function initChat(me) {
   state.me = me;
   state.nicknames.set(me.id, me.nickname);
   Object.assign(els, {
-    fab: $("#chatFab"),
+    section: $("#chat"),
+    back: $("#chatBackBtn"),
     unread: $("#chatUnread"),
     eyebrow: $("#chatEyebrow"),
     title: $("#chatTitle"),
@@ -39,8 +40,7 @@ export function initChat(me) {
     send: $("#chatSend"),
   });
 
-  els.fab.hidden = false;
-  els.fab.addEventListener("click", () => openChat());
+  els.back.addEventListener("click", () => openChat());
   els.form.addEventListener("submit", sendMessage);
   els.input.addEventListener("keydown", (event) => {
     if (event.key === "Enter" && !event.shiftKey && !event.isComposing) {
@@ -51,6 +51,18 @@ export function initChat(me) {
   els.input.addEventListener("input", onInput);
   els.list.addEventListener("click", onListClick);
   trackPresence();
+  watchVisibility();
+  showRoom(null);
+  return loadMessages();
+}
+
+// Global messages that arrive while the Chat section is off screen count as unread.
+function watchVisibility() {
+  if (typeof IntersectionObserver === "undefined") return;
+  new IntersectionObserver(([entry]) => {
+    state.visible = entry.isIntersecting;
+    if (state.visible) setUnread(0);
+  }, { threshold: 0.25 }).observe(els.section);
 }
 
 function onInput() {
@@ -59,10 +71,17 @@ function onInput() {
   els.input.style.height = `${els.input.scrollHeight}px`;
 }
 
-/** Opens Global Chat, or a community's group chat when `room` = { id, title }. */
+/** Switches the Chat section to Global Chat, or to a community's group chat when `room` = { id, title }. */
 export async function openChat(room = null) {
+  document.querySelectorAll(".sheet.is-open").forEach((sheet) => closeSheet(sheet.id));
+  showRoom(room);
+  els.section.scrollIntoView({ behavior: "smooth", block: "start" });
+  await loadMessages();
+  els.input.focus({ preventScroll: true });
+}
+
+function showRoom(room) {
   state.room = room;
-  state.open = true;
   if (!room) setUnread(0);
   els.eyebrow.textContent = room ? "Group chat" : "Everyone at Wegoinn";
   els.title.textContent = room ? room.title : "Global Chat";
@@ -70,18 +89,17 @@ export async function openChat(room = null) {
   delete els.title.dataset.siteOriginal;
   delete els.title.dataset.siteTranslated;
   els.title.toggleAttribute("data-user-content", Boolean(room));
-  els.onlineWrap.hidden = Boolean(room);
+  els.back.hidden = !room;
   els.send.disabled = !els.input.value.trim();
-  openSheet("chatSheet", () => { state.open = false; });
-  await loadMessages();
-  els.input.focus({ preventScroll: true });
 }
 
 async function loadMessages() {
+  const room = state.room;
   els.list.innerHTML = `<span class="loader"></span>`;
   let query = supabase.from("chat_messages").select(CHAT_COLUMNS);
   query = state.room ? query.eq("community_id", state.room.id) : query.is("community_id", null);
   const { data, error } = await query.order("created_at", { ascending: false }).limit(HISTORY_LIMIT);
+  if (room !== state.room) return; // the guest switched rooms while this was loading
   if (error) {
     els.list.innerHTML = `<div class="empty-state">${escapeHtml(errorMessage(error, "Messages could not be loaded."))}</div>`;
     return;
@@ -95,7 +113,7 @@ async function loadMessages() {
 }
 
 function inCurrentRoom(row) {
-  return state.open && (row.community_id ?? null) === (state.room?.id ?? null);
+  return (row.community_id ?? null) === (state.room?.id ?? null);
 }
 
 function appendMessage(row) {
@@ -184,6 +202,7 @@ export async function onChatInsert(payload) {
     if (row.community_id == null && row.author_id !== state.me?.id) setUnread(state.unread + 1);
     return;
   }
+  if (!state.visible && row.author_id !== state.me?.id) setUnread(state.unread + 1);
   if (!state.nicknames.has(row.author_id)) {
     const { data } = await supabase.from("profiles").select("nickname").eq("id", row.author_id).maybeSingle();
     if (data) state.nicknames.set(row.author_id, data.nickname);

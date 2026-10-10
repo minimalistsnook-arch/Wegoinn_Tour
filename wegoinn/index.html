@@ -91,6 +91,7 @@
       <div class="section-nav__inner">
         <a href="#guestbook" class="is-active"><i data-icon="book"></i> Guestbook</a>
         <a href="#community"><i data-icon="calendar"></i> Community</a>
+        <a href="#chat"><i data-icon="message"></i> Chat <span id="chatUnread" class="nav-badge" hidden>0</span></a>
       </div>
     </nav>
 
@@ -177,6 +178,32 @@
           <span class="create-cta__text"><b>CREATE COMMUNITY</b><small>for <span id="createDateLabel"></span></small></span>
           <i data-icon="arrow" class="create-cta__arrow"></i>
         </button>
+      </section>
+
+      <!-- LIVE CHAT -->
+      <section id="chat" class="block block--chat" data-section>
+        <div class="block__head">
+          <div>
+            <p class="eyebrow">03 — Live Chat</p>
+            <h2>Live <em>Chat</em></h2>
+          </div>
+          <p id="chatOnlineWrap" class="chat-online"><span class="chat-online__dot"></span> <b id="chatOnline">1</b> <span>online now</span></p>
+        </div>
+
+        <div class="card chat-card">
+          <div class="chat-head">
+            <div class="chat-head__text">
+              <p id="chatEyebrow" class="eyebrow">Everyone at Wegoinn</p>
+              <h3 id="chatTitle">Global Chat</h3>
+            </div>
+            <button id="chatBackBtn" type="button" class="pill-btn" hidden><i data-icon="left"></i> Global Chat</button>
+          </div>
+          <div id="chatMessages" class="chat-messages" aria-live="polite"></div>
+          <form id="chatForm" class="chat-composer" novalidate>
+            <textarea id="chatInput" rows="1" maxlength="500" placeholder="Type a message…" aria-label="Type a message"></textarea>
+            <button id="chatSend" class="btn btn--primary chat-composer__send" type="submit" aria-label="Send" disabled><i data-icon="send"></i></button>
+          </form>
+        </div>
       </section>
     </main>
 
@@ -272,27 +299,6 @@
   </div>
 
   <div id="notificationSheet" class="sheet" hidden><div class="sheet__backdrop" data-close-sheet></div><div class="sheet__panel" role="dialog" aria-modal="true" aria-labelledby="notificationTitle" tabindex="-1"><button class="icon-btn sheet__close" type="button" data-close-sheet aria-label="Close">×</button><h2 id="notificationTitle">Notifications</h2><p>Notifications are saved here. Push notifications while the site is closed are not connected.</p><button id="markNotificationsRead" class="btn btn--ghost" type="button">Mark shown as read</button><div id="notificationList"></div></div></div>
-
-  <!-- LIVE CHAT -->
-  <button id="chatFab" class="chat-fab" type="button" hidden><i data-icon="message"></i> Chat <span id="chatUnread" class="chat-fab__badge" hidden>0</span></button>
-
-  <div id="chatSheet" class="sheet" hidden>
-    <div class="sheet__backdrop" data-close-sheet></div>
-    <div class="sheet__panel chat-panel" role="dialog" aria-modal="true" aria-labelledby="chatTitle" tabindex="-1">
-      <span class="sheet__grabber" aria-hidden="true"></span>
-      <button class="icon-btn sheet__close" type="button" data-close-sheet aria-label="Close"><i data-icon="close"></i></button>
-      <div class="chat-head">
-        <p id="chatEyebrow" class="eyebrow">Everyone at Wegoinn</p>
-        <h2 id="chatTitle">Global Chat</h2>
-        <p id="chatOnlineWrap" class="chat-online"><span class="chat-online__dot"></span> <b id="chatOnline">1</b> <span>online now</span></p>
-      </div>
-      <div id="chatMessages" class="chat-messages" aria-live="polite"></div>
-      <form id="chatForm" class="chat-composer" novalidate>
-        <textarea id="chatInput" rows="1" maxlength="500" placeholder="Type a message…" aria-label="Type a message"></textarea>
-        <button id="chatSend" class="btn btn--primary chat-composer__send" type="submit" aria-label="Send" disabled><i data-icon="send"></i></button>
-      </form>
-    </div>
-  </div>
 
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
 

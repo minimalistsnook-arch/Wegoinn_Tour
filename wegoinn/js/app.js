@@ -98,7 +98,7 @@ function subscribeRealtime() {
     .subscribe();
 }
 
-// Guestbook / Community pills highlight the section in view.
+// Guestbook / Community / Chat pills highlight the section in view.
 function setupSectionNav() {
   const links = $$(".section-nav a");
   const observer = new IntersectionObserver(

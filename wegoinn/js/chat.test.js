@@ -20,16 +20,18 @@ const html = readFileSync(`${process.cwd()}/wegoinn/index.html`, 'utf8');
 const settle = () => new Promise((r) => setTimeout(r, 20));
 const me = { id: 'me', nickname: 'Mina' };
 
-beforeEach(() => {
+beforeEach(async () => {
+  Element.prototype.scrollIntoView = () => {};
   document.documentElement.innerHTML = html.replace(/<!DOCTYPE html>/i, '').replace(/<\/?html[^>]*>/g, '');
   mock.rows = [{ id: 'm1', community_id: null, author_id: 'u2', content: 'Anyone going to Hongdae? <b>', created_at: '2026-10-09T09:00:00Z', author: { nickname: 'Emma' } }];
   mock.query = []; mock.inserted = null;
-  initChat(me);
+  await initChat(me);
 });
 
 describe('live chat', () => {
-  it('loads Global Chat history with escaped content and only my delete buttons', async () => {
-    await openChat();
+  it('shows Global Chat in the page on load with escaped content and only my delete buttons', async () => {
+    expect(document.querySelector('#chat #chatMessages')).not.toBeNull();
+    expect(document.querySelector('.section-nav a[href="#chat"]')).not.toBeNull();
     expect(mock.query).toContainEqual(['is', 'community_id', null]);
     const msg = document.querySelector('[data-msg-id="m1"]');
     expect(msg.querySelector('.chat-msg__text').textContent).toBe('Anyone going to Hongdae? <b>');
@@ -40,6 +42,7 @@ describe('live chat', () => {
   it('sends into the open community room and ignores the echoed realtime event', async () => {
     await openChat({ id: 'c1', title: 'Night Walk' });
     expect(mock.query).toContainEqual(['eq', 'community_id', 'c1']);
+    expect(document.getElementById('chatBackBtn').hidden).toBe(false);
     document.getElementById('chatInput').value = 'See you at 8!';
     document.getElementById('chatForm').requestSubmit();
     await settle();
@@ -49,12 +52,15 @@ describe('live chat', () => {
     expect(document.querySelector('[data-msg-id="m-new"] [data-delete-msg]')).not.toBeNull();
   });
 
-  it('counts unread global messages while closed and removes deleted ones', async () => {
+  it('counts unread global messages while in a group room and removes deleted ones', async () => {
+    await openChat({ id: 'c1', title: 'Night Walk' });
     await onChatInsert({ new: { id: 'm2', community_id: null, author_id: 'u2', content: 'hi', created_at: '2026-10-09T10:00:00Z' } });
     await onChatInsert({ new: { id: 'm3', community_id: 'c9', author_id: 'u2', content: 'room', created_at: '2026-10-09T10:00:00Z' } });
     expect(document.getElementById('chatUnread').textContent).toBe('1');
-    await openChat();
+    document.getElementById('chatBackBtn').click();
+    await settle();
     expect(document.getElementById('chatUnread').hidden).toBe(true);
+    expect(document.getElementById('chatBackBtn').hidden).toBe(true);
     onChatDelete({ old: { id: 'm1' } });
     expect(document.querySelector('[data-msg-id="m1"]')).toBeNull();
   });
