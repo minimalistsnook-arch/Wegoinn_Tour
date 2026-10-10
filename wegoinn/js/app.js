@@ -3,6 +3,7 @@ import { initNotifications, refreshNotifications } from "./notifications.js";
 import { supabase, errorMessage } from "./supabase.js";
 import { isSupabaseConfigured } from "./config.js";
 import { signInGuest, getMyProfile } from "./auth.js";
+import { compressAvatar } from "./image-upload.js";
 import { initGuestbook, scheduleFeedRefresh } from "./guestbook.js";
 import { initCommunity, scheduleCommunityRefresh } from "./community.js";
 import { initChat } from "./chat.js";
@@ -40,19 +41,45 @@ async function boot() {
   show("login");
 }
 
+// Optional round profile photo. Only the compressed square crop is kept.
+let avatarFile = null;
+let avatarPreviewUrl = "";
+function setAvatar(file) {
+  avatarFile = file;
+  if (avatarPreviewUrl) URL.revokeObjectURL(avatarPreviewUrl);
+  avatarPreviewUrl = file ? URL.createObjectURL(file) : "";
+  $("#avatarPreview").src = avatarPreviewUrl;
+  $("#avatarPreview").hidden = !file;
+  $("#avatarRemove").hidden = !file;
+}
+$("#avatarPickBtn").addEventListener("click", () => $("#avatarInput").click());
+$("#avatarRemove").addEventListener("click", () => setAvatar(null));
+$("#avatarInput").addEventListener("change", async (event) => {
+  const input = event.currentTarget;
+  const [file] = input.files;
+  input.value = "";
+  if (!file) return;
+  try {
+    setAvatar(await compressAvatar(file));
+  } catch (err) {
+    toast(errorMessage(err), "error");
+  }
+});
+
 $("#loginForm").addEventListener("submit", async (event) => {
   event.preventDefault();
   const form = event.currentTarget;
   const reservation = form.elements.reservation;
   const nickname = form.elements.nickname;
   if (!reservation.value.trim() || !nickname.value.trim()) {
-    return toast("Please enter your reservation number and nickname.", "error");
+    return toast("Please enter the reservation name or number and a nickname.", "error");
   }
   const button = form.querySelector('[type="submit"]');
   setBusy(button, true, "Entering…");
   try {
-    const profile = await signInGuest(reservation.value, nickname.value);
+    const profile = await signInGuest(reservation.value, nickname.value, avatarFile);
     reservation.value = ""; // don't leave the reservation number in the DOM
+    setAvatar(null);
     await enterApp(profile);
   } catch (err) {
     toast(errorMessage(err), "error");
@@ -69,7 +96,7 @@ async function enterApp(profile) {
 
   // Shown in the UI only — permissions are always decided by the database.
   $("#headerNickname").textContent = profile.nickname;
-  $("#headerAvatar").outerHTML = avatarHtml(profile.nickname, "avatar--sm");
+  $("#headerAvatar").outerHTML = avatarHtml(profile.nickname, "avatar--sm", profile.avatar_url);
   $("#greetingName").textContent = profile.nickname;
 
   show("app");

@@ -46,6 +46,25 @@ describe('Korean time and map safety',()=>{
  });
 });
 describe('community workflows',()=>{
+ it('loads registered communities from a schema without lifecycle columns',async()=>{
+   const legacy=community();
+   delete legacy.status;
+   mock.communities=[legacy];
+   const original=mock.from.getMockImplementation();
+   mock.from.mockImplementation(table=>{
+     const chain=original(table);
+     if(table==='communities') chain.select.mockImplementation(columns=>{
+       if(/\bstatus\b|\bavatar_url\b/.test(columns)) chain.then=(resolve,reject)=>Promise.resolve({data:null,error:{message:'column does not exist'}}).then(resolve,reject);
+       return chain;
+     });
+     return chain;
+   });
+   await initCommunity(me);
+   expect(document.querySelector('#myCommunityList').textContent).toContain('Walk');
+   document.querySelector('#myCommunityList [data-action=view]').click(); await settle();
+   expect(document.querySelector('#communityDetail').textContent).toContain('Walk');
+   expect(document.body.textContent).not.toContain('column communities.status does not exist');
+ });
  it('shows historical hosted communities but offers no mutations',async()=>{
    mock.communities=[community({community_date:'2000-01-01'})];
    mock.applications=[{id:'application',status:'pending',applicant:{nickname:'Guest'}}];
@@ -76,6 +95,18 @@ describe('community workflows',()=>{
    for (const [key,value] of Object.entries({title:'Walk',activity:'Explore',preferred_participants:'Everyone',schedule:'Lobby',community_date:'2099-01-01',community_time:'19:00',max_participants:'8',meeting_place:'Lobby'})) form.elements[key].value=value;
    form.dispatchEvent(new Event('submit',{bubbles:true,cancelable:true})); await settle();
    expect(mock.rpc).toHaveBeenCalledWith('create_community_v2',expect.objectContaining({p_reservation_number:null,p_details:expect.objectContaining({title:'Walk',meeting_place:'Lobby'})}));
+ });
+ it('keeps the draft and avoids duplicate creation when the RPC is missing',async()=>{
+   await initCommunity(me);
+   document.querySelector('#openCreateCommunity').click();
+   const form=document.querySelector('#communityForm');
+   for (const [key,value] of Object.entries({title:'Walk',activity:'Explore',preferred_participants:'Everyone',schedule:'Lobby',community_date:'2099-01-01',community_time:'19:00',max_participants:'8',meeting_place:'Lobby'})) form.elements[key].value=value;
+   mock.rpc.mockResolvedValueOnce({data:null,error:{code:'PGRST202',message:'Could not find the function public.create_community_v2 in the schema cache'}});
+   form.dispatchEvent(new Event('submit',{bubbles:true,cancelable:true})); await settle();
+   expect(mock.rpc).toHaveBeenCalledTimes(1);
+   expect(form.elements.title.value).toBe('Walk');
+   expect(form.querySelector('[type=submit]').disabled).toBe(false);
+   expect(document.body.textContent).toContain('Community creation is temporarily unavailable');
  });
  it('lets a participant withdraw an approved application',async()=>{
    mock.communities=[community({creator_id:'00000000-0000-0000-0000-000000000002'})];

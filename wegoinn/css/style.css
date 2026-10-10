@@ -1371,3 +1371,30 @@ html { scroll-padding-top:calc(var(--measured-topbar-h, var(--topbar-h)) + 64px)
 .chat-composer textarea:focus { outline: 0; border-color: var(--rose); box-shadow: 0 0 0 4px var(--focus); }
 .chat-composer__send { flex-shrink: 0; width: 46px; height: 46px; padding: 0; border-radius: 50%; }
 
+
+/* ---------- Login profile photo ---------- */
+
+.avatar--photo { overflow: hidden; padding: 0; }
+.avatar--photo img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
+
+.avatar-pick { justify-items: center; text-align: center; }
+.avatar-pick .field__label { justify-self: start; }
+.avatar-pick .field__label small { color: var(--muted); font-weight: 400; }
+.avatar-pick__circle {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 96px; height: 96px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: var(--rose-50);
+  color: var(--rose-700);
+  border: 0;
+  box-shadow: inset 0 0 0 2px var(--avatar-ring);
+  cursor: pointer;
+}
+.avatar-pick__circle:focus-visible,
+.avatar-pick__circle:hover { box-shadow: inset 0 0 0 2px var(--rose-700); }
+.avatar-pick__circle img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.avatar-pick__empty .icon { width: 28px; height: 28px; }
+.avatar-pick__remove { border: 0; background: none; color: var(--muted); font-size: 12px; text-decoration: underline; cursor: pointer; }

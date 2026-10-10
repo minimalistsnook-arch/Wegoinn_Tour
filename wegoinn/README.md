@@ -187,4 +187,30 @@ Google API 키는 브라우저 설정 파일에 넣지 마세요. 요청은 Supa
 
 커뮤니티 생성 화면에서는 예약번호를 입력하지 않습니다. 로그인 시 예약번호 입력은 기존대로 유지합니다.
 
-기존 Supabase 프로젝트의 SQL Editor에서 `supabase/migrations/20261010_community_without_reservation.sql`을 실행한 다음 프런트엔드를 배포하세요. 이 파일은 누락된 `create_community_v2(text,jsonb)` 함수를 생성하고 스키마 캐시를 갱신합니다. 빈 예약번호는 별도 예약 테이블에 저장하지 않습니다. 기존 예약 데이터와 로그인·권한 검사는 유지합니다.
+기존 Supabase 프로젝트의 SQL Editor에서 먼저 `supabase/diagnose_community_rpc.sql`로 실제 함수 시그니처를 확인하고, `supabase/migrations/20261010_repair_community_rpc.sql`을 실행한 다음 프런트엔드를 배포하세요. 복구 SQL은 호환되는 기존 함수의 본문을 유지하고, 함수가 없을 때만 생성합니다. 다른 시그니처나 오버로드가 있으면 변경하지 않고 중단합니다. 이 파일은 누락된 `create_community_v2(text,jsonb)` 함수를 생성하고 스키마 캐시를 갱신합니다. 빈 예약번호는 별도 예약 테이블에 저장하지 않습니다. 기존 예약 데이터와 로그인·권한 검사는 유지합니다.
+
+### RPC 오류와 채팅 확인
+
+클라이언트 호출은 `create_community_v2`에 `p_details`(JSON)와 `p_reservation_number`(현재 임시 운영에서는 null)를 전달합니다. PostgREST의 이름 기반 매개변수 전달이므로 오류에 표시된 인자 순서는 문제가 아닙니다. 운영 DB 적용은 Git push와 별도입니다.
+
+동일한 함수가 이미 있는데 오류가 계속되면 SQL Editor에서 `NOTIFY pgrst, 'reload schema';`를 실행하고, API 설정에서 public 스키마 노출 여부와 프런트엔드의 Supabase 프로젝트 URL을 확인하세요. 복구 파일에는 authenticated 실행 권한과 캐시 갱신이 포함됩니다.
+
+예약번호가 전달된 신규 함수의 생성 경로는 기존 `create_community` RPC를 사용합니다. 로그인 `register_guest`와 `verifyReservationNumber`는 변경하지 않습니다. 현재 예약번호 검증은 빈 값 검사이며 실제 예약 서비스 연동은 TODO입니다. 채팅방은 별도 rooms 행이 아니라 `chat_messages.community_id`와 `can_access_chat_room`으로 구성되므로 커뮤니티 UUID 반환과 기존 채팅 정책을 유지합니다. 채팅 함수·테이블이 없다면 `20261009_live_chat.sql` 적용 여부를 확인하세요.
+
+## 로그인 기록 Google Sheet 연동
+
+로그인할 때 입력한 **예약자 이름/예약번호 · 닉네임 · 프로필 사진**이 Google Sheet의 `Guest Log` 탭에 한 줄씩 추가됩니다. 입력값은 검수하지 않습니다.
+
+흐름: 브라우저 → `/api/guest-log` (Cloudflare Pages Function, 로그인 세션 확인) → Google Apps Script 웹앱 → Sheet
+
+1. **Supabase**: SQL Editor에서 `supabase/migrations/20261010_guest_avatar.sql` 실행 (프로필 사진 컬럼). 프론트엔드 배포 **전에** 실행하세요.
+2. **Apps Script**: 시트에서 `확장 프로그램 → Apps Script` → `google-apps-script/guest-log.gs` 내용을 붙여넣고 저장.
+   - `프로젝트 설정 → 스크립트 속성`에 `WEBHOOK_SECRET` = 임의의 긴 문자열(예: `openssl rand -hex 32`).
+   - `배포 → 새 배포 → 유형: 웹 앱`, 실행 계정 **나**, 액세스 권한 **모든 사용자** → 웹 앱 URL(`https://script.google.com/macros/s/.../exec`) 복사.
+3. **Cloudflare**: Pages 프로젝트 `설정 → 환경 변수`(Production)에 추가 후 재배포.
+   - `GOOGLE_SHEET_WEBHOOK_URL` = 2번의 웹 앱 URL
+   - `GOOGLE_SHEET_WEBHOOK_SECRET` = 2번의 `WEBHOOK_SECRET`과 같은 값 (암호화로 저장)
+   - `SUPABASE_URL`, `SUPABASE_ANON_KEY` (번역 기능용으로 이미 있으면 그대로)
+4. 확인: `https://<사이트>/api/guest-log`를 열어 `{"configured":true}`가 나오면 연결 완료.
+
+시트 기록이 실패해도 로그인은 막지 않습니다(브라우저 콘솔에 `[guest-log]` 경고만 남음). Apps Script 코드를 수정하면 `배포 관리 → 새 버전`으로 다시 배포해야 반영됩니다.

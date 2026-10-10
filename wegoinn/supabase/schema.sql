@@ -623,6 +623,15 @@ begin
   raise exception 'Choose a future start time (KST)';
  end if;
  if coalesce(btrim(p_details->>'meeting_place'), '') = '' then raise exception 'Meeting place is required'; end if;
+ -- Preserve the original reservation-backed creation path and its side effects.
+ if coalesce(btrim(p_reservation_number), '') <> '' then
+  v_id := public.create_community(p_reservation_number, p_details->>'title', p_details->>'activity',
+   p_details->>'preferred_participants', p_details->>'schedule', v_date, v_time,
+   (p_details->>'max_participants')::int, coalesce((p_details->>'participation_fee')::int, 0));
+  update public.communities set meeting_place = btrim(p_details->>'meeting_place'),
+   map_url = btrim(coalesce(p_details->>'map_url', '')) where id = v_id;
+  return v_id;
+ end if;
  insert into public.communities (
   creator_id, title, activity, preferred_participants, schedule,
   community_date, community_time, max_participants, participation_fee, meeting_place, map_url
@@ -633,10 +642,6 @@ begin
   coalesce((p_details->>'participation_fee')::int, 0),
   btrim(p_details->>'meeting_place'), btrim(coalesce(p_details->>'map_url', ''))
  ) returning id into v_id;
- if coalesce(btrim(p_reservation_number), '') <> '' then
-  insert into public.community_reservations (community_id, reservation_number)
-  values (v_id, btrim(p_reservation_number));
- end if;
  return v_id;
 end $$;
 
@@ -791,3 +796,30 @@ do $$ begin
   end if;
 end $$;
 commit;
+
+-- ---------------------------------------------------------------------
+-- Guest profile photos (same as migrations/20261010_guest_avatar.sql)
+-- ---------------------------------------------------------------------
+alter table public.profiles add column if not exists avatar_url text
+  check (avatar_url is null or avatar_url ~ '^https://[^[:space:]]+$');
+
+-- Other guests may see the photo next to the nickname.
+grant select (avatar_url) on public.profiles to authenticated;
+
+-- The only write path: a guest may point avatar_url at a file in their own storage folder.
+create or replace function public.set_my_avatar(p_avatar_url text)
+returns void language plpgsql security definer set search_path = public as $$
+begin
+ if auth.uid() is null or public.current_profile_id() is null then
+  raise exception 'Not signed in' using errcode = '42501';
+ end if;
+ if p_avatar_url is not null
+    and position('/storage/v1/object/public/post-images/' || auth.uid()::text || '/' in p_avatar_url) = 0 then
+  raise exception 'Invalid profile photo';
+ end if;
+ update public.profiles set avatar_url = nullif(btrim(p_avatar_url), '') where auth_user_id = auth.uid();
+end $$;
+
+revoke all on function public.set_my_avatar(text) from public, anon;
+grant execute on function public.set_my_avatar(text) to authenticated;
+notify pgrst, 'reload schema';

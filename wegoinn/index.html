@@ -43,13 +43,13 @@
 
       <form id="loginForm" class="login-card" novalidate>
         <h2>Welcome in</h2>
-        <p class="login-card__sub">Check in with your reservation and choose a nickname for the guestbook.</p>
+        <p class="login-card__sub">Enter the name or number on your reservation, then choose a nickname for the guestbook.</p>
 
         <label class="field">
-          <span class="field__label">Reservation Number</span>
+          <span class="field__label">Reservation Name or Number</span>
           <span class="field__box">
             <i data-icon="key"></i>
-            <input name="reservation" type="text" inputmode="text" placeholder="e.g. AGD12345678" autocomplete="off" autocapitalize="characters" spellcheck="false" required />
+            <input name="reservation" type="text" inputmode="text" placeholder="e.g. Kim Mina or AGD12345678" maxlength="64" autocomplete="off" spellcheck="false" required />
           </span>
         </label>
 
@@ -62,12 +62,23 @@
           <small class="field__hint">English letters &amp; numbers · this is the only name other guests see.</small>
         </label>
 
+        <div class="field avatar-pick">
+          <span class="field__label">Profile Photo <small>(optional)</small></span>
+          <button type="button" id="avatarPickBtn" class="avatar-pick__circle" aria-label="Choose profile photo">
+            <img id="avatarPreview" alt="" hidden />
+            <span class="avatar-pick__empty"><i data-icon="camera"></i></span>
+          </button>
+          <input id="avatarInput" name="avatar" type="file" accept="image/*" hidden />
+          <button type="button" id="avatarRemove" class="avatar-pick__remove" hidden>Remove photo</button>
+          <small class="field__hint">A face photo shown in a circle next to your nickname.</small>
+        </div>
+
         <button type="submit" class="btn btn--dark btn--block btn--lg">ENTER <i data-icon="arrow"></i></button>
 
         <p id="setupNotice" class="setup-notice" hidden>
           Supabase isn't connected yet — add your project URL and anon key in <code>js/config.js</code>.
         </p>
-        <p class="login-card__fine"><i data-icon="shield"></i> Your reservation number is never shown to other guests.</p>
+        <p class="login-card__fine"><i data-icon="shield"></i> Your reservation name or number is never shown to other guests.</p>
       </form>
     </div>
   </section>

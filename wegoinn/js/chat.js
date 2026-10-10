@@ -9,7 +9,7 @@ import { closeSheet } from "./sheet.js";
 import { icon } from "./icons.js";
 
 const HISTORY_LIMIT = 100;
-const CHAT_COLUMNS = "id, community_id, author_id, content, created_at, author:profiles ( nickname )";
+const CHAT_COLUMNS = "id, community_id, author_id, content, created_at, author:profiles ( nickname, avatar_url )";
 
 const state = {
   me: null,
@@ -19,6 +19,7 @@ const state = {
   lastDay: "",
   unread: 0,
   nicknames: new Map(),
+  avatars: new Map(),
   loading: false,      // history for the open room is being fetched
   pending: [],         // realtime rows that arrived while history was loading
   lastAt: null,        // created_at of the newest rendered message (for resync)
@@ -30,6 +31,7 @@ const els = {};
 export function initChat(me) {
   state.me = me;
   state.nicknames.set(me.id, me.nickname);
+  state.avatars.set(me.id, me.avatar_url);
   Object.assign(els, {
     section: $("#chat"),
     back: $("#chatBackBtn"),
@@ -137,6 +139,7 @@ function appendMessage(row) {
   if (!state.lastAt || Date.parse(row.created_at) > Date.parse(state.lastAt)) state.lastAt = row.created_at;
   const nickname = row.author?.nickname ?? state.nicknames.get(row.author_id) ?? "Guest";
   state.nicknames.set(row.author_id, nickname);
+  if (row.author) state.avatars.set(row.author_id, row.author.avatar_url);
   els.list.querySelector(".chat-empty")?.remove();
 
   const day = formatDate(row.created_at);
@@ -147,7 +150,7 @@ function appendMessage(row) {
   const mine = row.author_id === state.me.id;
   els.list.insertAdjacentHTML("beforeend", `
     <article class="chat-msg ${mine ? "chat-msg--mine" : ""}" data-msg-id="${escapeHtml(row.id)}">
-      ${mine ? "" : avatarHtml(nickname, "avatar--sm")}
+      ${mine ? "" : avatarHtml(nickname, "avatar--sm", state.avatars.get(row.author_id))}
       <div class="chat-msg__body">
         <div class="chat-msg__meta"><strong>${escapeHtml(mine ? "you" : nickname)}</strong><time>${escapeHtml(formatTime(row.created_at))}</time></div>
         <p class="chat-msg__text" data-user-content>${escapeHtml(row.content)}</p>
@@ -259,8 +262,11 @@ export async function onChatInsert(payload) {
   if (!state.visible && row.author_id !== state.me?.id && !state.ids.has(row.id)) setUnread(state.unread + 1);
   if (state.loading) { state.pending.push(row); return; }
   if (!state.nicknames.has(row.author_id)) {
-    const { data } = await supabase.from("profiles").select("nickname").eq("id", row.author_id).maybeSingle();
-    if (data) state.nicknames.set(row.author_id, data.nickname);
+    const { data } = await supabase.from("profiles").select("nickname, avatar_url").eq("id", row.author_id).maybeSingle();
+    if (data) {
+      state.nicknames.set(row.author_id, data.nickname);
+      state.avatars.set(row.author_id, data.avatar_url);
+    }
   }
   const stick = nearBottom();
   appendMessage(row);

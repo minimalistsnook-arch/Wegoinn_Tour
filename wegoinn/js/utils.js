@@ -23,7 +23,10 @@ export function avatarTone(name = "") {
   return AVATAR_TONES[hash % AVATAR_TONES.length];
 }
 
-export function avatarHtml(name, size = "") {
+export function avatarHtml(name, size = "", photoUrl = "") {
+  if (photoUrl?.startsWith("https://")) {
+    return `<span class="avatar avatar--${avatarTone(name)} avatar--photo ${size}" aria-hidden="true"><img src="${escapeHtml(photoUrl)}" alt="" loading="lazy" decoding="async" /></span>`;
+  }
   return `<span class="avatar avatar--${avatarTone(name)} ${size}" aria-hidden="true">${escapeHtml(initials(name))}</span>`;
 }
 

@@ -9,9 +9,9 @@ const FEED_LIMIT = 20;
 
 const POST_COLUMNS = `
   id, content, original_language, image_url, created_at, author_id,
-  author:profiles ( nickname ),
+  author:profiles ( nickname, avatar_url ),
   comments ( id, post_id, parent_comment_id, content, original_language, created_at, author_id,
-             author:profiles ( nickname ) )`;
+             author:profiles ( nickname, avatar_url ) )`;
 
 const state = {
   me: null,
@@ -44,7 +44,7 @@ export function initGuestbook(me) {
     composerAvatar: $("#composerAvatar"),
   });
 
-  els.composerAvatar.outerHTML = avatarHtml(me.nickname, "avatar--md");
+  els.composerAvatar.outerHTML = avatarHtml(me.nickname, "avatar--md", me.avatar_url);
   els.input.addEventListener("input", updateComposer);
   // Enter posts straight to the guestbook; Shift+Enter adds a new line.
   els.input.addEventListener("keydown", (event) => {
@@ -250,7 +250,7 @@ function postHtml(post) {
   return `
     <article class="post card" data-post-id="${post.id}">
       <header class="post__head">
-        ${avatarHtml(name, "avatar--md")}
+        ${avatarHtml(name, "avatar--md", post.author?.avatar_url)}
         <div class="post__who">
           <strong>${escapeHtml(name)}${post.author_id === me.id ? ` <span class="you-tag">you</span>` : ""}</strong>
           <time datetime="${post.created_at}">${escapeHtml(formatDateTime(post.created_at))}</time>

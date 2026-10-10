@@ -104,3 +104,26 @@ export async function uploadImage(file) {
   const { data: { publicUrl } } = bucket.getPublicUrl(path);
   return publicUrl;
 }
+
+const AVATAR_EDGE = 320;
+
+/** Centre-crops a face photo to a 320px square (WebP, JPEG fallback) for round avatars. */
+export async function compressAvatar(file) {
+  if (!file?.type?.startsWith("image/")) throw new Error("Please choose an image file.");
+  if (file.size > MAX_INPUT_BYTES) throw new Error("That photo is too large (max 25 MB).");
+  const source = await loadImage(file);
+  let blob;
+  try {
+    const side = Math.min(source.width, source.height);
+    const canvas = document.createElement("canvas");
+    canvas.width = canvas.height = Math.min(AVATAR_EDGE, side);
+    const ctx = canvas.getContext("2d");
+    ctx.imageSmoothingQuality = "high";
+    ctx.drawImage(source, (source.width - side) / 2, (source.height - side) / 2, side, side, 0, 0, canvas.width, canvas.height);
+    blob = await encode(canvas, 0.8);
+  } finally {
+    source.close?.();
+  }
+  if (!blob) throw new Error("Could not process this photo.");
+  return new File([blob], `avatar.${blob.type === "image/webp" ? "webp" : "jpg"}`, { type: blob.type });
+}

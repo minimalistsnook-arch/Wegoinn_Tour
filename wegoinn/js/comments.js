@@ -13,7 +13,7 @@ function commentHtml(comment, me, { isReply }) {
   const name = comment.author?.nickname ?? "Guest";
   return `
     <div class="comment ${isReply ? "comment--reply" : ""}" data-comment-id="${comment.id}">
-      ${avatarHtml(name, "avatar--sm")}
+      ${avatarHtml(name, "avatar--sm", comment.author?.avatar_url)}
       <div class="comment__bubble">
         <div class="comment__head">
           <strong>${escapeHtml(name)}</strong>

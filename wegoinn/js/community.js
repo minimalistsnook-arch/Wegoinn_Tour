@@ -9,8 +9,7 @@ import { icon } from "./icons.js";
 import { openChat } from "./chat.js";
 
 const COMMUNITY_COLUMNS = `
-  id, creator_id, title, activity, preferred_participants, schedule,
-  community_date, community_time, max_participants, participation_fee, approved_count, created_at, status, meeting_place, map_url,
+  *,
   creator:profiles ( nickname )`;
 
 const today = koreaToday;
@@ -292,7 +291,7 @@ async function renderDetail() {
     <div class="detail-hero tone--${avatarTone(c.title)}">
       <p class="eyebrow">${escapeHtml(formatDateKey(c.community_date, { weekday: "long", month: "long", day: "numeric" }))} · ${escapeHtml(shortTime(c.community_time))} KST</p>
       <h2 data-user-content id="communitySheetTitle">${escapeHtml(c.title)}</h2>
-      <div class="detail-host">${avatarHtml(host, "avatar--sm")} <span>hosted by <b>${escapeHtml(host)}</b></span></div>
+      <div class="detail-host">${avatarHtml(host, "avatar--sm", c.creator?.avatar_url)} <span>hosted by <b>${escapeHtml(host)}</b></span></div>
     </div>
 
     <div class="detail-facts">
@@ -358,7 +357,7 @@ async function renderHostPanel(c) {
         const name = a.applicant?.nickname ?? "Guest";
         return `
           <li class="applicant">
-            ${avatarHtml(name, "avatar--sm")}
+            ${avatarHtml(name, "avatar--sm", a.applicant?.avatar_url)}
             <span class="applicant__name">${escapeHtml(name)}</span>
             ${a.status === "pending" && !communityIsLocked(c) ? `
               <div class="applicant__actions">
@@ -500,7 +499,10 @@ async function submitCommunity(event) {
       : { p_reservation_number: null, p_details: details }));
   } catch (err) { error = err; }
   setBusy(submit, false);
-  if (error) return toast(errorMessage(error), "error");
+  if (error) {
+    if (error.code === "PGRST202") return toast("Community creation is temporarily unavailable. Please contact staff.", "error");
+    return toast(errorMessage(error), "error");
+  }
 
   const date = v("community_date");
   f.reset(); // clears the reservation number from the DOM right away

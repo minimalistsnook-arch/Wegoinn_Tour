@@ -1,6 +1,7 @@
 import { isTranslationConfigured, translateText, checkTranslationService } from './translation.js';
 // Interface translations are local; guest-written content uses the authenticated API.
 const rows = [
+['Community creation is temporarily unavailable. Please contact staff.','현재 모임을 만들 수 없습니다. 직원에게 문의해 주세요.','現在コミュニティを作成できません。スタッフにお問い合わせください。','暂时无法创建活动，请联系工作人员。'],
 ['Mark shown as read','표시된 알림 읽음 처리','表示中の通知を既読にする','将显示的通知标为已读'],['Entering…','입장 중…','ログイン中…','正在进入…'],['Posting…','게시 중…','投稿中…','正在发布…'],['Sending…','전송 중…','送信中…','正在发送…'],['Creating…','저장 중…','保存中…','正在保存…'],
 ['Stay','머무르기','泊まる','入住'],['Meet','만나기','出会う','相遇'],['Remember','기억하기','思い出','留念'],['for','날짜','日付','日期'],['Sections','메뉴','メニュー','菜单'],
 ['e.g. AGD12345678','예: AGD12345678','例：AGD12345678','例如：AGD12345678'],['e.g. SunnyMina','예: SunnyMina','例：SunnyMina','例如：SunnyMina'],['e.g. Hongdae Night Walk','예: 홍대 밤 산책','例：弘大ナイトウォーク','例如：弘大夜游'],['e.g. Wegoinn lobby','예: 위고인 로비','例：Wegoinn ロビー','例如：Wegoinn 大堂'],
@@ -12,7 +13,7 @@ const rows = [
 ['Delete','삭제','削除','删除'],['Send','보내기','送信','发送'],['Comments','댓글','コメント','评论'],['No comments yet — say hello ✨','아직 댓글이 없습니다. 인사를 남겨보세요 ✨','コメントはまだありません。挨拶しましょう ✨','暂无评论，打个招呼吧 ✨'],
 ['Language','언어','言語','语言'],['Guestbook & Community','방명록과 모임','ゲストブック＆コミュニティ','留言簿与活动'],
 ['Guestbook','방명록','ゲストブック','留言簿'],['Community','모임','コミュニティ','活动'],['Notifications','알림','通知','通知'],['Log out','로그아웃','ログアウト','退出登录'],
-['Welcome in','환영합니다','ようこそ','欢迎'],['Reservation Number','예약번호','予約番号','预订编号'],['English Nickname','영문 닉네임','英語のニックネーム','英文昵称'],['ENTER','입장','入る','进入'],
+['Welcome in','환영합니다','ようこそ','欢迎'],['Reservation Name or Number','예약자 이름 또는 예약번호','予約者名または予約番号','预订人姓名或预订编号'],['Enter the name or number on your reservation, then choose a nickname for the guestbook.','예약자 이름 또는 예약번호를 입력하고 방명록에서 사용할 닉네임을 정하세요.','予約者名または予約番号を入力し、ゲストブック用のニックネームを決めてください。','请输入预订人姓名或预订编号，并选择留言簿昵称。'],['Profile Photo','프로필 사진','プロフィール写真','头像'],['Choose profile photo','프로필 사진 선택','プロフィール写真を選択','选择头像'],['(optional)','(선택)','(任意)','（可选）'],['Remove photo','사진 삭제','写真を削除','移除照片'],['A face photo shown in a circle next to your nickname.','닉네임 옆에 동그랗게 표시되는 얼굴 사진입니다.','ニックネームの横に丸く表示される顔写真です。','显示在昵称旁的圆形头像照片。'],['Your reservation name or number is never shown to other guests.','예약자 이름과 예약번호는 다른 투숙객에게 공개되지 않습니다.','予約者名・予約番号は他のゲストには表示されません。','预订人姓名或编号不会向其他住客公开。'],['Please enter the reservation name or number and a nickname.','예약자 이름 또는 예약번호와 닉네임을 입력하세요.','予約者名または予約番号とニックネームを入力してください。','请输入预订人姓名或预订编号以及昵称。'],['Reservation Number','예약번호','予約番号','预订编号'],['English Nickname','영문 닉네임','英語のニックネーム','英文昵称'],['ENTER','입장','入る','进入'],
 ['Check in with your reservation and choose a nickname for the guestbook.','예약번호와 방명록에서 사용할 닉네임을 입력하세요.','予約番号とニックネームを入力してください。','请输入预订编号并选择留言簿昵称。'],
 ['English letters & numbers · this is the only name other guests see.','영문과 숫자 · 다른 투숙객에게는 이 이름만 보입니다.','英字と数字 · 他のゲストにはこの名前だけが表示されます。','英文字母和数字 · 其他住客只能看到此昵称。'],
 ['Your reservation number is never shown to other guests.','예약번호는 다른 투숙객에게 공개되지 않습니다.','予約番号は他のゲストには表示されません。','预订编号不会向其他住客公开。'],
