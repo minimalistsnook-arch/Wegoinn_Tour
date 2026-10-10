@@ -23,6 +23,8 @@ const state = {
   draftImage: null,        // compressed File — the original is never kept
   draftPreviewUrl: "",
   refreshPending: false,
+  publishing: false,
+  imageLoading: false,
 };
 
 const els = {};
@@ -66,21 +68,51 @@ export function initGuestbook(me) {
     state.visibleLimit += FEED_LIMIT;
     await loadFeed();
   });
+  setupComposerDock();
   updateComposer();
   return loadFeed();
 }
 
 /* ---------------- Composer ---------------- */
 
+function setupComposerDock() {
+  const section = $("#guestbook");
+  const composer = $("#guestbookComposer");
+  const syncDock = () => {
+    const viewport = window.visualViewport;
+    const top = viewport?.offsetTop || 0;
+    const height = viewport?.height || window.innerHeight;
+    const rect = section.getBoundingClientRect();
+    const focused = composer.contains(document.activeElement);
+    const visible = focused || (rect.top <= top + height * 0.55 && rect.bottom > top + height * 0.55);
+    composer.classList.toggle("is-visible", visible);
+    composer.inert = !visible;
+    section.style.setProperty("--guestbook-composer-height", `${composer.getBoundingClientRect().height}px`);
+    composer.style.setProperty("--guestbook-keyboard-offset", `${Math.max(0, window.innerHeight - height - top)}px`);
+  };
+  window.addEventListener("scroll", syncDock, { passive: true });
+  window.addEventListener("resize", syncDock);
+  window.visualViewport?.addEventListener("resize", syncDock);
+  window.visualViewport?.addEventListener("scroll", syncDock);
+  composer.addEventListener("focusin", syncDock);
+  composer.addEventListener("focusout", () => requestAnimationFrame(syncDock));
+  if (typeof ResizeObserver !== "undefined") new ResizeObserver(syncDock).observe(composer);
+  syncDock();
+}
+
 function updateComposer() {
   const len = els.input.value.length;
   els.counter.textContent = `${len} / 1000`;
   els.input.style.height = "auto";
   els.input.style.height = `${els.input.scrollHeight}px`;
-  els.publish.disabled = !els.input.value.trim() && !state.draftImage;
+  els.publish.disabled = state.publishing || state.imageLoading || (!els.input.value.trim() && !state.draftImage);
+  els.input.readOnly = state.publishing;
+  els.fileInput.disabled = state.publishing || state.imageLoading;
+  els.removeImage.disabled = state.publishing || state.imageLoading;
 }
 
 async function onPickImage() {
+  if (state.publishing || state.imageLoading) return;
   const file = els.fileInput.files?.[0];
   els.fileInput.value = "";
   if (!file) return;
@@ -88,6 +120,8 @@ async function onPickImage() {
     toast("Photo upload isn't connected yet. You can post text for now.");
     return;
   }
+  state.imageLoading = true;
+  updateComposer();
   try {
     els.preview.classList.add("is-loading");
     els.preview.hidden = false;
@@ -101,6 +135,7 @@ async function onPickImage() {
     clearDraftImage();
     toast(err.message, "error");
   } finally {
+    state.imageLoading = false;
     els.preview.classList.remove("is-loading");
     updateComposer();
   }
@@ -116,9 +151,12 @@ function clearDraftImage() {
 }
 
 async function publishPost() {
+  if (state.publishing || state.imageLoading) return;
   const content = els.input.value.trim();
   if (!content && !state.draftImage) return toast("Write something or add a photo first.");
 
+  state.publishing = true;
+  updateComposer();
   setBusy(els.publish, true, "Posting…");
   try {
     let imageUrl = null;
@@ -135,9 +173,11 @@ async function publishPost() {
     clearDraftImage();
     toast("Your moment is on the wall ✨");
     await loadFeed();
+    els.feed.querySelector(".post")?.scrollIntoView?.({ behavior: "smooth", block: "start" });
   } catch (err) {
     toast(errorMessage(err), "error");
   } finally {
+    state.publishing = false;
     setBusy(els.publish, false);
     updateComposer();
   }

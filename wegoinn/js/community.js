@@ -1,3 +1,4 @@
+import { mapLink, mapLocation, resolveMap, locationHtml } from "./maps.js";
 import { supabase, errorMessage } from "./supabase.js";
 import {
   $, escapeHtml, avatarHtml, avatarTone, toDateKey, parseDateKey, formatDateKey,
@@ -60,6 +61,8 @@ export function initCommunity(me) {
   els.detail.addEventListener("click", onDetailClick);
   els.createBtn.addEventListener("click", openCreateForm);
   els.form.addEventListener("submit", submitCommunity);
+  els.form.elements.map_url.addEventListener("input", debounce(updateMapPreview, 400));
+  els.form.elements.map_url.addEventListener("change", updateMapPreview);
   els.form.addEventListener("change", (e) => {
     if (e.target.name === "feeType") toggleFeeAmount();
   });
@@ -300,7 +303,7 @@ async function renderDetail() {
     </div>
 
     ${capacityHtml(c)}
-    <section class="detail-block"><h3>Meeting place</h3><p data-user-content>${escapeHtml(c.meeting_place || "Not specified")}</p>${safeMapUrl(c.map_url) ? `<a class="btn btn--ghost" href="${escapeHtml(safeMapUrl(c.map_url))}" target="_blank" rel="noopener noreferrer">Open map</a>` : ""}</section>
+    <section class="detail-block"><h3>Meeting place</h3><p data-user-content>${escapeHtml(c.meeting_place || "Not specified")}</p>${mapLocation(c.map_url)?.coordinates ? `<p>${escapeHtml(mapLocation(c.map_url).coordinates)}</p>` : ""}${safeMapUrl(c.map_url) ? `<a class="btn btn--ghost" href="${escapeHtml(safeMapUrl(c.map_url))}" target="_blank" rel="noopener noreferrer">Open map</a>` : ""}</section>
     ${communityIsLocked(c) ? `<p class="host-note">${c.status === "cancelled" ? "This community was cancelled. History is preserved." : "This community has started. History is read-only."}</p>` : ""}
     ${isHost(c) && !communityIsLocked(c) ? `<div class="community-card__actions"><button class="btn btn--ghost" type="button" data-action="edit" data-id="${c.id}">Edit community</button><button class="btn btn--soft" type="button" data-action="cancel" data-id="${c.id}">Cancel community</button></div>` : ""}
     ${canChat(c) ? `<button class="btn btn--dark btn--block" type="button" data-action="chat" data-id="${c.id}">${icon("message")} Open group chat</button>` : ""}
@@ -415,6 +418,33 @@ async function onDetailClick(event) {
 
 /* ---------------- Create community ---------------- */
 
+let mapPreviewRequest = 0;
+let resolvedMap = null;
+async function updateMapPreview() {
+  const sequence = ++mapPreviewRequest;
+  resolvedMap = null;
+  const preview = $("#mapLocationPreview");
+  const input = els.form.elements.map_url;
+  const value = input.value.trim();
+  if (!preview) return;
+  preview.hidden = !value;
+  if (!value) { preview.textContent = ""; return; }
+  preview.textContent = "Reading map location…";
+  try {
+    const info = await resolveMap(value, AbortSignal.timeout(12000));
+    if (sequence !== mapPreviewRequest || input.value.trim() !== value) return;
+    resolvedMap = { input: value, info };
+    preview.innerHTML = locationHtml(info);
+    const place = els.form.elements.meeting_place;
+    if (!place.value.trim() || place.value === place.dataset.mapAutofill) {
+      place.value = info.name || info.coordinates;
+      place.dataset.mapAutofill = place.value;
+    }
+  } catch (error) {
+    if (sequence === mapPreviewRequest && input.value.trim() === value) preview.textContent = error.message;
+  }
+}
+
 function toggleFeeAmount() {
   const paid = els.form.elements.feeType.value === "paid";
   els.feeAmountWrap.hidden = !paid;
@@ -430,6 +460,7 @@ function openCreateForm() {
   $("#communityReservationField").hidden = false;
   f.elements.reservation_number.required = true;
   f.reset();
+  updateMapPreview();
   f.elements.community_date.value = state.selectedDate;
   f.elements.community_date.min = today();
   toggleFeeAmount();
@@ -441,6 +472,8 @@ async function submitCommunity(event) {
   event.preventDefault();
   const f = els.form;
   const v = (name) => f.elements[name].value.trim();
+
+  if (v("map_url") && !v("meeting_place")) await updateMapPreview();
 
   const required = ["community_date", "community_time", "title", "activity", "preferred_participants", "schedule", "max_participants", "meeting_place"];
   if (!state.editId) required.push("reservation_number");
@@ -454,12 +487,13 @@ async function submitCommunity(event) {
   if (paid && (!Number.isInteger(fee) || fee <= 0)) return toast("Please enter the fee in KRW.", "error");
 
   if (communityIsLocked({ community_date: v("community_date"), community_time: v("community_time"), status: "active" })) return toast("Choose a future start time (KST)", "error");
-  if (v("map_url") && !safeMapUrl(v("map_url"))) return toast("Please enter a valid HTTPS map link.", "error");
+  if (v("map_url") && !mapLink(v("map_url"))) return toast("Paste a Google, Naver or Kakao Maps link.", "error");
   if (!state.editId && !(await verifyReservationNumber(v("reservation_number")))) return toast("We couldn't verify that reservation number.", "error");
 
   const submit = f.querySelector('[type="submit"]');
   setBusy(submit, true, "Creating…");
   const details = Object.fromEntries(["title", "activity", "preferred_participants", "schedule", "community_date", "community_time", "meeting_place", "map_url"].map((name) => [name, v(name)]));
+  details.map_url = resolvedMap?.input === v("map_url") ? mapLink(resolvedMap.info.url) : mapLink(v("map_url"));
   details.max_participants = max;
   details.participation_fee = fee;
   let error;
@@ -492,6 +526,7 @@ function openEditForm(c) {
   $("#communityReservationField").hidden = true;
   els.form.elements.reservation_number.required = false;
   for (const key of ["title","activity","preferred_participants","schedule","community_date","community_time","max_participants","meeting_place","map_url"]) els.form.elements[key].value = c[key] ?? "";
+  updateMapPreview();
   els.form.elements.feeType.value = c.participation_fee > 0 ? "paid" : "free";
   toggleFeeAmount();
   els.form.elements.participation_fee.value = c.participation_fee || "";

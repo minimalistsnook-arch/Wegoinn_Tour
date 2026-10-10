@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#f3ecdf" />
-  <title>Wegoinn · Guestbook & Community</title>
+  <title>Wegoinn · 방명록 & Community</title>
   <script>
     try {
       if (localStorage.getItem("wegoinn-theme") === "dark") document.documentElement.dataset.theme = "dark";
@@ -36,7 +36,7 @@
     <div class="login__inner">
       <div class="login__brand">
         <div class="arch" aria-hidden="true"><i data-icon="sparkle"></i></div>
-        <p class="eyebrow">Guestbook &amp; Community</p>
+        <p class="eyebrow">방명록 &amp; Community</p>
         <h1 class="wordmark wordmark--xl">Wegoinn</h1>
         <p class="login__tagline">Stay <span>·</span> Meet <span>·</span> Remember</p>
       </div>
@@ -90,7 +90,7 @@
     <nav class="section-nav" aria-label="Sections">
       <div class="section-nav__inner">
         <a href="#community" class="is-active"><i data-icon="calendar"></i> Community</a>
-        <a href="#guestbook"><i data-icon="book"></i> Guestbook</a>
+        <a href="#guestbook"><i data-icon="book"></i> 방명록</a>
         <a href="#chat"><i data-icon="message"></i> Chat <span id="chatUnread" class="nav-badge" hidden>0</span></a>
       </div>
     </nav>
@@ -151,8 +151,8 @@
       <section id="guestbook" class="block" data-section>
         <div class="block__head">
           <div>
-            <p class="eyebrow">02 — Wegoinn Guestbook</p>
-            <h2>Wegoinn <em>Guestbook</em></h2>
+            <p class="eyebrow">02 — 위고인 방명록</p>
+            <h2>위고인 <em>방명록</em></h2>
           </div>
           <span id="postCount" class="count">0 stories</span>
         </div>
@@ -160,10 +160,10 @@
         <div id="feed" class="feed" aria-live="polite"><span class="loader"></span></div>
         <button id="loadMorePosts" type="button" class="btn btn--ghost btn--block" hidden>Load more</button>
 
-        <div class="composer composer--dock card">
+        <div id="guestbookComposer" class="composer composer--dock card" role="group" aria-label="방명록 작성">
           <div class="composer__row">
             <span id="composerAvatar"></span>
-            <textarea id="postInput" rows="1" maxlength="1000" placeholder="Leave a note, a tip, a memory…" aria-label="Write a post"></textarea>
+            <textarea id="postInput" rows="1" maxlength="1000" placeholder="Leave a note, a tip, a memory…" aria-label="방명록 작성"></textarea>
           </div>
           <div id="postPreview" class="composer__preview" hidden>
             <img id="postPreviewImg" alt="Selected photo preview" />
@@ -175,7 +175,7 @@
               <input id="postImageInput" type="file" accept="image/*" hidden />
             </label>
             <span id="postCounter" class="composer__counter">0 / 1000</span>
-            <button id="publishPostBtn" class="btn btn--primary" type="button">POST</button>
+            <button id="publishPostBtn" class="btn btn--primary" type="button">등록</button>
           </div>
         </div>
       </section>
@@ -209,7 +209,7 @@
 
     <footer class="app-foot">
       <span class="wordmark">Wegoinn</span>
-      <p>Hostel guestbook &amp; community · Seoul</p>
+      <p>호스텔 방명록 &amp; Community · Seoul</p>
     </footer>
   </div>
 
@@ -268,7 +268,8 @@
         </label>
 
         <label class="field"><span class="field__label">Meeting place</span><span class="field__box"><input name="meeting_place" type="text" maxlength="200" placeholder="e.g. Wegoinn lobby" required /></span></label>
-        <label class="field"><span class="field__label">Map link</span><span class="field__box"><input name="map_url" type="url" maxlength="2000" placeholder="https://maps.google.com/…" /></span><small class="field__hint">Paste a Google, Naver or Kakao Maps HTTPS link.</small></label>
+        <label class="field"><span class="field__label">Map link</span><span class="field__box"><input name="map_url" type="text" maxlength="2000" placeholder="https://maps.google.com/…" /></span><small class="field__hint">Paste a Google, Naver or Kakao Maps share link. The location appears below.</small></label>
+        <div id="mapLocationPreview" class="detail-block" aria-live="polite" hidden></div>
 
         <label class="field">
           <span class="field__label">Maximum Participants <small>1 – 30 people</small></span>
