@@ -44,6 +44,7 @@ export function initChat(me) {
     form: $("#chatForm"),
     input: $("#chatInput"),
     send: $("#chatSend"),
+    closeFullscreen: $("#chatCloseFullscreen"),
   });
 
   els.back.addEventListener("click", () => openChat());
@@ -55,6 +56,7 @@ export function initChat(me) {
     }
   });
   els.input.addEventListener("input", onInput);
+  setupMobileChat();
   els.list.addEventListener("click", onListClick);
   trackPresence();
   subscribeChat();
@@ -64,6 +66,49 @@ export function initChat(me) {
   watchVisibility();
   showRoom(null);
   return loadMessages();
+}
+
+// Keep the chat inside the visible viewport when a phone keyboard opens.
+function setupMobileChat() {
+  const mobile = window.matchMedia("(max-width: 600px)");
+  let expanded = false;
+  const syncViewport = () => {
+    if (!expanded) return;
+    if (!mobile.matches) { closeFullscreen(); return; }
+    const stick = nearBottom();
+    const viewport = window.visualViewport;
+    els.section.style.setProperty("--chat-viewport-top", `${viewport?.offsetTop || 0}px`);
+    els.section.style.setProperty("--chat-viewport-height", `${viewport?.height || window.innerHeight}px`);
+    scrollToEnd(stick);
+  };
+  const closeFullscreen = () => {
+    if (!expanded) return;
+    expanded = false;
+    els.input.blur();
+    els.section.classList.remove("is-fullscreen");
+    document.documentElement.classList.remove("chat-fullscreen");
+    els.closeFullscreen.hidden = true;
+    els.section.style.removeProperty("--chat-viewport-top");
+    els.section.style.removeProperty("--chat-viewport-height");
+  };
+  els.input.addEventListener("focus", () => {
+    if (!mobile.matches || expanded) return;
+    expanded = true;
+    els.section.classList.add("is-fullscreen");
+    document.documentElement.classList.add("chat-fullscreen");
+    els.closeFullscreen.hidden = false;
+    state.visible = true;
+    setUnread(0);
+    syncViewport();
+    scrollToEnd(true);
+  });
+  els.closeFullscreen.addEventListener("click", closeFullscreen);
+  document.addEventListener("keydown", (event) => {
+    if (expanded && event.key === "Escape") closeFullscreen();
+  });
+  window.addEventListener("resize", syncViewport);
+  window.visualViewport?.addEventListener("resize", syncViewport);
+  window.visualViewport?.addEventListener("scroll", syncViewport);
 }
 
 // Global messages that arrive while the Chat section is off screen count as unread.

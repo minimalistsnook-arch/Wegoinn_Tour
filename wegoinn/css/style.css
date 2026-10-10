@@ -1453,3 +1453,37 @@ html { scroll-padding-top:calc(var(--measured-topbar-h, var(--topbar-h)) + 64px)
   .form__row { grid-template-columns: minmax(0, 1fr); }
   .chat-msg { max-width: 95%; }
 }
+
+html.chat-fullscreen, html.chat-fullscreen body { overflow: hidden; overscroll-behavior: none; }
+@media (max-width: 600px) {
+  .layout > #chat.is-fullscreen {
+    position: fixed;
+    top: var(--chat-viewport-top, 0px);
+    left: 0;
+    right: 0;
+    z-index: 90;
+    height: var(--chat-viewport-height, 100dvh);
+    margin: 0;
+    padding: env(safe-area-inset-top) max(10px, env(safe-area-inset-right)) env(safe-area-inset-bottom) max(10px, env(safe-area-inset-left));
+    border: 0;
+    border-radius: 0;
+    background: var(--surface);
+  }
+  #chat.is-fullscreen > .block__head { display: none; }
+  #chat.is-fullscreen .chat-card {
+    height: 100%;
+    min-height: 0;
+    padding: 10px 0;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+  #chat.is-fullscreen .chat-head { flex-wrap: nowrap; gap: 8px; padding-bottom: 8px; }
+  #chat.is-fullscreen .chat-head__text { flex: 1; }
+  #chat.is-fullscreen .chat-head h3 { font-size: 20px; }
+  #chat.is-fullscreen .chat-head .pill-btn { padding: 0 8px; font-size: 11px; }
+  #chatCloseFullscreen { flex: none; }
+  #chat.is-fullscreen .chat-messages { padding: 12px 2px; }
+  #chat.is-fullscreen .chat-msg__text { font-size: 16px; line-height: 1.55; }
+  #chat.is-fullscreen .chat-composer textarea { max-height: min(120px, 25dvh); }
+}

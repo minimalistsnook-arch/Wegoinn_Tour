@@ -1,6 +1,7 @@
 import { isTranslationConfigured, translateText, checkTranslationService } from './translation.js';
 // Interface translations are local; guest-written content uses the authenticated API.
 const rows = [
+['Close fullscreen chat','전체 화면 채팅 닫기','全画面チャットを閉じる','关闭全屏聊天'],
 ['Guestbook','방명록','ゲストブック','留言簿'],
 ['Show less','접기','折りたたむ','收起'],
 ['Community creation is temporarily unavailable. Please contact staff.','현재 모임을 만들 수 없습니다. 직원에게 문의해 주세요.','現在コミュニティを作成できません。スタッフにお問い合わせください。','暂时无法创建活动，请联系工作人员。'],

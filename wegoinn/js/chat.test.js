@@ -1,6 +1,6 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest';
 import { readFileSync } from 'node:fs';
-const mock = vi.hoisted(() => ({ rows: [], inserted: null, query: [], subscribed: null }));
+const mock = vi.hoisted(() => ({ mobile: false, rows: [], inserted: null, query: [], subscribed: null }));
 vi.mock('./supabase.js', () => {
   const chain = () => {
     const c = {};
@@ -20,7 +20,16 @@ const html = readFileSync(`${process.cwd()}/wegoinn/index.html`, 'utf8');
 const settle = () => new Promise((r) => setTimeout(r, 20));
 const me = { id: 'me', nickname: 'Mina' };
 
+let viewport;
 beforeEach(async () => {
+  mock.mobile = false;
+  vi.stubGlobal('matchMedia', () => ({ get matches() { return mock.mobile; } }));
+  vi.stubGlobal('requestAnimationFrame', callback => { callback(); return 1; });
+  viewport = new EventTarget();
+  viewport.height = 740;
+  viewport.offsetTop = 0;
+  vi.stubGlobal('visualViewport', viewport);
+  document.documentElement.classList.remove('chat-fullscreen');
   Element.prototype.scrollIntoView = () => {};
   document.documentElement.innerHTML = html.replace(/<!DOCTYPE html>/i, '').replace(/<\/?html[^>]*>/g, '');
   mock.rows = [{ id: 'm1', community_id: null, author_id: 'u2', content: 'Anyone going to Hongdae? <b>', created_at: '2026-10-09T09:00:00Z', author: { nickname: 'Emma' } }];
@@ -92,4 +101,47 @@ describe('live chat', () => {
     await opening;
     expect(document.querySelectorAll('[data-msg-id="m7"]')).toHaveLength(1);
   });
+});
+
+afterEach(() => { document.querySelector('#chatCloseFullscreen').click(); vi.unstubAllGlobals(); });
+it('fits mobile chat to the keyboard viewport and returns to the page with its draft', () => {
+  mock.mobile = true;
+  const input = document.querySelector('#chatInput');
+  const chat = document.querySelector('#chat');
+  input.focus();
+  expect(chat.classList.contains('is-fullscreen')).toBe(true);
+  expect(document.documentElement.classList.contains('chat-fullscreen')).toBe(true);
+  expect(document.querySelector('#chatCloseFullscreen').hidden).toBe(false);
+  input.value = 'Draft';
+  viewport.height = 390; viewport.offsetTop = 12;
+  viewport.dispatchEvent(new Event('resize'));
+  expect(chat.style.getPropertyValue('--chat-viewport-height')).toBe('390px');
+  expect(chat.style.getPropertyValue('--chat-viewport-top')).toBe('12px');
+  document.querySelector('#chatCloseFullscreen').click();
+  expect(chat.classList.contains('is-fullscreen')).toBe(false);
+  expect(document.documentElement.classList.contains('chat-fullscreen')).toBe(false);
+  expect(chat.style.getPropertyValue('--chat-viewport-height')).toBe('');
+  expect(input.value).toBe('Draft');
+});
+it('keeps the fullscreen conversation and keyboard focus after sending', async () => {
+  mock.mobile = true;
+  const input = document.querySelector('#chatInput');
+  input.focus(); input.value = 'Hello'; input.dispatchEvent(new Event('input'));
+  document.querySelector('#chatForm').dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+  await new Promise(resolve => setTimeout(resolve, 0));
+  expect(mock.inserted).toMatchObject({ content: 'Hello' });
+  expect(document.querySelector('#chatMessages').textContent).toContain('Hello');
+  expect(document.querySelector('#chat').classList.contains('is-fullscreen')).toBe(true);
+  expect(document.activeElement).toBe(input);
+  expect(input.value).toBe('');
+});
+it('keeps desktop chat inline and exits fullscreen when the viewport becomes wider', () => {
+  mock.mobile = true;
+  const input = document.querySelector('#chatInput');
+  mock.mobile = false; input.focus();
+  expect(document.querySelector('#chat').classList.contains('is-fullscreen')).toBe(false);
+  input.blur(); mock.mobile = true; input.focus();
+  expect(document.querySelector('#chat').classList.contains('is-fullscreen')).toBe(true);
+  mock.mobile = false; window.dispatchEvent(new Event('resize'));
+  expect(document.querySelector('#chat').classList.contains('is-fullscreen')).toBe(false);
 });
