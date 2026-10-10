@@ -44,6 +44,13 @@ export function initGuestbook(me) {
 
   els.composerAvatar.outerHTML = avatarHtml(me.nickname, "avatar--md");
   els.input.addEventListener("input", updateComposer);
+  // Enter posts straight to the guestbook; Shift+Enter adds a new line.
+  els.input.addEventListener("keydown", (event) => {
+    if (event.key === "Enter" && !event.shiftKey && !event.isComposing) {
+      event.preventDefault();
+      if (!els.publish.disabled) publishPost();
+    }
+  });
   els.fileInput.addEventListener("change", onPickImage);
   els.removeImage.addEventListener("click", clearDraftImage);
   els.publish.addEventListener("click", publishPost);
@@ -68,6 +75,8 @@ export function initGuestbook(me) {
 function updateComposer() {
   const len = els.input.value.length;
   els.counter.textContent = `${len} / 1000`;
+  els.input.style.height = "auto";
+  els.input.style.height = `${els.input.scrollHeight}px`;
   els.publish.disabled = !els.input.value.trim() && !state.draftImage;
 }
 

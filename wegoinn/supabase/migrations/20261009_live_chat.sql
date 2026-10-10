@@ -83,3 +83,6 @@ do $$ begin
   end if;
 end $$;
 commit;
+
+-- Make the REST API see the new table right away.
+notify pgrst, 'reload schema';

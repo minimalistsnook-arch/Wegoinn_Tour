@@ -89,8 +89,8 @@
 
     <nav class="section-nav" aria-label="Sections">
       <div class="section-nav__inner">
-        <a href="#guestbook" class="is-active"><i data-icon="book"></i> Guestbook</a>
-        <a href="#community"><i data-icon="calendar"></i> Community</a>
+        <a href="#community" class="is-active"><i data-icon="calendar"></i> Community</a>
+        <a href="#guestbook"><i data-icon="book"></i> Guestbook</a>
         <a href="#chat"><i data-icon="message"></i> Chat <span id="chatUnread" class="nav-badge" hidden>0</span></a>
       </div>
     </nav>
@@ -107,44 +107,11 @@
         </div>
       </section>
 
-            <!-- WEGOINN GUESTBOOK -->
-      <section id="guestbook" class="block" data-section>
-        <div class="block__head">
-          <div>
-            <p class="eyebrow">01 — Wegoinn Guestbook</p>
-            <h2>Wegoinn <em>Guestbook</em></h2>
-          </div>
-          <span id="postCount" class="count">0 stories</span>
-        </div>
-
-        <div class="composer card">
-          <div class="composer__row">
-            <span id="composerAvatar"></span>
-            <textarea id="postInput" rows="3" maxlength="1000" placeholder="Leave a note, a tip, a memory…" aria-label="Write a post"></textarea>
-          </div>
-          <div id="postPreview" class="composer__preview" hidden>
-            <img id="postPreviewImg" alt="Selected photo preview" />
-            <button id="removePostImage" type="button" class="icon-btn icon-btn--overlay" aria-label="Remove photo"><i data-icon="close"></i></button>
-          </div>
-          <div class="composer__bar">
-            <label class="pill-btn pill-btn--file">
-              <i data-icon="image"></i> Photo
-              <input id="postImageInput" type="file" accept="image/*" hidden />
-            </label>
-            <span id="postCounter" class="composer__counter">0 / 1000</span>
-            <button id="publishPostBtn" class="btn btn--primary" type="button">POST</button>
-          </div>
-        </div>
-
-        <div id="feed" class="feed" aria-live="polite"><span class="loader"></span></div>
-        <button id="loadMorePosts" type="button" class="btn btn--ghost btn--block" hidden>Load more</button>
-      </section>
-
       <!-- COMMUNITY CALENDAR -->
       <section id="community" class="block block--community" data-section>
         <div class="block__head">
           <div>
-            <p class="eyebrow">02 — Community Calendar</p>
+            <p class="eyebrow">01 — Community Calendar</p>
             <h2>Community <em>Calendar</em></h2>
           </div>
         </div>
@@ -178,6 +145,39 @@
           <span class="create-cta__text"><b>CREATE COMMUNITY</b><small>for <span id="createDateLabel"></span></small></span>
           <i data-icon="arrow" class="create-cta__arrow"></i>
         </button>
+      </section>
+
+      <!-- WEGOINN GUESTBOOK -->
+      <section id="guestbook" class="block" data-section>
+        <div class="block__head">
+          <div>
+            <p class="eyebrow">02 — Wegoinn Guestbook</p>
+            <h2>Wegoinn <em>Guestbook</em></h2>
+          </div>
+          <span id="postCount" class="count">0 stories</span>
+        </div>
+
+        <div id="feed" class="feed" aria-live="polite"><span class="loader"></span></div>
+        <button id="loadMorePosts" type="button" class="btn btn--ghost btn--block" hidden>Load more</button>
+
+        <div class="composer composer--dock card">
+          <div class="composer__row">
+            <span id="composerAvatar"></span>
+            <textarea id="postInput" rows="1" maxlength="1000" placeholder="Leave a note, a tip, a memory…" aria-label="Write a post"></textarea>
+          </div>
+          <div id="postPreview" class="composer__preview" hidden>
+            <img id="postPreviewImg" alt="Selected photo preview" />
+            <button id="removePostImage" type="button" class="icon-btn icon-btn--overlay" aria-label="Remove photo"><i data-icon="close"></i></button>
+          </div>
+          <div class="composer__bar">
+            <label class="pill-btn pill-btn--file">
+              <i data-icon="image"></i> Photo
+              <input id="postImageInput" type="file" accept="image/*" hidden />
+            </label>
+            <span id="postCounter" class="composer__counter">0 / 1000</span>
+            <button id="publishPostBtn" class="btn btn--primary" type="button">POST</button>
+          </div>
+        </div>
       </section>
 
       <!-- LIVE CHAT -->

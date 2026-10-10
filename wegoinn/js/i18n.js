@@ -18,7 +18,7 @@ const rows = [
 ['Your reservation number is never shown to other guests.','예약번호는 다른 투숙객에게 공개되지 않습니다.','予約番号は他のゲストには表示されません。','预订编号不会向其他住客公开。'],
 ['Welcome home','어서 오세요','おかえりなさい','欢迎回来'],['Hello,','안녕하세요,','こんにちは、','你好，'],['traveler','여행자','旅人','旅行者'],
 ['Share a little moment from your stay — and find people to explore Seoul with.','여행의 추억을 나누고 서울을 함께 둘러볼 친구를 만나세요.','旅の思い出を共有し、一緒にソウルを楽しむ仲間を見つけましょう。','分享旅途点滴，寻找一起探索首尔的伙伴。'],
-['01 — Wegoinn Guestbook','01 — 위고인 방명록','01 — Wegoinn ゲストブック','01 — Wegoinn 留言簿'],['02 — Community Calendar','02 — 모임 달력','02 — コミュニティカレンダー','02 — 活动日历'],['Calendar','달력','カレンダー','日历'],['Wegoinn Guestbook','위고인 방명록','Wegoinn ゲストブック','Wegoinn 留言簿'],['Community Calendar','모임 달력','コミュニティカレンダー','活动日历'],
+['01 — Community Calendar','01 — 모임 달력','01 — コミュニティカレンダー','01 — 活动日历'],['02 — Wegoinn Guestbook','02 — 위고인 방명록','02 — Wegoinn ゲストブック','02 — Wegoinn 留言簿'],['Calendar','달력','カレンダー','日历'],['Wegoinn Guestbook','위고인 방명록','Wegoinn ゲストブック','Wegoinn 留言簿'],['Community Calendar','모임 달력','コミュニティカレンダー','活动日历'],
 ['Photo','사진','写真','照片'],['POST','게시','投稿','发布'],['Load more','더 보기','もっと見る','加载更多'],['Original','원문','原文','原文'],['Translated','번역','翻訳','译文'],['you','나','あなた','你'],['Reply','답글','返信','回复'],['REPLY','답글','返信','回复'],['Cancel','취소','キャンセル','取消'],['SEND','보내기','送信','发送'],['COMMENT','댓글','コメント','评论'],
 ['Leave a note, a tip, a memory…','이야기, 여행 팁, 추억을 남겨보세요…','メモ、旅のヒント、思い出を残しましょう…','留下故事、旅行建议或回忆…'],['Write a comment…','댓글을 입력하세요…','コメントを書く…','写下评论…'],['Write a reply…','답글을 입력하세요…','返信を書く…','写下回复…'],
 ['My communities','내 모임','自分のコミュニティ','我的活动'],['Hosting, applications and history · All times KST (UTC+9)','주최·신청·지난 모임 · 모든 시간은 한국 시간(UTC+9)','主催・申請・履歴 · すべて韓国時間 (UTC+9)','发起、申请与历史 · 所有时间为韩国时间 (UTC+9)'],
