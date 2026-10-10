@@ -12,6 +12,7 @@ export async function onRequest({ request, env }) {
   if (origin && origin !== new URL(request.url).origin) return json({ error: 'Invalid origin' }, 403);
   const authorization = request.headers.get('Authorization') || '';
   if (!authorization.startsWith('Bearer ')) return json({ error: 'Sign in required' }, 401);
+  let step = 'profile';
   try {
     // Nickname and profile id come from the database, not from the browser.
     const profile = await fetch(`${env.SUPABASE_URL}/rest/v1/rpc/get_my_profile`, { method: 'POST', headers: { authorization, apikey: env.SUPABASE_ANON_KEY, 'Content-Type': 'application/json' }, body: '{}', signal: AbortSignal.timeout(5000) });
@@ -25,6 +26,7 @@ export async function onRequest({ request, env }) {
     const avatarUrl = text(body.avatarUrl, 1000);
     if (!reservation) return json({ error: 'Reservation name or number is required' }, 400);
     if (avatarUrl && !avatarUrl.startsWith(`${env.SUPABASE_URL}/storage/v1/object/public/`)) return json({ error: 'Invalid photo' }, 400);
+    step = 'webhook';
     const response = await fetch(env.GOOGLE_SHEET_WEBHOOK_URL, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ secret: env.GOOGLE_SHEET_WEBHOOK_SECRET, reservation, nickname: me.nickname, avatarUrl, profileId: me.id }),
@@ -35,5 +37,5 @@ export async function onRequest({ request, env }) {
     const result = await response.json().catch(() => null);
     if (!result?.ok) return json({ error: 'Guest log unavailable', reason: result?.error ? `sheet webhook: ${result.error}` : 'sheet webhook did not return JSON' }, 502);
     return json({ ok: true });
-  } catch (err) { return json({ error: 'Guest log unavailable', reason: err?.name || 'request failed' }, 502); }
+  } catch (err) { return json({ error: 'Guest log unavailable', reason: `${step}: ${err?.name || 'request failed'}` }, 502); }
 }
