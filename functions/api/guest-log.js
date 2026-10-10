@@ -30,8 +30,10 @@ export async function onRequest({ request, env }) {
       body: JSON.stringify({ secret: env.GOOGLE_SHEET_WEBHOOK_SECRET, reservation, nickname: me.nickname, avatarUrl, profileId: me.id }),
       signal: AbortSignal.timeout(10000),
     });
-    const result = response.ok ? await response.json().catch(() => null) : null;
-    if (!result?.ok) return json({ error: 'Guest log unavailable' }, 502);
+    // The reason (never the secret) is returned so a broken setup can be told apart from the browser console.
+    if (!response.ok) return json({ error: 'Guest log unavailable', reason: `sheet webhook HTTP ${response.status}` }, 502);
+    const result = await response.json().catch(() => null);
+    if (!result?.ok) return json({ error: 'Guest log unavailable', reason: result?.error ? `sheet webhook: ${result.error}` : 'sheet webhook did not return JSON' }, 502);
     return json({ ok: true });
-  } catch { return json({ error: 'Guest log unavailable' }, 502); }
+  } catch (err) { return json({ error: 'Guest log unavailable', reason: err?.name || 'request failed' }, 502); }
 }
