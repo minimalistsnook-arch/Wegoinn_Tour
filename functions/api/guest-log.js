@@ -33,9 +33,9 @@ export async function onRequest({ request, env }) {
     if (!reservation) return json({ error: 'Reservation name or number is required' }, 400);
     if (avatarUrl && !avatarUrl.startsWith(`${env.SUPABASE_URL}/storage/v1/object/public/`)) return json({ error: 'Invalid photo' }, 400);
     step = 'webhook';
-    const response = await fetch(env.GOOGLE_SHEET_WEBHOOK_URL, {
+    const response = await fetch(env.GOOGLE_SHEET_WEBHOOK_URL.trim(), {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ secret: env.GOOGLE_SHEET_WEBHOOK_SECRET, reservation, nickname: me.nickname, avatarUrl, profileId: me.id }),
+      body: JSON.stringify({ secret: env.GOOGLE_SHEET_WEBHOOK_SECRET.trim(), reservation, nickname: me.nickname, avatarUrl, profileId: me.id }),
       signal: AbortSignal.timeout(10000),
     });
     // The reason (never the secret) is returned so a broken setup can be told apart from the browser console.
