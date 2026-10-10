@@ -182,3 +182,9 @@ Google API 키는 브라우저 설정 파일에 넣지 마세요. 요청은 Supa
 - 저장: `chat_messages` 테이블 (메시지 500자, 10초에 5개 제한 trigger). 본인 메시지 삭제 가능, Admin은 `admin.html` → **Chat** 탭에서 모든 메시지 삭제 가능.
 - 번역: 메시지는 `data-user-content`라서 사이트 언어 선택 시 기존 번역 API로 자동 번역됩니다.
 - 적용: Supabase SQL Editor에서 `supabase/migrations/20261009_live_chat.sql` 실행.
+
+## 예약번호 없이 커뮤니티 만들기 (임시 운영)
+
+커뮤니티 생성 화면에서는 예약번호를 입력하지 않습니다. 로그인 시 예약번호 입력은 기존대로 유지합니다.
+
+기존 Supabase 프로젝트의 SQL Editor에서 `supabase/migrations/20261010_community_without_reservation.sql`을 실행한 다음 프런트엔드를 배포하세요. 이 파일은 누락된 `create_community_v2(text,jsonb)` 함수를 생성하고 스키마 캐시를 갱신합니다. 빈 예약번호는 별도 예약 테이블에 저장하지 않습니다. 기존 예약 데이터와 로그인·권한 검사는 유지합니다.

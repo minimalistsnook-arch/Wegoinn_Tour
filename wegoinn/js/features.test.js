@@ -67,6 +67,16 @@ describe('community workflows',()=>{
    form.dispatchEvent(new Event('submit',{bubbles:true,cancelable:true})); await settle();
    expect(mock.rpc).toHaveBeenCalledWith('update_community',expect.objectContaining({p_community_id:community().id,p_details:expect.objectContaining({title:'New walk',meeting_place:'Lobby'})}));
  });
+ it('creates a community without entering a reservation number',async()=>{
+   await initCommunity(me);
+   document.querySelector('#openCreateCommunity').click();
+   const form=document.querySelector('#communityForm');
+   expect(document.querySelector('#communityReservationField').hidden).toBe(true);
+   expect(form.elements.reservation_number.required).toBe(false);
+   for (const [key,value] of Object.entries({title:'Walk',activity:'Explore',preferred_participants:'Everyone',schedule:'Lobby',community_date:'2099-01-01',community_time:'19:00',max_participants:'8',meeting_place:'Lobby'})) form.elements[key].value=value;
+   form.dispatchEvent(new Event('submit',{bubbles:true,cancelable:true})); await settle();
+   expect(mock.rpc).toHaveBeenCalledWith('create_community_v2',expect.objectContaining({p_reservation_number:null,p_details:expect.objectContaining({title:'Walk',meeting_place:'Lobby'})}));
+ });
  it('lets a participant withdraw an approved application',async()=>{
    mock.communities=[community({creator_id:'00000000-0000-0000-0000-000000000002'})];
    mock.applications=[{community_id:community().id,status:'approved'}];

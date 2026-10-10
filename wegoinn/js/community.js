@@ -4,7 +4,6 @@ import {
   $, escapeHtml, avatarHtml, avatarTone, toDateKey, parseDateKey, formatDateKey,
   shortTime, formatFee, toast, setBusy, debounce, koreaToday, communityIsLocked, safeMapUrl, displayLocale,
 } from "./utils.js";
-import { verifyReservationNumber } from "./auth.js";
 import { openSheet, closeSheet } from "./sheet.js";
 import { icon } from "./icons.js";
 import { openChat } from "./chat.js";
@@ -457,8 +456,8 @@ function openCreateForm() {
   state.editId = null;
   $("#createTitle").textContent = "Create Community";
   f.querySelector("[type=submit]").textContent = "CREATE COMMUNITY";
-  $("#communityReservationField").hidden = false;
-  f.elements.reservation_number.required = true;
+  $("#communityReservationField").hidden = true;
+  f.elements.reservation_number.required = false;
   f.reset();
   updateMapPreview();
   f.elements.community_date.value = state.selectedDate;
@@ -476,7 +475,6 @@ async function submitCommunity(event) {
   if (v("map_url") && !v("meeting_place")) await updateMapPreview();
 
   const required = ["community_date", "community_time", "title", "activity", "preferred_participants", "schedule", "max_participants", "meeting_place"];
-  if (!state.editId) required.push("reservation_number");
   if (required.some((name) => !v(name))) return toast("Please fill in every field.", "error");
 
   const max = Number(v("max_participants"));
@@ -488,7 +486,6 @@ async function submitCommunity(event) {
 
   if (communityIsLocked({ community_date: v("community_date"), community_time: v("community_time"), status: "active" })) return toast("Choose a future start time (KST)", "error");
   if (v("map_url") && !mapLink(v("map_url"))) return toast("Paste a Google, Naver or Kakao Maps link.", "error");
-  if (!state.editId && !(await verifyReservationNumber(v("reservation_number")))) return toast("We couldn't verify that reservation number.", "error");
 
   const submit = f.querySelector('[type="submit"]');
   setBusy(submit, true, "Creating…");
@@ -500,7 +497,7 @@ async function submitCommunity(event) {
   try {
     ({ error } = await supabase.rpc(state.editId ? "update_community" : "create_community_v2", state.editId
       ? { p_community_id: state.editId, p_details: details }
-      : { p_reservation_number: v("reservation_number"), p_details: details }));
+      : { p_reservation_number: null, p_details: details }));
   } catch (err) { error = err; }
   setBusy(submit, false);
   if (error) return toast(errorMessage(error), "error");
