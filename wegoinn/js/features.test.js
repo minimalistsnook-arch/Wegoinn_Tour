@@ -4,7 +4,7 @@ const mock = vi.hoisted(() => ({ rpc: vi.fn(), from: vi.fn(), posts: [], communi
 vi.mock('./supabase.js', () => ({ supabase: { from: mock.from, rpc: mock.rpc, auth: { getSession: vi.fn(async () => ({ data: { session: { access_token:'test' } } })) } }, errorMessage: err => err.message }));
 import { koreaToday, communityIsLocked, formatDateTime, safeMapUrl } from './utils.js';
 import { initCommunity } from './community.js';
-import { initGuestbook } from './guestbook.js';
+import { initGuestbook, loadFeed } from './guestbook.js';
 import { initNotifications } from './notifications.js';
 import { initSiteLanguage } from './i18n.js';
 const html = readFileSync(`${process.cwd()}/wegoinn/index.html`, 'utf8');
@@ -119,11 +119,23 @@ describe('community workflows',()=>{
 it('loads older guestbook posts and retains the expanded range on refresh',async()=>{
  mock.posts=Array.from({length:25},(_,i)=>({id:String(i),content:`Post ${i}`,author_id:me.id,author:{nickname:'Host'},created_at:'2026-10-08T00:00:00Z',comments:[]}));
  await initGuestbook(me);
- expect(document.querySelectorAll('[data-post-id]')).toHaveLength(20);
+ expect(document.querySelectorAll('[data-post-id]')).toHaveLength(1);
+ expect(document.querySelector('#loadMorePosts').getAttribute('aria-expanded')).toBe('false');
  expect(document.querySelector('#loadMorePosts').hidden).toBe(false);
+ document.querySelector('#loadMorePosts').click(); await settle();
+ expect(document.querySelectorAll('[data-post-id]')).toHaveLength(20);
+ expect(document.querySelector('#loadMorePosts').getAttribute('aria-expanded')).toBe('true');
  document.querySelector('#loadMorePosts').click(); await settle();
  expect(document.querySelectorAll('[data-post-id]')).toHaveLength(25);
  expect(document.querySelector('#loadMorePosts').hidden).toBe(true);
+ await loadFeed();
+ expect(document.querySelectorAll('[data-post-id]')).toHaveLength(25);
+ document.querySelector('#collapsePosts').click();
+ expect(document.querySelectorAll('[data-post-id]')).toHaveLength(1);
+ expect(document.querySelector('#loadMorePosts').hidden).toBe(false);
+ expect(document.querySelector('#collapsePosts').hidden).toBe(true);
+ await loadFeed();
+ expect(document.querySelectorAll('[data-post-id]')).toHaveLength(1);
 });
 it('shows unread notifications and marks only displayed unread IDs',async()=>{
  mock.notifications=[{id:'notice',kind:'approved',community_title:'Walk',created_at:'2026-10-08T00:00:00Z',read_at:null}];

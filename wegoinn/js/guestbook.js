@@ -15,9 +15,10 @@ const POST_COLUMNS = `
 
 const state = {
   me: null,
-  visibleLimit: FEED_LIMIT,
+  visibleLimit: 1,
   loading: false,
   posts: [],
+  hasMore: false,
   openComments: new Set(),
   replyingTo: null,        // top-level comment id currently being replied to
   draftImage: null,        // compressed File — the original is never kept
@@ -31,6 +32,8 @@ const els = {};
 
 export function initGuestbook(me) {
   state.me = me;
+  state.visibleLimit = 1;
+  state.openComments.clear();
   Object.assign(els, {
     feed: $("#feed"),
     count: $("#postCount"),
@@ -65,40 +68,24 @@ export function initGuestbook(me) {
 
   $("#loadMorePosts").addEventListener("click", async () => {
     if (state.loading) return;
-    state.visibleLimit += FEED_LIMIT;
+    state.visibleLimit = state.visibleLimit === 1 ? FEED_LIMIT : state.visibleLimit + FEED_LIMIT;
     await loadFeed();
   });
-  setupComposerDock();
+  $("#collapsePosts").addEventListener("click", () => {
+    if (state.loading) return;
+    const hasHistory = state.posts.length > 1 || state.hasMore;
+    state.visibleLimit = 1;
+    state.posts = state.posts.slice(0, 1);
+    renderFeed();
+    $("#loadMorePosts").hidden = !hasHistory;
+    $("#collapsePosts").hidden = true;
+    $("#loadMorePosts").setAttribute("aria-expanded", "false");
+  });
   updateComposer();
   return loadFeed();
 }
 
 /* ---------------- Composer ---------------- */
-
-function setupComposerDock() {
-  const section = $("#guestbook");
-  const composer = $("#guestbookComposer");
-  const syncDock = () => {
-    const viewport = window.visualViewport;
-    const top = viewport?.offsetTop || 0;
-    const height = viewport?.height || window.innerHeight;
-    const rect = section.getBoundingClientRect();
-    const focused = composer.contains(document.activeElement);
-    const visible = focused || (rect.top <= top + height * 0.55 && rect.bottom > top + height * 0.55);
-    composer.classList.toggle("is-visible", visible);
-    composer.inert = !visible;
-    section.style.setProperty("--guestbook-composer-height", `${composer.getBoundingClientRect().height}px`);
-    composer.style.setProperty("--guestbook-keyboard-offset", `${Math.max(0, window.innerHeight - height - top)}px`);
-  };
-  window.addEventListener("scroll", syncDock, { passive: true });
-  window.addEventListener("resize", syncDock);
-  window.visualViewport?.addEventListener("resize", syncDock);
-  window.visualViewport?.addEventListener("scroll", syncDock);
-  composer.addEventListener("focusin", syncDock);
-  composer.addEventListener("focusout", () => requestAnimationFrame(syncDock));
-  if (typeof ResizeObserver !== "undefined") new ResizeObserver(syncDock).observe(composer);
-  syncDock();
-}
 
 function updateComposer() {
   const len = els.input.value.length;
@@ -191,6 +178,7 @@ export async function loadFeed() {
   state.refreshPending = false;
   const more = $("#loadMorePosts");
   more.disabled = true;
+  $("#collapsePosts").disabled = true;
   let result;
   try { result = await supabase
     .from("posts")
@@ -199,14 +187,17 @@ export async function loadFeed() {
     .order("id", { ascending: false })
     .limit(state.visibleLimit + 1);
   } catch (err) { result = { error: err }; }
-  finally { state.loading = false; more.disabled = false; }
+  finally { state.loading = false; more.disabled = false; $("#collapsePosts").disabled = false; }
   const { data, error } = result;
 
   if (error) {
     els.feed.innerHTML = `<div class="empty-state">${escapeHtml(errorMessage(error, "Couldn't load the guestbook."))}</div>`;
     return;
   }
-  more.hidden = data.length <= state.visibleLimit;
+  state.hasMore = data.length > state.visibleLimit;
+  more.hidden = !state.hasMore;
+  more.setAttribute("aria-expanded", String(state.visibleLimit > 1));
+  $("#collapsePosts").hidden = state.visibleLimit === 1;
   state.posts = data.slice(0, state.visibleLimit);
   renderFeed();
   if (state.refreshPending) scheduleFeedRefresh();

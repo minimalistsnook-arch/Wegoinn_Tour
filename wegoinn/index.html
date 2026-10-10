@@ -119,15 +119,15 @@
       </section>
 
       <!-- COMMUNITY CALENDAR -->
-      <section id="community" class="block block--community" data-section>
+      <section id="community" class="block block--community" aria-labelledby="communityHeading" data-section>
         <div class="block__head">
           <div>
             <p class="eyebrow">01 — Community Calendar</p>
-            <h2>Community <em>Calendar</em></h2>
+            <h2 id="communityHeading">Community <em>Calendar</em></h2>
           </div>
         </div>
 
-        <div class="card my-communities"><h3>My communities</h3><p>Hosting, applications and history · All times KST (UTC+9)</p><div id="myCommunityList" class="community-list"></div></div>
+        <details class="card my-communities"><summary>My communities</summary><p>Hosting, applications and history · All times KST (UTC+9)</p><div id="myCommunityList" class="community-list"></div></details>
         <div class="calendar card">
           <div class="calendar__head">
             <button id="prevMonth" class="icon-btn" type="button" aria-label="Previous month"><i data-icon="left"></i></button>
@@ -159,19 +159,20 @@
       </section>
 
       <!-- WEGOINN GUESTBOOK -->
-      <section id="guestbook" class="block" data-section>
+      <section id="guestbook" class="block block--guestbook" aria-labelledby="guestbookHeading" data-section>
         <div class="block__head">
           <div>
             <p class="eyebrow">02 — 위고인 방명록</p>
-            <h2>위고인 <em>방명록</em></h2>
+            <h2 id="guestbookHeading">Guestbook <em>방명록</em></h2>
           </div>
           <span id="postCount" class="count">0 stories</span>
         </div>
 
         <div id="feed" class="feed" aria-live="polite"><span class="loader"></span></div>
-        <button id="loadMorePosts" type="button" class="btn btn--ghost btn--block" hidden>Load more</button>
+        <button id="loadMorePosts" type="button" class="btn btn--ghost btn--block" aria-controls="feed" aria-expanded="false" hidden>Load more</button>
+        <button id="collapsePosts" type="button" class="btn btn--soft btn--block" aria-controls="feed" hidden>Show less</button>
 
-        <div id="guestbookComposer" class="composer composer--dock card" role="group" aria-label="방명록 작성">
+        <div id="guestbookComposer" class="composer card" role="group" aria-label="방명록 작성">
           <div class="composer__row">
             <span id="composerAvatar"></span>
             <textarea id="postInput" rows="1" maxlength="1000" placeholder="Leave a note, a tip, a memory…" aria-label="방명록 작성"></textarea>
@@ -192,11 +193,11 @@
       </section>
 
       <!-- LIVE CHAT -->
-      <section id="chat" class="block block--chat" data-section>
+      <section id="chat" class="block block--chat" aria-labelledby="chatHeading" data-section>
         <div class="block__head">
           <div>
             <p class="eyebrow">03 — Live Chat</p>
-            <h2>Live <em>Chat</em></h2>
+            <h2 id="chatHeading">Live <em>Chat</em></h2>
           </div>
           <p id="chatOnlineWrap" class="chat-online"><span class="chat-online__dot"></span> <b id="chatOnline">1</b> <span>online now</span></p>
         </div>

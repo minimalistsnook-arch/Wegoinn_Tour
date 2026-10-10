@@ -20,18 +20,6 @@ beforeEach(async () => {
   await initGuestbook({ id: 'me', nickname: 'Traveler' });
 });
 afterEach(() => { vi.restoreAllMocks(); vi.unstubAllGlobals(); });
-it('docks the composer only when the guestbook is active and labels it 방명록', () => {
-  const section = document.querySelector('#guestbook');
-  const composer = document.querySelector('#guestbookComposer');
-  vi.spyOn(section, 'getBoundingClientRect').mockReturnValue({ top: 100, bottom: 2000 });
-  window.dispatchEvent(new Event('scroll'));
-  expect(composer.classList.contains('is-visible')).toBe(true);
-  expect(composer.inert).toBe(false);
-  vi.spyOn(section, 'getBoundingClientRect').mockReturnValue({ top: -1000, bottom: -100 });
-  window.dispatchEvent(new Event('scroll'));
-  expect(composer.inert).toBe(true);
-  expect(document.querySelector('a[href="#guestbook"]').textContent).toContain('방명록');
-});
 it('publishes once while a request is pending and refreshes the guestbook', async () => {
   let complete;
   mock.insert.mockImplementationOnce(details => new Promise(resolve => {
@@ -61,4 +49,13 @@ it('uploads a photo and registers a photo-only guestbook entry', async () => {
   expect(mock.insert).toHaveBeenCalledWith(expect.objectContaining({ content: '', image_url: 'https://example.com/photo.webp' }));
   expect(document.querySelector('#feed .post__photo img').src).toBe('https://example.com/photo.webp');
   expect(document.querySelector('#postPreview').hidden).toBe(true);
+});
+
+it('hides history controls when only the latest story exists', async () => {
+  const input = document.querySelector('#postInput');
+  input.value = 'Only story'; input.dispatchEvent(new Event('input'));
+  document.querySelector('#publishPostBtn').click(); await settle();
+  expect(document.querySelectorAll('[data-post-id]')).toHaveLength(1);
+  expect(document.querySelector('#loadMorePosts').hidden).toBe(true);
+  expect(document.querySelector('#collapsePosts').hidden).toBe(true);
 });

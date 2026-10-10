@@ -1,6 +1,8 @@
 import { isTranslationConfigured, translateText, checkTranslationService } from './translation.js';
 // Interface translations are local; guest-written content uses the authenticated API.
 const rows = [
+['Guestbook','방명록','ゲストブック','留言簿'],
+['Show less','접기','折りたたむ','收起'],
 ['Community creation is temporarily unavailable. Please contact staff.','현재 모임을 만들 수 없습니다. 직원에게 문의해 주세요.','現在コミュニティを作成できません。スタッフにお問い合わせください。','暂时无法创建活动，请联系工作人员。'],
 ['Mark shown as read','표시된 알림 읽음 처리','表示中の通知を既読にする','将显示的通知标为已读'],['Entering…','입장 중…','ログイン中…','正在进入…'],['Posting…','게시 중…','投稿中…','正在发布…'],['Sending…','전송 중…','送信中…','正在发送…'],['Creating…','저장 중…','保存中…','正在保存…'],
 ['Stay','머무르기','泊まる','入住'],['Meet','만나기','出会う','相遇'],['Remember','기억하기','思い出','留念'],['for','날짜','日付','日期'],['Sections','메뉴','メニュー','菜单'],

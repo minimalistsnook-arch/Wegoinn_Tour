@@ -733,26 +733,6 @@ h1 em, h2 em, h3 em { color: var(--copper); font-family: var(--font-serif); }
 }
 .composer__counter { margin-left: auto; color: var(--muted); font-size: 11px; font-variant-numeric: tabular-nums; }
 
-/* Keep the guestbook composer at the viewport bottom while its section is active. */
-#guestbook { padding-bottom: calc(var(--guestbook-composer-height, 150px) + 20px); }
-.composer--dock {
-  position: fixed;
-  bottom: var(--guestbook-keyboard-offset, 0px);
-  left: 50%;
-  transform: translateX(-50%);
-  width: min(calc(100% - 2 * var(--gutter)), calc(760px - 2 * var(--gutter)));
-  z-index: 28;
-  visibility: hidden;
-  pointer-events: none;
-  padding: 12px 14px calc(12px + env(safe-area-inset-bottom));
-  border-radius: var(--r-md) var(--r-md) 0 0;
-  box-shadow: 0 -10px 28px rgba(0, 0, 0, .12);
-}
-.composer--dock.is-visible { visibility: visible; pointer-events: auto; }
-.composer--dock textarea { min-width: 0; min-height: 40px; max-height: 140px; padding-top: 6px; overflow-y: auto; }
-.composer--dock .composer__preview img { max-height: 160px; }
-.composer--dock .composer__bar { margin-top: 8px; padding-top: 8px; }
-
 /* ---------- Feed ---------- */
 
 .feed { display: grid; gap: 16px; margin-top: 18px; }
@@ -1398,3 +1378,78 @@ html { scroll-padding-top:calc(var(--measured-topbar-h, var(--topbar-h)) + 64px)
 .avatar-pick__circle img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
 .avatar-pick__empty .icon { width: 28px; height: 28px; }
 .avatar-pick__remove { border: 0; background: none; color: var(--muted); font-size: 12px; text-decoration: underline; cursor: pointer; }
+
+/* Separate the three spaces while keeping them in one scrollable page. */
+.layout > .block {
+  --section-accent: var(--rose);
+  min-width: 0;
+  margin-top: 20px;
+  padding: 20px;
+  border: 1px solid var(--line-strong);
+  border-top: 4px solid var(--section-accent);
+  border-radius: var(--r-lg);
+  background: var(--surface-soft);
+}
+.layout > .block--guestbook { --section-accent: var(--copper); background: var(--tone-sand-b); }
+.layout > .block--chat { --section-accent: var(--ok); background: var(--ok-bg); }
+.block__head .eyebrow { color: var(--section-accent); }
+.block__head > div, .day-head > div, .hello__copy { min-width: 0; }
+.block__head { flex-wrap: wrap; }
+.block__head h2 { font-size: clamp(24px, 6vw, 32px); overflow-wrap: anywhere; }
+.my-communities { padding: 14px; margin-bottom: 14px; }
+.my-communities summary { cursor: pointer; font-weight: 700; min-height: 28px; }
+#myCommunityList { max-height: 360px; }
+#guestbook .composer { margin-top: 16px; }
+#collapsePosts { margin-top: 8px; }
+.composer textarea, .chat-composer textarea { min-width: 0; font-size: 16px; }
+.post__photo img { width: 100%; max-height: 360px; object-fit: contain; }
+.community-card__actions { flex-wrap: wrap; }
+.community-card__actions .btn { white-space: normal; }
+.chat-card { height: clamp(300px, 55dvh, 520px); min-height: 0; }
+.chat-head { flex-wrap: wrap; }
+.language-bar select { background: var(--surface); color: var(--ink); border-color: var(--line-strong); }
+#translationStatus { color: var(--muted); overflow-wrap: anywhere; }
+
+@media (max-width: 600px) {
+  :root { --gutter: 12px; }
+  .layout { padding-inline: max(var(--gutter), env(safe-area-inset-left)) max(var(--gutter), env(safe-area-inset-right)); }
+  .topbar { flex-wrap: wrap; align-items: center; gap: 6px; }
+  .topbar__brand { font-size: 22px; }
+  .topbar__actions { width: 100%; display: grid; grid-template-columns: auto auto auto minmax(0, 1fr); gap: 6px; }
+  .topbar__actions > button { min-height: 36px; padding: 0 9px; font-size: 11px; gap: 4px; }
+  .topbar__me { max-width: none; width: 100%; flex-wrap: nowrap; padding: 3px 6px; gap: 4px; }
+  .topbar__me .avatar { width: 24px; height: 24px; }
+  .topbar__name { font-size: 11px; }
+  .section-nav { padding: 6px var(--gutter); }
+  .section-nav__inner { width: 100%; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 2px; }
+  .section-nav a { justify-content: center; min-height: 40px; padding: 6px 3px; gap: 4px; font-size: 12px; white-space: nowrap; }
+  .section-nav a .icon { width: 14px; height: 14px; }
+  .hello { margin-top: 10px; padding: 16px; border-radius: 20px; }
+  .hello h1 { font-size: 28px; }
+  .hello p:not(.eyebrow) { font-size: 12px; margin-top: 6px; }
+  .hello__art { display: none; }
+  .layout > .block { margin-top: 14px; padding: 14px 10px; border-radius: 20px; }
+  .block__head { margin-bottom: 12px; gap: 8px; }
+  .block__head .count { padding: 4px 8px; }
+  .calendar { padding: 12px 8px; }
+  .calendar__month { font-size: 22px; }
+  .cal-day__num { width: min(100%, 40px); }
+  .calendar__weekdays, .calendar__grid { grid-template-columns: repeat(7, minmax(0, 1fr)); }
+  .day-head { flex-wrap: wrap; gap: 8px; }
+  .day-head h3 { font-size: 20px; }
+  .community-card, .post { padding: 14px 12px; }
+  .community-card__top { flex-wrap: wrap; }
+  .community-card__heading { min-width: 0; }
+  .create-cta { padding: 14px 12px; gap: 10px; }
+  .create-cta__text b { font-size: 12px; letter-spacing: .04em; }
+  .composer { padding: 12px; }
+  .composer__row { gap: 8px; }
+  .composer textarea { min-height: 48px; }
+  .composer__bar { gap: 6px; }
+  .composer__bar .pill-btn, .composer__bar .btn { padding-inline: 12px; }
+  .post__foot { flex-wrap: wrap; gap: 8px; }
+  .chat-card { padding: 12px; }
+  .chat-online { font-size: 12px; }
+  .form__row { grid-template-columns: minmax(0, 1fr); }
+  .chat-msg { max-width: 95%; }
+}
