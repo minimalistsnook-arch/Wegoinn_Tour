@@ -122,8 +122,10 @@ it('loads older guestbook posts and retains the expanded range on refresh',async
  expect(document.querySelectorAll('[data-post-id]')).toHaveLength(1);
  expect(document.querySelector('#loadMorePosts').getAttribute('aria-expanded')).toBe('false');
  expect(document.querySelector('#loadMorePosts').hidden).toBe(false);
+ expect(document.querySelector('#guestbookComposer').classList.contains('composer--dock')).toBe(false);
  document.querySelector('#loadMorePosts').click(); await settle();
  expect(document.querySelectorAll('[data-post-id]')).toHaveLength(20);
+ expect(document.querySelector('#guestbookComposer').classList.contains('composer--dock')).toBe(true);
  expect(document.querySelector('#loadMorePosts').getAttribute('aria-expanded')).toBe('true');
  document.querySelector('#loadMorePosts').click(); await settle();
  expect(document.querySelectorAll('[data-post-id]')).toHaveLength(25);
@@ -134,6 +136,7 @@ it('loads older guestbook posts and retains the expanded range on refresh',async
  expect(document.querySelectorAll('[data-post-id]')).toHaveLength(1);
  expect(document.querySelector('#loadMorePosts').hidden).toBe(false);
  expect(document.querySelector('#collapsePosts').hidden).toBe(true);
+ expect(document.querySelector('#guestbookComposer').classList.contains('composer--dock')).toBe(false);
  await loadFeed();
  expect(document.querySelectorAll('[data-post-id]')).toHaveLength(1);
 });

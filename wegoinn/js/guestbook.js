@@ -80,12 +80,49 @@ export function initGuestbook(me) {
     $("#loadMorePosts").hidden = !hasHistory;
     $("#collapsePosts").hidden = true;
     $("#loadMorePosts").setAttribute("aria-expanded", "false");
+    syncComposerDock();
   });
+  setupComposerDock();
   updateComposer();
   return loadFeed();
 }
 
 /* ---------------- Composer ---------------- */
+
+// Once the feed is expanded, keep the composer docked at the bottom while the Guestbook is in view.
+function syncComposerDock() {
+  const section = $("#guestbook");
+  const composer = $("#guestbookComposer");
+  const docked = state.visibleLimit > 1;
+  section.classList.toggle("is-expanded", docked);
+  composer.classList.toggle("composer--dock", docked);
+  if (!docked) {
+    composer.classList.remove("is-visible");
+    composer.inert = false;
+    return;
+  }
+  const viewport = window.visualViewport;
+  const top = viewport?.offsetTop || 0;
+  const height = viewport?.height || window.innerHeight;
+  const rect = section.getBoundingClientRect();
+  const focused = composer.contains(document.activeElement);
+  const visible = focused || (rect.top <= top + height * 0.55 && rect.bottom > top + height * 0.55);
+  composer.classList.toggle("is-visible", visible);
+  composer.inert = !visible;
+  section.style.setProperty("--guestbook-composer-height", `${composer.getBoundingClientRect().height}px`);
+  composer.style.setProperty("--guestbook-keyboard-offset", `${Math.max(0, window.innerHeight - height - top)}px`);
+}
+
+function setupComposerDock() {
+  const composer = $("#guestbookComposer");
+  window.addEventListener("scroll", syncComposerDock, { passive: true });
+  window.addEventListener("resize", syncComposerDock);
+  window.visualViewport?.addEventListener("resize", syncComposerDock);
+  window.visualViewport?.addEventListener("scroll", syncComposerDock);
+  composer.addEventListener("focusin", syncComposerDock);
+  composer.addEventListener("focusout", () => requestAnimationFrame(syncComposerDock));
+  if (typeof ResizeObserver !== "undefined") new ResizeObserver(syncComposerDock).observe(composer);
+}
 
 function updateComposer() {
   const len = els.input.value.length;
@@ -200,6 +237,7 @@ export async function loadFeed() {
   $("#collapsePosts").hidden = state.visibleLimit === 1;
   state.posts = data.slice(0, state.visibleLimit);
   renderFeed();
+  syncComposerDock();
   if (state.refreshPending) scheduleFeedRefresh();
 }
 
