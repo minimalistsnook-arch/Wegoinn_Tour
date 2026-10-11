@@ -43,5 +43,15 @@ export async function onRequest({ request, env }) {
     const result = await response.json().catch(() => null);
     if (!result?.ok) return json({ error: 'Guest log unavailable', reason: result?.error ? `sheet webhook: ${result.error}` : 'sheet webhook did not return JSON' }, 502);
     return json({ ok: true });
-  } catch (err) { return json({ error: 'Guest log unavailable', reason: `${step}: ${err?.name || 'request failed'}` }, 502); }
+  } catch (err) {
+    // Name the URL's shape (never the URL or secret) so a mistyped webhook URL can be spotted.
+    let detail = '';
+    if (step === 'webhook') {
+      const url = env.GOOGLE_SHEET_WEBHOOK_URL.trim();
+      let shape = 'not a URL';
+      try { const u = new URL(url); shape = `${u.protocol}//${u.host}${u.pathname.endsWith('/exec') ? ' …/exec' : ` …${u.pathname.slice(-5)}`}`; } catch { /* reported as not a URL */ }
+      detail = ` (${String(err?.message || '').split(url).join('<url>').slice(0, 120)}; URL ${shape}, ${url.length} chars)`;
+    }
+    return json({ error: 'Guest log unavailable', reason: `${step}: ${err?.name || 'request failed'}${detail}` }, 502);
+  }
 }
