@@ -283,10 +283,11 @@ function postHtml(post) {
         ${avatarHtml(name, "avatar--md", post.author?.avatar_url)}
         <div class="post__who">
           <strong>${escapeHtml(name)}${post.author_id === me.id ? ` <span class="you-tag">you</span>` : ""}</strong>
-          <time datetime="${post.created_at}">${escapeHtml(formatDateTime(post.created_at))}</time>
-          ${isNew("guestbook", post.created_at, post.author_id) ? `<span class="tag tag--new">NEW</span>` : ""}
+          <span class="post__sub">
+            <time datetime="${post.created_at}">${escapeHtml(formatDateTime(post.created_at))}</time>
+            ${isNew("guestbook", post.created_at, post.author_id) ? `<span class="tag tag--new">NEW</span>` : ""}
+          </span>
         </div>
-        ${canDelete ? `<button type="button" class="icon-btn icon-btn--quiet" data-action="delete-post" aria-label="Delete post">${icon("trash")}</button>` : ""}
       </header>
 
       ${post.content ? `
@@ -300,10 +301,12 @@ function postHtml(post) {
         </figure>` : ""}
 
       <footer class="post__foot">
-        ${post.content ? translationToggleHtml() : "<span></span>"}
-        <button type="button" class="pill-btn ${open ? "is-active" : ""}" data-action="toggle-comments" aria-expanded="${open}">
-          ${icon("chat")} ${commentCount} ${commentCount === 1 ? "comment" : "comments"}
+        ${post.content ? translationToggleHtml() : ""}
+        <button type="button" class="post__comments ${open ? "is-active" : ""}" data-action="toggle-comments" aria-expanded="${open}"
+          aria-label="${commentCount} ${commentCount === 1 ? "comment" : "comments"}">
+          ${icon("chat")} <span>${commentCount}</span>
         </button>
+        ${canDelete ? `<button type="button" class="icon-btn icon-btn--quiet post__delete" data-action="delete-post" aria-label="Delete post">${icon("trash")}</button>` : ""}
       </footer>
 
       ${open ? commentsSectionHtml(post, me, state.replyingTo) : ""}

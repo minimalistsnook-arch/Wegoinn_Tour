@@ -1706,3 +1706,76 @@ html.chrome-hidden { scroll-padding-top: 12px; }
 .community-row__meta .icon { flex-shrink: 0; }
 /* Actions sit above the stretched title button. */
 .community-row__action { position: relative; z-index: 1; flex-shrink: 0; min-height: 40px; max-width: 46%; padding: 0 14px; white-space: normal; line-height: 1.2; text-align: center; }
+
+/* =====================================================================
+   GUESTBOOK — compact, mobile-first
+   Header (avatar · name · time) → text → photo → footer (translate · comments · delete).
+   Same colors; less padding, flatter cards, smaller controls.
+   ===================================================================== */
+
+.feed { gap: 12px; margin-top: 12px; }
+.post { display: grid; gap: 8px; padding: 14px 16px 10px; border-radius: var(--r-md); box-shadow: none; }
+
+.post__head { gap: 10px; }
+.post__who { gap: 1px; }
+.post__who strong { font-size: 14px; line-height: 1.3; }
+.post__sub { display: flex; align-items: center; gap: 6px; min-width: 0; color: var(--muted); font-size: 12px; line-height: 1.3; }
+.post__sub .tag { padding: 2px 7px; font-size: 9px; }
+
+.post__text { margin-top: 0; font-size: 15px; line-height: 1.55; }
+.post__photo { margin: 2px 0 0; border-radius: 12px; }
+.post__photo img { max-height: 420px; }
+
+.post__foot { justify-content: flex-start; gap: 8px; margin-top: 0; min-height: 40px; }
+.post__foot .lang-toggle { padding: 2px; }
+.post__foot .lang-toggle__btn { min-height: 26px; padding: 0 10px; font-size: 11px; }
+.post__comments {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 36px;
+  margin-left: auto;
+  padding: 0 10px;
+  border: 0;
+  border-radius: var(--r-pill);
+  background: transparent;
+  color: var(--ink-2);
+  font-size: 13px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.post__comments .icon { width: 18px; height: 18px; }
+.post__comments:hover, .post__comments.is-active { background: var(--rose-50); color: var(--rose-700); }
+.post__delete { flex-shrink: 0; width: 36px; height: 36px; }
+.post__delete .icon { width: 18px; height: 18px; }
+
+/* Comments sit closer to their post. */
+.comments { gap: 10px; margin-top: 2px; padding-top: 10px; }
+.thread { gap: 8px; }
+.comment { gap: 8px; }
+.comment--reply, .comment-form--reply { margin-left: 34px; }
+.comment__bubble { padding: 8px 12px; }
+.comment__actions { margin-top: 6px; }
+
+/* Composer: one-line start that grows as you type. */
+.composer { padding: 10px 12px; border-radius: var(--r-md); box-shadow: none; }
+.composer__row { align-items: flex-start; gap: 10px; }
+.composer textarea { min-height: 40px; max-height: 160px; padding: 9px 0 0; overflow-y: auto; font-size: 16px; line-height: 1.45; }
+.composer textarea::placeholder { font-size: 15px; }
+.composer__preview { margin-top: 8px; }
+.composer__preview img { max-height: 240px; }
+.composer__bar { gap: 8px; margin-top: 8px; padding-top: 8px; }
+.composer__bar .pill-btn, .composer__bar .btn { min-height: 36px; padding: 0 14px; }
+.composer__bar .btn { font-size: 12px; }
+.composer__counter { font-size: 11px; }
+
+@media (max-width: 600px) {
+  .post { padding: 12px 12px 8px; }
+  .post .avatar--md, .composer .avatar--md { width: 36px; height: 36px; font-size: 15px; }
+  .post__text { font-size: 15px; }
+  .post__photo { margin-inline: -4px; }
+  .post__foot { flex-wrap: nowrap; gap: 6px; }
+  .composer { padding: 10px; }
+  .composer textarea { min-height: 40px; }
+  .composer__bar .pill-btn, .composer__bar .btn { padding-inline: 12px; }
+}
