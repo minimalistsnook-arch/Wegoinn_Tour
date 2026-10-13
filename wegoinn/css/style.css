@@ -1522,3 +1522,28 @@ html.chat-fullscreen, html.chat-fullscreen body { overflow: hidden; overscroll-b
   #chat.is-fullscreen .chat-msg__text { font-size: 16px; line-height: 1.55; }
   #chat.is-fullscreen .chat-composer textarea { max-height: min(120px, 25dvh); }
 }
+
+/* =====================================================================
+   SECTION SCROLL SNAP — Community → 방명록 → Chat
+   Mandatory snapping never stops between two sections. A section taller than
+   the screen still scrolls freely inside (browsers keep any position where one
+   section covers the whole screen) and snaps only at its edges.
+   ===================================================================== */
+
+html { scroll-snap-type: y mandatory; }
+.hello, [data-section] { scroll-snap-align: start; }
+.app-foot { scroll-snap-align: end; }
+
+/* Each section fills the screen below the sticky top bar and section tabs
+   (the same 64px the anchor scroll-padding reserves for the tabs). svh stays
+   fixed while the mobile address bar shows or hides, so nothing re-snaps mid-scroll. */
+[data-section] {
+  min-height: calc(100vh - var(--measured-topbar-h, var(--topbar-h)) - 64px);
+  min-height: calc(100svh - var(--measured-topbar-h, var(--topbar-h)) - 64px);
+}
+
+/* While someone is typing, the keyboard or a growing text box must not move the page. */
+html:has(.layout :is(input, textarea, select):focus) { scroll-snap-type: none; }
+
+/* Inner scrollers keep their own scroll instead of handing it to the page. */
+#myCommunityList { overscroll-behavior: contain; }
