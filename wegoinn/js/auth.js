@@ -17,30 +17,44 @@ export function normalizeStayDate(value) {
   return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
 }
 
+async function loginStep(stage, run) {
+  try {
+    const result = await run();
+    if (result?.error) throw result.error;
+    return result;
+  } catch (cause) {
+    const error = new Error(cause?.message || String(cause));
+    error.code = cause?.code;
+    error.status = cause?.status;
+    error.loginStage = stage;
+    throw error;
+  }
+}
+
 export async function signInGuest(checkIn, checkOut, roomNumber, nickname, avatarFile = null) {
-  const arrival = normalizeStayDate(checkIn), departure = normalizeStayDate(checkOut);
+  let arrival, departure;
+  try { arrival = normalizeStayDate(checkIn); } catch (error) { throw new Error(`체크인 날짜: ${error.message}`); }
+  try { departure = normalizeStayDate(checkOut); } catch (error) { throw new Error(`체크아웃 날짜: ${error.message}`); }
   const name = nickname.trim();
   const admin = arrival === "999222" && departure === "999222";
   if (!validateNickname(name)) throw new Error("닉네임은 1~20자로 입력하세요.");
-  if (!admin && (!roomNumber.trim() || departure <= arrival || arrival === "999222" || departure === "999222")) throw new Error("객실 번호와 올바른 숙박 기간을 입력하세요.");
-  const { data: { session } } = await supabase.auth.getSession();
-  if (session) await supabase.auth.signOut({ scope: "local" });
-  {
-    const { error } = await supabase.auth.signInAnonymously();
-    if (error) throw error;
-  }
+  if (!admin && (arrival === "999222" || departure === "999222")) throw new Error("운영자 로그인은 체크인과 체크아웃 날짜에 모두 999222를 입력해야 합니다.");
+  if (!admin && !roomNumber.trim()) throw new Error("객실 번호를 입력하세요.");
+  if (!admin && departure <= arrival) throw new Error("체크아웃 날짜는 체크인 날짜보다 이후여야 합니다.");
+  const sessionResult = await loginStep("session", () => supabase.auth.getSession());
+  const session = sessionResult.data.session;
+  if (session) await loginStep("session", () => supabase.auth.signOut({ scope: "local" }));
+  await loginStep("auth", () => supabase.auth.signInAnonymously());
 
-  const { data, error } = await supabase
+  const { data } = await loginStep("profile", () => supabase
     .rpc("register_stay_guest", { p_check_in: arrival, p_check_out: departure, p_room_number: roomNumber.trim(), p_nickname: name })
-    .single();
-  if (error) throw error;
+    .single());
 
   // Upload needs the profile to exist (storage policy), so it runs after register_stay_guest.
   let avatarUrl = await getMyAvatarUrl(data.id);
   if (avatarFile) {
-    avatarUrl = await uploadImage(avatarFile);
-    const { error: avatarError } = await supabase.rpc("set_my_avatar", { p_avatar_url: avatarUrl });
-    if (avatarError) throw avatarError;
+    avatarUrl = await loginStep("avatar", () => uploadImage(avatarFile));
+    await loginStep("avatar", () => supabase.rpc("set_my_avatar", { p_avatar_url: avatarUrl }));
   }
   await logGuestCheckIn(avatarUrl);
   return { ...data, avatar_url: avatarUrl }; // { id, nickname, role, avatar_url }

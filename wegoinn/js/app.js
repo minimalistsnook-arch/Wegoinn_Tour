@@ -10,6 +10,7 @@ import { initChat } from "./chat.js";
 import { $, $$, avatarHtml, toast, setBusy } from "./utils.js";
 import { hydrateIcons } from "./icons.js";
 import { initTheme } from "./theme.js";
+import { loginErrorMessage } from "./login-errors.js";
 
 hydrateIcons();
 initTheme();
@@ -104,9 +105,9 @@ $("#loginForm").addEventListener("submit", async (event) => {
   const checkOut = form.elements.check_out;
   const room = form.elements.room_number;
   const nickname = form.elements.nickname;
-  if (!checkIn.value.trim() || !checkOut.value.trim() || !nickname.value.trim()) {
-    return toast("Please enter your stay dates, room number and nickname.", "error");
-  }
+  const loginError = $("#loginError");
+  loginError.hidden = true;
+  loginError.textContent = "";
   const button = form.querySelector('[type="submit"]');
   setBusy(button, true, "Entering…");
   try {
@@ -115,7 +116,10 @@ $("#loginForm").addEventListener("submit", async (event) => {
     setAvatar(null);
     await enterApp(profile);
   } catch (err) {
-    toast(errorMessage(err), "error");
+    const message = loginErrorMessage(err);
+    loginError.textContent = message;
+    loginError.hidden = false;
+    toast(message, "error");
   } finally {
     setBusy(button, false);
   }

@@ -1614,3 +1614,15 @@ html:has(.layout :is(input, textarea, select):focus) { scroll-snap-type: none; }
 .chat-room .icon { width: 14px; height: 14px; flex-shrink: 0; }
 .chat-room.is-active { border-color: var(--pine); background: var(--pine); color: var(--on-accent); }
 .chat-room.is-active small { color: var(--on-accent-dim); }
+
+/* Login errors stay readable after the temporary toast disappears. */
+.login-error {
+  padding: 12px 14px;
+  border: 1px solid currentColor;
+  border-radius: var(--r-md);
+  color: var(--danger, #b42318);
+  font-size: 14px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+.login-error[hidden] { display: none; }

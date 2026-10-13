@@ -25,6 +25,10 @@ describe('stay login',()=>{
   expect(mocks.rpc).toHaveBeenCalledWith('register_stay_guest',{p_check_in:'2026-10-13',p_check_out:'2026-10-25',p_room_number:'701',p_nickname:'손님'});
   expect(JSON.parse(fetch.mock.calls[0][1].body)).toEqual({avatarUrl:''});
  });
+ it('preserves the database error code and identifies the failing step',async()=>{
+  mocks.rpc.mockReturnValue({single:async()=>({data:null,error:{code:'PGRST202',message:'Could not find the function public.register_stay_guest in the schema cache'}})});
+  await expect(signInGuest('26.10.13','26.10.25','701','손님')).rejects.toMatchObject({code:'PGRST202',loginStage:'profile'});
+ });
  it('allows operator dates with no room',async()=>{
   await signInGuest('999222','999222','','운영자');
   expect(mocks.rpc).toHaveBeenCalledWith('register_stay_guest',expect.objectContaining({p_check_in:'999222',p_check_out:'999222',p_room_number:''}));
