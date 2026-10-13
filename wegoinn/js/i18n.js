@@ -88,7 +88,7 @@ function pump() {
       }
     }).catch(() => {
       if (job.version === revision && job.el.isConnected) { job.el.textContent = job.original; delete job.el.dataset.siteTranslated; }
-      if (job.version === revision) document.getElementById('translationStatus').textContent = t('Content translation failed. Original text is shown.');
+      if (job.version === revision) setStatus(t('Content translation failed. Original text is shown.'));
       // Keep the failed job recorded; retry on an explicit language change.
     }).finally(() => { running--; pump(); });
   }
@@ -132,23 +132,33 @@ function applyLanguage() {
   });
   pump();
 }
+// Translation notices pop up briefly (CSS fades them out) instead of taking a permanent bar.
+function setStatus(text) {
+  const status = document.getElementById('translationStatus');
+  if (status.textContent === text) return;
+  status.textContent = text;
+  status.classList.remove('is-shown');
+  void status.offsetWidth; // restart the fade for a new message
+  if (text) status.classList.add('is-shown');
+}
 export function initSiteLanguage() {
-  const select = document.getElementById('siteLanguage');
+  // One picker in the login corner and one in the app's top bar; they stay in sync.
+  const selects = [...document.querySelectorAll('[data-site-language]')];
   const choose = value => {
     language = languages.includes(value) ? value : 'en';
     document.querySelectorAll("[data-translation-mode]").forEach(el => delete el.dataset.translationMode);
     revision++; contentQueue = []; contentJobs = new WeakMap();
     document.documentElement.lang = language;
     localStorage.setItem('wegoinn-language',language);
-    select.value = language;
-    document.getElementById('translationStatus').textContent = language !== 'en' && !isTranslationConfigured()
-      ? ({ko:'화면 번역 사용 중 · 게시글 번역은 API 연결이 필요합니다.',ja:'画面翻訳中 · 投稿の翻訳には API 接続が必要です。',zh:'界面已翻译，用户内容翻译需要连接 API。'})[language] : '';
+    selects.forEach(select => (select.value = language));
+    setStatus(language !== 'en' && !isTranslationConfigured()
+      ? ({ko:'화면 번역 사용 중 · 게시글 번역은 API 연결이 필요합니다.',ja:'画面翻訳中 · 投稿の翻訳には API 接続が必要です。',zh:'界面已翻译，用户内容翻译需要连接 API。'})[language] : '');
     applyLanguage();
     document.dispatchEvent(new CustomEvent('site-language-change'));
   };
   choose(localStorage.getItem('wegoinn-language') || 'en');
   checkTranslationService().then(() => choose(language));
-  select.addEventListener('change',()=>choose(select.value));
+  selects.forEach(select => select.addEventListener('change',()=>choose(select.value)));
   let scheduled = false;
   new MutationObserver(() => {
     if (scheduled) return;

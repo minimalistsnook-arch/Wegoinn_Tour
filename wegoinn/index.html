@@ -16,7 +16,7 @@
   <link rel="stylesheet" href="css/style.css" />
 </head>
 <body data-app="guest">
-  <div class="language-bar"><label>Language <select id="siteLanguage" aria-label="Language"><option value="en">English</option><option value="ko">한국어</option><option value="ja">日本語</option><option value="zh">中文</option></select></label><span id="translationStatus" role="status"></span></div>
+  <p id="translationStatus" class="translation-status" role="status"></p>
 
   <!-- LOADING -->
   <div id="loadingView" class="loading-screen">
@@ -26,7 +26,10 @@
 
   <!-- LOGIN -->
   <section id="loginView" class="login" hidden>
-    <button type="button" class="theme-toggle theme-toggle--float" data-theme-toggle aria-pressed="false">Dark</button>
+    <div class="login__corner">
+      <select class="lang-select" data-site-language aria-label="Language"><option value="en">English</option><option value="ko">한국어</option><option value="ja">日本語</option><option value="zh">中文</option></select>
+      <button type="button" class="theme-toggle" data-theme-toggle aria-pressed="false">Dark</button>
+    </div>
     <div class="login__bg" aria-hidden="true">
       <span class="blob blob--rose"></span>
       <span class="blob blob--peach"></span>
@@ -107,6 +110,7 @@
     <header class="topbar">
       <a class="wordmark topbar__brand" href="#top">Wegoinn</a>
       <div class="topbar__actions">
+        <select class="lang-select lang-select--on-pine" data-site-language aria-label="Language"><option value="en">English</option><option value="ko">한국어</option><option value="ja">日本語</option><option value="zh">中文</option></select>
         <button type="button" class="theme-toggle theme-toggle--on-pine" data-theme-toggle aria-pressed="false">Dark</button>
         <button id="notificationBtn" type="button" class="pill-btn">Notifications <span id="notificationCount">0</span></button>
         <button id="logoutBtn" type="button" class="pill-btn">Log out</button>

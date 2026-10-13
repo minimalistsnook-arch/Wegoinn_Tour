@@ -204,7 +204,7 @@ it('switches interface language in both directions without translating nicknames
  vi.stubGlobal('fetch',vi.fn(async()=>({ok:true,json:async()=>({configured:false})})));
  document.querySelector('#headerNickname').textContent='Language';
  initSiteLanguage(); await settle();
- const select=document.querySelector('#siteLanguage');
+ const select=document.querySelector('.topbar [data-site-language]');
  select.value='ko';select.dispatchEvent(new Event('change'));
  expect(document.querySelector('#logoutBtn').textContent).toBe('로그아웃');
  expect(document.querySelector('#headerNickname').textContent).toBe('Language');
