@@ -43,23 +43,28 @@
 
       <form id="loginForm" class="login-card" novalidate>
         <h2>Welcome in</h2>
-        <p class="login-card__sub">Enter the name or number on your reservation, then choose a nickname for the guestbook.</p>
+        <p class="login-card__sub">Enter your stay dates, room number and nickname. Use the same details to return to your account.</p>
 
         <label class="field">
-          <span class="field__label">Reservation Name or Number</span>
-          <span class="field__box">
-            <i data-icon="key"></i>
-            <input name="reservation" type="text" inputmode="text" placeholder="e.g. Kim Mina or AGD12345678" maxlength="64" autocomplete="off" spellcheck="false" required />
-          </span>
+          <span class="field__label">Check in date</span>
+          <span class="field__box"><input name="check_in" type="text" placeholder="2026-10-13" maxlength="10" autocomplete="off" required /></span>
+        </label>
+        <label class="field">
+          <span class="field__label">Check out date</span>
+          <span class="field__box"><input name="check_out" type="text" placeholder="2026-10-25" maxlength="10" autocomplete="off" required /></span>
+        </label>
+        <label class="field">
+          <span class="field__label">Room number</span>
+          <span class="field__box"><input name="room_number" type="text" inputmode="numeric" placeholder="701" maxlength="3" autocomplete="off" required /></span>
         </label>
 
         <label class="field">
-          <span class="field__label">English Nickname</span>
+          <span class="field__label">Nickname</span>
           <span class="field__box">
             <i data-icon="user"></i>
             <input name="nickname" type="text" placeholder="e.g. SunnyMina" maxlength="20" autocomplete="nickname" spellcheck="false" required />
           </span>
-          <small class="field__hint">English letters &amp; numbers · this is the only name other guests see.</small>
+          <small class="field__hint">Use the same nickname when you return.</small>
         </label>
 
         <div class="field avatar-pick">
@@ -78,7 +83,7 @@
         <p id="setupNotice" class="setup-notice" hidden>
           Supabase isn't connected yet — add your project URL and anon key in <code>js/config.js</code>.
         </p>
-        <p class="login-card__fine"><i data-icon="shield"></i> Your reservation name or number is never shown to other guests.</p>
+        <p class="login-card__fine"><i data-icon="shield"></i> Your stay dates and room number are never shown to other guests.</p>
       </form>
     </div>
   </section>

@@ -1,68 +1,64 @@
 import { supabase } from "./supabase.js";
 import { uploadImage } from "./image-upload.js";
 
-const NICKNAME_PATTERN = /^[A-Za-z0-9][A-Za-z0-9 ._-]{0,19}$/;
-
 export function validateNickname(nickname) {
-  return NICKNAME_PATTERN.test(nickname);
+  return typeof nickname === "string" && nickname.trim().length >= 1 && nickname.trim().length <= 20;
 }
 
-/**
- * Checks a reservation number before a guest may enter.
- * Prototype: any non-empty value passes.
- */
-export async function verifyReservationNumber(reservationNumber) {
-  // TODO: Connect reservation verification API
-  // The real check must ALSO run on the server (Edge Function / register_guest),
-  // because anything in the browser can be bypassed.
-  return reservationNumber.trim().length > 0;
+export function normalizeStayDate(value) {
+  const raw = value.trim();
+  if (raw === "999222") return raw;
+  const match = /^(\d{2}|\d{4})[-./](\d{1,2})[-./](\d{1,2})$/.exec(raw);
+  if (!match) throw new Error("날짜를 YYYY-MM-DD 또는 YY.MM.DD 형식으로 입력하세요.");
+  const year = match[1].length === 2 ? 2000 + Number(match[1]) : Number(match[1]);
+  const month = Number(match[2]), day = Number(match[3]);
+  const date = new Date(Date.UTC(year, month - 1, day));
+  if (date.getUTCFullYear() !== year || date.getUTCMonth() !== month - 1 || date.getUTCDate() !== day) throw new Error("올바른 날짜를 입력하세요.");
+  return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
 }
 
-/**
- * Anonymous sign-in → links the anonymous auth user to a guest profile.
- * `reservation` is the booker's name or reservation number (not verified).
- * `avatarFile` is an optional, already-compressed face photo (compressAvatar()).
- */
-export async function signInGuest(reservationNumber, nickname, avatarFile = null) {
-  const reservation = reservationNumber.trim();
+export async function signInGuest(checkIn, checkOut, roomNumber, nickname, avatarFile = null) {
+  const arrival = normalizeStayDate(checkIn), departure = normalizeStayDate(checkOut);
   const name = nickname.trim();
-
-  if (!reservation || !name) throw new Error("Please enter the reservation name or number and a nickname.");
-  if (!validateNickname(name)) throw new Error("Nickname: English letters, numbers, space, . _ - (max 20).");
-  if (!(await verifyReservationNumber(reservation))) throw new Error("We couldn't verify that reservation number.");
-
+  const admin = arrival === "999222" && departure === "999222";
+  if (!validateNickname(name)) throw new Error("닉네임은 1~20자로 입력하세요.");
+  if (!admin && (!roomNumber.trim() || departure <= arrival || arrival === "999222" || departure === "999222")) throw new Error("객실 번호와 올바른 숙박 기간을 입력하세요.");
   const { data: { session } } = await supabase.auth.getSession();
-  if (!session) {
+  if (session) await supabase.auth.signOut({ scope: "local" });
+  {
     const { error } = await supabase.auth.signInAnonymously();
     if (error) throw error;
   }
 
   const { data, error } = await supabase
-    .rpc("register_guest", { p_reservation_number: reservation, p_nickname: name })
+    .rpc("register_stay_guest", { p_check_in: arrival, p_check_out: departure, p_room_number: roomNumber.trim(), p_nickname: name })
     .single();
   if (error) throw error;
 
-  // Upload needs the profile to exist (storage policy), so it runs after register_guest.
+  // Upload needs the profile to exist (storage policy), so it runs after register_stay_guest.
   let avatarUrl = await getMyAvatarUrl(data.id);
   if (avatarFile) {
     avatarUrl = await uploadImage(avatarFile);
     const { error: avatarError } = await supabase.rpc("set_my_avatar", { p_avatar_url: avatarUrl });
     if (avatarError) throw avatarError;
   }
-  logGuestCheckIn(reservation, avatarUrl);
+  await logGuestCheckIn(avatarUrl);
   return { ...data, avatar_url: avatarUrl }; // { id, nickname, role, avatar_url }
 }
 
 /** Sends the check-in to the staff Google Sheet. Failures never block entry. */
-async function logGuestCheckIn(reservation, avatarUrl) {
+async function logGuestCheckIn(avatarUrl) {
   try {
     const { data: { session } } = await supabase.auth.getSession();
     const response = await fetch("/api/guest-log", {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${session?.access_token ?? ""}` },
-      body: JSON.stringify({ reservation, avatarUrl: avatarUrl ?? "" }),
+      body: JSON.stringify({ avatarUrl: avatarUrl ?? "" }),
     });
-    if (!response.ok) console.warn("[guest-log]", response.status);
+    if (!response.ok) {
+      const result = await response.json().catch(() => null);
+      console.warn("[guest-log]", response.status, result?.reason || result?.error || "Unknown error");
+    }
   } catch (err) {
     console.warn("[guest-log]", err);
   }

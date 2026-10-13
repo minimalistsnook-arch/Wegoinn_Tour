@@ -199,18 +199,37 @@ Google API 키는 브라우저 설정 파일에 넣지 마세요. 요청은 Supa
 
 ## 로그인 기록 Google Sheet 연동
 
-로그인할 때 입력한 **예약자 이름/예약번호 · 닉네임 · 프로필 사진**이 Google Sheet의 `Guest Log` 탭에 한 줄씩 추가됩니다. 입력값은 검수하지 않습니다.
+로그인 폼에서 입력한 예약자 이름/예약번호, 닉네임, 프로필 사진을 서비스 계정으로 Google Sheets에 직접 기록합니다.
 
-흐름: 브라우저 → `/api/guest-log` (Cloudflare Pages Function, 로그인 세션 확인) → Google Apps Script 웹앱 → Sheet
+흐름: 브라우저 → `/api/guest-log` (Supabase 세션/프로필 확인) → Google OAuth → Sheets API.
 
-1. **Supabase**: SQL Editor에서 `supabase/migrations/20261010_guest_avatar.sql` 실행 (프로필 사진 컬럼). 프론트엔드 배포 **전에** 실행하세요.
-2. **Apps Script**: 시트에서 `확장 프로그램 → Apps Script` → `google-apps-script/guest-log.gs` 내용을 붙여넣고 저장.
-   - `프로젝트 설정 → 스크립트 속성`에 `WEBHOOK_SECRET` = 임의의 긴 문자열(예: `openssl rand -hex 32`).
-   - `배포 → 새 배포 → 유형: 웹 앱`, 실행 계정 **나**, 액세스 권한 **모든 사용자** → 웹 앱 URL(`https://script.google.com/macros/s/.../exec`) 복사.
-3. **Cloudflare**: Pages 프로젝트 `설정 → 환경 변수`(Production)에 추가 후 재배포.
-   - `GOOGLE_SHEET_WEBHOOK_URL` = 2번의 웹 앱 URL
-   - `GOOGLE_SHEET_WEBHOOK_SECRET` = 2번의 `WEBHOOK_SECRET`과 같은 값 (암호화로 저장)
-   - `SUPABASE_URL`, `SUPABASE_ANON_KEY` (번역 기능용으로 이미 있으면 그대로)
-4. 확인: `https://<사이트>/api/guest-log`를 열어 `{"configured":true}`가 나오면 연결 완료.
+1. Google Cloud 프로젝트에서 **Google Sheets API**를 활성화합니다.
+2. **IAM 및 관리자 → 서비스 계정 → 서비스 계정 만들기**에서 계정을 생성합니다. 프로젝트 IAM 역할은 이 기능에 필요하지 않습니다.
+3. 서비스 계정의 **키 → 키 추가 → 새 키 만들기 → JSON**으로 키를 다운로드합니다.
+4. 대상 시트의 **공유**에서 JSON의 `client_email` 이메일을 **편집자**로 추가합니다.
+5. Cloudflare Pages의 `wegoinn-tour` 프로젝트 **설정 → 변수 및 비밀**에서 Production에 아래를 등록합니다.
+   - `GOOGLE_SERVICE_ACCOUNT_JSON`: 다운로드한 JSON 파일 전체 내용. Secret(암호화)으로 저장합니다. 저장소나 브라우저 코드에 넣지 않습니다.
+   - `GOOGLE_SHEET_ID`: `1iSTD4TPnC8hS-bxhRMS3ysehGS6FRGlsrWiQANGztZI`
+   - `SUPABASE_URL`, `SUPABASE_ANON_KEY`: 기존 설정 유지.
+6. 새 서버 코드를 배포합니다. 환경변수 변경만으로는 이전 배포가 업데이트되지 않으므로 재배포가 필요합니다.
+7. `/api/guest-log`에서 `provider: "google-sheets"`, `configured: true`, `missing: []`를 확인합니다. 이것은 설정 존재 확인이며 실제 쓰기 성공 확인은 아닙니다.
+8. 시크릿 창에서 로그인 폼을 제출합니다. `Guest Log` 탭이 자동 생성되고 제목 행과 로그인 기록이 추가됩니다. 성공 응답은 `{"ok":true}`입니다.
 
-시트 기록이 실패해도 로그인은 막지 않습니다(브라우저 콘솔에 `[guest-log]` 경고만 남음). Apps Script 코드를 수정하면 `배포 관리 → 새 버전`으로 다시 배포해야 반영됩니다.
+기존 `GOOGLE_SHEET_WEBHOOK_URL`, `GOOGLE_SHEET_WEBHOOK_SECRET`, Apps Script 배포는 새 코드에서 사용하지 않습니다. `google-apps-script/guest-log.gs`는 이전 방식의 참고 파일입니다.
+
+프로필 사진은 공개 Supabase Storage URL을 IMAGE 함수로 표시합니다. 예약번호와 닉네임은 수식으로 실행되지 않도록 텍스트로 기록합니다. 제목 행 A1:F1은 매 요청에서 위 기록 형식으로 설정합니다.
+
+시트 기록 실패는 로그인을 막지 않습니다. Network의 `/api/guest-log` POST 응답 `reason`에서 원인을 확인할 수 있습니다. Google 인증 오류는 서비스 계정 키, Sheets API 403은 API 활성화와 편집자 공유, 404는 시트 ID와 공유 권한을 확인합니다.
+
+이미 로그인한 세션으로 재접속하면 로그인 폼을 건너뛰므로 새 기록을 추가하지 않습니다.
+
+
+### 숙박 날짜·객실 로그인 (2026-10-13)
+
+Supabase SQL Editor에서 `supabase/migrations/20261013_stay_login.sql` 전체를 실행한 후 사이트를 배포하세요. 마이그레이션은 한 트랜잭션으로 적용됩니다. 기존 `register_guest` 로그인 경로는 비활성화됩니다.
+
+- 입력 순서: 체크인 날짜, 체크아웃 날짜, 객실 번호, 닉네임. 날짜는 `2026-10-13`, `26.10.13`, `26/10/13` 형식을 지원합니다.
+- 같은 날짜·객실·닉네임은 기존 프로필 ID로 연결됩니다. 게시글과 모임 등 기존 활동을 유지합니다. 닉네임은 한글을 포함해 1~20자입니다.
+- 등록된 43개 객실의 수용 인원은 서버에서 검사합니다. 날짜가 겹치는 숙박의 최대 동시 인원이 정원을 넘으면 새 닉네임 등록만 차단합니다. 체크아웃 날짜는 점유일에 포함하지 않습니다. 과거·미래 날짜에 별도 로그인 제한은 없습니다.
+- 두 날짜가 모두 `999222`이면 운영자로 로그인합니다. 객실 번호는 생략할 수 있고, 같은 운영자 닉네임은 기존 프로필을 사용합니다. 헤더와 로그인 기록에 운영자 표시가 있습니다.
+- `Guest Log` 기존 A~F 열은 유지하고 G~L에 체크인, 체크아웃, 객실 번호, 룸타입, 수용 인원, 역할을 기록합니다. 서버가 `get_my_stay`로 읽은 정보만 기록합니다. 기존 행은 소급해서 채우지 않습니다.

@@ -69,16 +69,18 @@ $("#avatarInput").addEventListener("change", async (event) => {
 $("#loginForm").addEventListener("submit", async (event) => {
   event.preventDefault();
   const form = event.currentTarget;
-  const reservation = form.elements.reservation;
+  const checkIn = form.elements.check_in;
+  const checkOut = form.elements.check_out;
+  const room = form.elements.room_number;
   const nickname = form.elements.nickname;
-  if (!reservation.value.trim() || !nickname.value.trim()) {
-    return toast("Please enter the reservation name or number and a nickname.", "error");
+  if (!checkIn.value.trim() || !checkOut.value.trim() || !nickname.value.trim()) {
+    return toast("Please enter your stay dates, room number and nickname.", "error");
   }
   const button = form.querySelector('[type="submit"]');
   setBusy(button, true, "Entering…");
   try {
-    const profile = await signInGuest(reservation.value, nickname.value, avatarFile);
-    reservation.value = ""; // don't leave the reservation number in the DOM
+    const profile = await signInGuest(checkIn.value, checkOut.value, room.value, nickname.value, avatarFile);
+    checkIn.value = checkOut.value = room.value = "";
     setAvatar(null);
     await enterApp(profile);
   } catch (err) {
@@ -95,7 +97,7 @@ async function enterApp(profile) {
   started = true;
 
   // Shown in the UI only — permissions are always decided by the database.
-  $("#headerNickname").textContent = profile.nickname;
+  $("#headerNickname").textContent = profile.role === "admin" ? `${profile.nickname} · 운영자` : profile.nickname;
   $("#headerAvatar").outerHTML = avatarHtml(profile.nickname, "avatar--sm", profile.avatar_url);
   $("#greetingName").textContent = profile.nickname;
 
