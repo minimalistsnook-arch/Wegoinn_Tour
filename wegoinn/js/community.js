@@ -623,5 +623,6 @@ export async function openCommunityById(id) {
     state.extra.set(id, data);
   }
   closeSheet("notificationSheet");
+  if (location.hash !== "#community") location.hash = "community";
   openDetail(id);
 }

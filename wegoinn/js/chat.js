@@ -139,7 +139,7 @@ function onInput() {
 export async function openChat(room = null) {
   document.querySelectorAll(".sheet.is-open").forEach((sheet) => closeSheet(sheet.id));
   showRoom(room);
-  els.section.scrollIntoView({ behavior: "smooth", block: "start" });
+  if (location.hash !== "#chat") location.hash = "chat"; // switch to the Chat page
   await loadMessages();
   els.input.focus({ preventScroll: true });
 }

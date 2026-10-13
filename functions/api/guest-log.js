@@ -1,13 +1,14 @@
 // Server-only service-account authentication; credentials never reach the browser.
 const json = (body, status = 200) => new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } });
 const text = (value, max) => typeof value === 'string' ? value.trim().slice(0, max) : '';
-const HEADERS = ['Time (KST)', 'Reservation name / number', 'Nickname', 'Photo', 'Photo URL', 'Profile ID', 'Check in date', 'Check out date', 'Room number', 'Room type', 'Capacity', 'Role'];
-const TAB = 'Guest Log';
+// Column M is for staff: an "x" there checks the guest out (see stay-status.js).
+const HEADERS = ['Time (KST)', 'Reservation name / number', 'Nickname', 'Photo', 'Photo URL', 'Profile ID', 'Check in date', 'Check out date', 'Room number', 'Room type', 'Capacity', 'Role', 'Checked out (x)'];
+export const TAB = 'Guest Log';
 const TOKEN_URL = 'https://oauth2.googleapis.com/token';
 const encode = bytes => btoa(String.fromCharCode(...new Uint8Array(bytes))).replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
 const encodeJson = value => encode(new TextEncoder().encode(JSON.stringify(value)));
 
-async function accessToken(credentials) {
+export async function accessToken(credentials) {
   const now = Math.floor(Date.now() / 1000);
   const unsigned = `${encodeJson({ alg: 'RS256', typ: 'JWT' })}.${encodeJson({ iss: credentials.client_email, scope: 'https://www.googleapis.com/auth/spreadsheets', aud: TOKEN_URL, iat: now, exp: now + 3600 })}`;
   const pem = credentials.private_key.replace(/\\n/g, '\n').replace(/-----BEGIN PRIVATE KEY-----|-----END PRIVATE KEY-----|\s/g, '');
@@ -19,7 +20,7 @@ async function accessToken(credentials) {
   return result.access_token;
 }
 
-async function sheetsRequest(base, token, path, method = 'GET', body) {
+export async function sheetsRequest(base, token, path, method = 'GET', body) {
   const response = await fetch(base + path, { method, headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }, ...(body ? { body: JSON.stringify(body) } : {}), signal: AbortSignal.timeout(10000) });
   const result = await response.json().catch(() => null);
   if (!response.ok) {
@@ -43,7 +44,7 @@ async function appendGuest(env, credentials, row) {
       if (!hasTab(await metadata())) throw error;
     }
   }
-  const range = encodeURIComponent(`'${TAB}'!A1:L1`);
+  const range = encodeURIComponent(`'${TAB}'!A1:M1`);
   await sheetsRequest(base, token, `/values/${range}?valueInputOption=RAW`, 'PUT', { values: [HEADERS] });
   if (!row) return;
   const result = await sheetsRequest(base, token, `/values/${encodeURIComponent(`'${TAB}'!A:L`)}:append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS`, 'POST', { values: [row] });

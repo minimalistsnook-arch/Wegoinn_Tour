@@ -47,7 +47,10 @@ async function refreshNew(section) {
     .select("id", { count: "exact", head: true })
     .gt("created_at", lastSeen[section])
     .neq(author, me.id);
-  if (!error) setBadge(section, count || 0);
+  if (error) return;
+  setBadge(section, count || 0);
+  // Arrived while the guest is looking at this page: it is seen after the usual moment.
+  if (count && section === current) sectionInView(section);
 }
 export const scheduleNewCommunities = debounce(() => refreshNew("community"), 600);
 export const scheduleNewPosts = debounce(() => refreshNew("guestbook"), 600);
@@ -60,8 +63,10 @@ function setBadge(section, count) {
 }
 
 const timers = {};
+let current = null; // section page currently shown
 /** Called with the section on screen; after a moment it is marked as seen and its badge clears. */
 export function sectionInView(section) {
+  current = section;
   for (const key of Object.keys(timers)) if (key !== section) { clearTimeout(timers[key]); delete timers[key]; }
   if (!me || !SECTIONS[section] || timers[section]) return;
   timers[section] = setTimeout(() => {

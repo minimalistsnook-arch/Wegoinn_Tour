@@ -56,8 +56,36 @@ export async function signInGuest(checkIn, checkOut, roomNumber, nickname, avata
     avatarUrl = await loginStep("avatar", () => uploadImage(avatarFile));
     await loginStep("avatar", () => supabase.rpc("set_my_avatar", { p_avatar_url: avatarUrl }));
   }
+  // Staff may already have checked this guest out in the Guest Log sheet (column M = "x").
+  if ((await checkStayStatus())?.active === false) {
+    await supabase.auth.signOut({ scope: "local" });
+    throw new Error(CHECKED_OUT_MESSAGE);
+  }
   await logGuestCheckIn(avatarUrl);
   return { ...data, avatar_url: avatarUrl }; // { id, nickname, role, avatar_url }
+}
+
+export const CHECKED_OUT_MESSAGE = "체크아웃 처리된 손님은 다시 로그인할 수 없습니다.";
+
+/**
+ * Asks the server whether the stay is still active (check-out date not passed, not marked "x" in the
+ * Guest Log sheet). Returns { active } or null when the check itself is unavailable.
+ */
+export async function checkStayStatus() {
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return null;
+    const response = await fetch("/api/stay-status", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${session.access_token}` },
+      signal: AbortSignal.timeout(15000),
+    });
+    if (!response.ok) return null;
+    const result = await response.json().catch(() => null);
+    return typeof result?.active === "boolean" ? result : null;
+  } catch {
+    return null;
+  }
 }
 
 /** Sends the check-in to the staff Google Sheet. Failures never block entry. */

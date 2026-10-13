@@ -8,6 +8,9 @@ export function loginErrorMessage(error) {
     message = '로그인 서버 설정이 완료되지 않았습니다. DB에 숙박 로그인 함수(register_stay_guest)가 없습니다. 관리자에게 SQL 적용을 요청해 주세요.';
   } else if (code === 'anonymous_provider_disabled' || /anonymous.*(disabled|not enabled)/i.test(raw)) {
     message = '서버에서 익명 로그인이 비활성화되어 있습니다. 관리자가 Supabase의 익명 로그인 설정을 활성화해야 합니다.';
+  } else if (/체크아웃/.test(raw) && stage !== 'session') {
+    // Stay over (date passed, or staff marked the guest "x"): show the reason as is.
+    return raw;
   } else if (/수용 인원/.test(raw)) {
     message = '해당 숙박 기간에 객실 수용 인원이 모두 등록되어 새 닉네임을 만들 수 없습니다. 이미 등록한 날짜·객실 번호·닉네임을 입력하면 기존 계정으로 로그인할 수 있습니다.';
   } else if (/Failed to fetch|fetch failed|NetworkError|Load failed/i.test(raw)) {

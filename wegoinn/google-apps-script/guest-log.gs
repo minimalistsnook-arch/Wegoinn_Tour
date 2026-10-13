@@ -3,7 +3,7 @@
 // Script property WEBHOOK_SECRET must equal Cloudflare's GOOGLE_SHEET_WEBHOOK_SECRET.
 const SHEET_NAME = 'Guest Log';
 const SPREADSHEET_ID = '1iSTD4TPnC8hS-bxhRMS3ysehGS6FRGlsrWiQANGztZI';
-const HEADERS = ['Time (KST)', 'Reservation name / number', 'Nickname', 'Photo', 'Photo URL', 'Profile ID', 'Check in date', 'Check out date', 'Room number', 'Room type', 'Capacity', 'Role'];
+const HEADERS = ['Time (KST)', 'Reservation name / number', 'Nickname', 'Photo', 'Photo URL', 'Profile ID', 'Check in date', 'Check out date', 'Room number', 'Room type', 'Capacity', 'Role', 'Checked out (x)'];
 
 function doPost(e) {
   const body = JSON.parse((e.postData && e.postData.contents) || '{}');

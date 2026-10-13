@@ -2,7 +2,7 @@ import { initSiteLanguage } from "./i18n.js";
 import { initNotifications, refreshNotifications } from "./notifications.js";
 import { supabase, errorMessage } from "./supabase.js";
 import { isSupabaseConfigured } from "./config.js";
-import { signInGuest, getMyProfile, normalizeStayDate } from "./auth.js";
+import { signInGuest, getMyProfile, normalizeStayDate, checkStayStatus } from "./auth.js";
 import { compressAvatar } from "./image-upload.js";
 import { initGuestbook, scheduleFeedRefresh } from "./guestbook.js";
 import { initCommunity, scheduleCommunityRefresh } from "./community.js";
@@ -16,7 +16,16 @@ import { loginErrorMessage } from "./login-errors.js";
 hydrateIcons();
 initTheme();
 initSiteLanguage();
+const LOGOUT_REASON = "wegoinn-logout-reason";
+const SIGNED_IN = "wegoinn-signed-in";
+const STAY_ENDED_MESSAGE = "체크아웃 날짜가 지났거나 체크아웃 처리되어 자동으로 로그아웃되었습니다.";
+const storage = {
+  get: (key) => { try { return localStorage.getItem(key); } catch { return null; } },
+  set: (key, value) => { try { value == null ? localStorage.removeItem(key) : localStorage.setItem(key, value); } catch { /* private mode */ } },
+};
+
 $("#logoutBtn").addEventListener("click", async () => {
+  storage.set(SIGNED_IN, null);
   const { error } = await supabase.auth.signOut();
   if (error) toast(errorMessage(error), "error");
 });
@@ -37,10 +46,49 @@ async function boot() {
   try {
     const profile = await getMyProfile();
     if (profile) return enterApp(profile);
+    // Signed in before but the profile is gone: the stay is over (the database hides ended stays).
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session && storage.get(SIGNED_IN)) return endStay();
   } catch (err) {
     console.warn(err);
   }
+  showLogoutReason();
   show("login");
+}
+
+function showLogoutReason() {
+  const reason = storage.get(LOGOUT_REASON);
+  if (!reason) return;
+  storage.set(LOGOUT_REASON, null);
+  $("#loginError").textContent = reason;
+  $("#loginError").hidden = false;
+}
+
+// Signs out a guest whose stay is over; the login screen then explains why.
+async function endStay() {
+  storage.set(SIGNED_IN, null);
+  storage.set(LOGOUT_REASON, STAY_ENDED_MESSAGE);
+  await supabase.auth.signOut({ scope: "local" }).catch(() => {});
+  location.reload();
+}
+
+// Re-checks the stay while the app is open: every few minutes and whenever the tab comes back.
+function watchStay() {
+  let checking = false;
+  const check = async () => {
+    if (checking || document.visibilityState === "hidden") return;
+    checking = true;
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return; // already signed out; onAuthStateChange takes over
+      const profile = await getMyProfile().catch(() => undefined);
+      if (profile === null || (await checkStayStatus())?.active === false) await endStay();
+    } finally {
+      checking = false;
+    }
+  };
+  setInterval(check, 5 * 60 * 1000);
+  document.addEventListener("visibilitychange", check);
 }
 
 // Keep free-text entry (including the operator code) alongside a native calendar.
@@ -137,7 +185,9 @@ async function enterApp(profile) {
   $("#headerAvatar").outerHTML = avatarHtml(profile.nickname, "avatar--sm", profile.avatar_url);
   $("#greetingName").textContent = profile.nickname;
 
+  storage.set(SIGNED_IN, "1");
   show("app");
+  watchStay();
   const header = $(".topbar");
   if (typeof ResizeObserver !== "undefined") {
     new ResizeObserver(() => document.documentElement.style.setProperty("--measured-topbar-h", `${header.getBoundingClientRect().height}px`)).observe(header);
@@ -197,20 +247,34 @@ function setupAutoHideHeader() {
   chrome.forEach((el) => el.addEventListener("focusin", () => root.classList.remove("chrome-hidden")));
 }
 
-// Guestbook / Community / Chat pills highlight the section in view.
+// Community / 방명록 / Chat are separate pages: the tab (and the URL hash) decides which one is shown.
+// Links elsewhere can switch pages with location.hash = "chat" etc.
 function setupSectionNav() {
   const links = $$(".section-nav a");
-  const observer = new IntersectionObserver(
-    (entries) => {
-      entries.forEach((entry) => {
-        if (!entry.isIntersecting) return;
-        links.forEach((a) => a.classList.toggle("is-active", a.getAttribute("href") === `#${entry.target.id}`));
-        sectionInView(entry.target.id);
-      });
-    },
-    { rootMargin: "-45% 0px -50% 0px" }
-  );
-  $$("[data-section]").forEach((s) => observer.observe(s));
+  const sections = $$("[data-section]");
+  const ids = sections.map((s) => s.id);
+  const showSection = (id, { scroll = true } = {}) => {
+    if (!ids.includes(id)) id = ids[0];
+    sections.forEach((s) => (s.hidden = s.id !== id));
+    $(".hello").hidden = id !== ids[0]; // the greeting belongs to the first page only
+    links.forEach((a) => {
+      const active = a.getAttribute("href") === `#${id}`;
+      a.classList.toggle("is-active", active);
+      if (active) a.setAttribute("aria-current", "page"); else a.removeAttribute("aria-current");
+    });
+    document.documentElement.classList.remove("chrome-hidden");
+    if (scroll) window.scrollTo({ top: 0 });
+    sectionInView(id);
+    document.dispatchEvent(new CustomEvent("section-change", { detail: id }));
+  };
+  links.forEach((a) => a.addEventListener("click", (event) => {
+    event.preventDefault();
+    const id = a.getAttribute("href").slice(1);
+    if (location.hash === `#${id}`) showSection(id);
+    else location.hash = id; // hashchange shows it, and Back returns to the previous page
+  }));
+  window.addEventListener("hashchange", () => showSection(location.hash.slice(1)));
+  showSection(location.hash.slice(1), { scroll: false });
 }
 
 supabase?.auth.onAuthStateChange((event) => {
