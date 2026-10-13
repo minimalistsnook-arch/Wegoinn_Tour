@@ -1828,3 +1828,14 @@ html.chrome-hidden { scroll-padding-top: 12px; }
 @media (max-width: 600px) { .lang-select { max-width: 84px; padding: 0 8px; font-size: 11px; } }
 
 .chat-msg__actions:empty { display: none; }
+
+/* Guestbook without its section box: each post is its own card on the page background,
+   and the feed never grows wider than the phone (long words, links and photos wrap or shrink). */
+.layout > .block--guestbook { padding: 0; border: 0; border-radius: 0; background: transparent; }
+.block--guestbook .block__head { margin-inline: 4px; }
+.feed { grid-template-columns: minmax(0, 1fr); }
+.post { grid-template-columns: minmax(0, 1fr); min-width: 0; max-width: 100%; }
+.comments, .thread { grid-template-columns: minmax(0, 1fr); }
+.post__who, .post__sub, .comment, .comment__bubble, .comment__head { min-width: 0; }
+.post__photo img { display: block; max-width: 100%; height: auto; }
+.post__text, .comment__text { overflow-wrap: anywhere; word-break: break-word; }
