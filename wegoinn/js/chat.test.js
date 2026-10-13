@@ -61,11 +61,11 @@ describe('live chat', () => {
     expect(document.querySelector('[data-msg-id="m-new"] [data-delete-msg]')).not.toBeNull();
   });
 
-  it('counts unread global messages while in a group room and removes deleted ones', async () => {
+  it('counts unread messages from other rooms and removes deleted ones', async () => {
     await openChat({ id: 'c1', title: 'Night Walk' });
     await onChatInsert({ new: { id: 'm2', community_id: null, author_id: 'u2', content: 'hi', created_at: '2026-10-09T10:00:00Z' } });
     await onChatInsert({ new: { id: 'm3', community_id: 'c9', author_id: 'u2', content: 'room', created_at: '2026-10-09T10:00:00Z' } });
-    expect(document.getElementById('chatUnread').textContent).toBe('1');
+    expect(document.getElementById('chatUnread').textContent).toBe('2');
     document.getElementById('chatBackBtn').click();
     await settle();
     expect(document.getElementById('chatUnread').hidden).toBe(true);
@@ -157,4 +157,8 @@ it('lists joined community chats under Live Chat and switches rooms from there',
   expect(rooms.querySelector('[data-room="c-1"]').getAttribute('aria-pressed')).toBe('true');
   rooms.querySelector('[data-room=""]').click(); await settle();
   expect(document.querySelector('#chatTitle').textContent).toBe('Global Chat');
+  await onChatInsert({ new: { id: 'm9', community_id: 'c-1', author_id: 'u2', content: 'see you', created_at: '2026-10-09T12:00:00Z' } });
+  expect(rooms.querySelector('[data-room="c-1"] .chat-room__dot')).not.toBeNull();
+  rooms.querySelector('[data-room="c-1"]').click(); await settle();
+  expect(rooms.querySelector('[data-room="c-1"] .chat-room__dot')).toBeNull();
 });

@@ -1626,3 +1626,15 @@ html:has(.layout :is(input, textarea, select):focus) { scroll-snap-type: none; }
   overflow-wrap: anywhere;
 }
 .login-error[hidden] { display: none; }
+
+/* Scrolling down slides the top bar and section tabs away (app.js setupAutoHideHeader). */
+.topbar, .section-nav { transition: transform .3s var(--ease); }
+html.chrome-hidden .topbar,
+html.chrome-hidden .section-nav { transform: translateY(calc(-1 * var(--chrome-h, 140px))); }
+html.chrome-hidden { scroll-padding-top: 12px; }
+
+/* "New since your last visit" markers. */
+.tag--new { color: var(--on-accent); background: var(--pine); }
+.chat-room { position: relative; }
+.chat-room__dot { position: absolute; top: 4px; right: 6px; width: 8px; height: 8px; border-radius: 50%; background: var(--pine); box-shadow: 0 0 0 2px var(--surface); }
+.chat-room.is-active .chat-room__dot { display: none; }

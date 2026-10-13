@@ -4,6 +4,7 @@ import { compressImage, uploadImage, isImageUploadConfigured } from "./image-upl
 import { detectLanguage, translationToggleHtml, handleTranslationToggle } from "./translation.js";
 import { commentsSectionHtml, addComment, deleteComment } from "./comments.js";
 import { icon } from "./icons.js";
+import { isNew } from "./news.js";
 
 const FEED_LIMIT = 20;
 
@@ -283,6 +284,7 @@ function postHtml(post) {
         <div class="post__who">
           <strong>${escapeHtml(name)}${post.author_id === me.id ? ` <span class="you-tag">you</span>` : ""}</strong>
           <time datetime="${post.created_at}">${escapeHtml(formatDateTime(post.created_at))}</time>
+          ${isNew("guestbook", post.created_at, post.author_id) ? `<span class="tag tag--new">NEW</span>` : ""}
         </div>
         ${canDelete ? `<button type="button" class="icon-btn icon-btn--quiet" data-action="delete-post" aria-label="Delete post">${icon("trash")}</button>` : ""}
       </header>

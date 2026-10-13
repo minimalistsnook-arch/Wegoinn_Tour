@@ -25,6 +25,7 @@ const state = {
   lastAt: null,        // created_at of the newest rendered message (for resync)
   channel: null,
   rooms: [],           // community group chats this guest hosts or joined: { id, title, date, time }
+  unreadRooms: new Set(), // room ids ("" = Global Chat) with messages the guest hasn't opened yet
 };
 
 const els = {};
@@ -157,7 +158,7 @@ function renderRooms() {
   const current = state.room?.id ?? "";
   const chip = (id, label, sub = "") => `
     <button type="button" class="chat-room ${id === current ? "is-active" : ""}" data-room="${escapeHtml(id)}" aria-pressed="${id === current}">
-      ${label}${sub ? `<small>${escapeHtml(sub)}</small>` : ""}
+      ${label}${sub ? `<small>${escapeHtml(sub)}</small>` : ""}${state.unreadRooms.has(id) ? `<i class="chat-room__dot" aria-label="New messages"></i>` : ""}
     </button>`;
   els.rooms.innerHTML = chip("", `${icon("globe")} <span>Global Chat</span>`) + state.rooms.map((r) =>
     chip(r.id, `${icon("users")} <span data-user-content>${escapeHtml(r.title)}</span>`, `${formatDateKey(r.date, { month: "short", day: "numeric" })} ${shortTime(r.time)}`)).join("");
@@ -166,6 +167,7 @@ function renderRooms() {
 
 function showRoom(room) {
   state.room = room;
+  state.unreadRooms.delete(room?.id ?? "");
   renderRooms();
   if (!room) setUnread(0);
   els.eyebrow.textContent = room ? "Group chat" : "Everyone at Wegoinn";
@@ -331,7 +333,12 @@ export async function onChatInsert(payload) {
   const row = payload.new;
   if (!row?.id) return;
   if (!inCurrentRoom(row)) {
-    if (row.community_id == null && row.author_id !== state.me?.id) setUnread(state.unread + 1);
+    // Another room this guest can read (RLS only delivers those): count it and dot its chip.
+    if (row.author_id !== state.me?.id) {
+      setUnread(state.unread + 1);
+      state.unreadRooms.add(row.community_id ?? "");
+      renderRooms();
+    }
     return;
   }
   if (!state.visible && row.author_id !== state.me?.id && !state.ids.has(row.id)) setUnread(state.unread + 1);

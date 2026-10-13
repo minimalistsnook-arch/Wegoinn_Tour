@@ -8,6 +8,7 @@ import {
 import { openSheet, closeSheet } from "./sheet.js";
 import { icon } from "./icons.js";
 import { openChat, setChatRooms } from "./chat.js";
+import { isNew } from "./news.js";
 
 const COMMUNITY_COLUMNS = `
   *,
@@ -261,6 +262,7 @@ function cardHtml(c) {
           <h3 data-user-content>${escapeHtml(c.title)}</h3>
           <p>hosted by ${escapeHtml(host)}</p>
         </div>
+        ${isNew("community", c.created_at, c.creator_id) ? `<span class="tag tag--new">NEW</span>` : ""}
         ${communityIsLocked(c) ? `<span class="tag">${c.status === "cancelled" ? "Cancelled" : notHeld(c) ? "Not held" : "Past"}</span>` : ""}
         ${isHost(c) ? `<span class="tag tag--host">Hosting</span>` : status ? `<span class="tag tag--${status}">${statusLabel(status)}</span>` : ""}
       </div>
