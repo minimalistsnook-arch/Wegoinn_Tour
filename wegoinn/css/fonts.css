@@ -1,0 +1,19 @@
+/* Hancom MalangMalang Bold webfont: https://noonnu.cc/font_page/1421 */
+@font-face {
+  font-family: "Hancom MalangMalang";
+  src: url("https://cdn.jsdelivr.net/gh/projectnoonnu/2406-1@1.0/HancomMalangMalang-Bold.woff2") format("woff2");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  --font-ui: "Hancom MalangMalang", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+  font-synthesis: none;
+}
+
+button, input, textarea, select, code, pre, kbd, samp {
+  font-family: var(--font-ui);
+  font-weight: 700;
+  font-style: normal;
+}
