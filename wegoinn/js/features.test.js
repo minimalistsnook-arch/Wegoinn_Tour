@@ -139,6 +139,16 @@ describe('community workflows',()=>{
    expect(list.textContent).toContain('APPLICATIONS CLOSED');
    expect(list.textContent).toMatch(/Korean|한국어/);
  });
+ it('joins straight away without waiting for the host',async()=>{
+   const other={...me,id:'00000000-0000-0000-0000-000000000002'};
+   mock.communities=[community()];
+   mock.rpc.mockReturnValueOnce({single:async()=>({data:{status:'approved',approved_count:2,max_participants:8},error:null})});
+   await initCommunity(other);
+   document.querySelector('#communityList [data-action=join]').click(); await settle();
+   expect(mock.rpc).toHaveBeenCalledWith('join_community',{p_community_id:community().id});
+   expect(document.querySelector('#communityList').textContent).toContain('JOINED');
+   expect(document.querySelector('#communityList [data-action=join]')).toBeNull();
+ });
  it('keeps the draft and avoids duplicate creation when the RPC is missing',async()=>{
    await initCommunity(me);
    document.querySelector('#openCreateCommunity').click();

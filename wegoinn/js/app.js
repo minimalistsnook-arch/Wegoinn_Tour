@@ -2,7 +2,7 @@ import { initSiteLanguage } from "./i18n.js";
 import { initNotifications, refreshNotifications } from "./notifications.js";
 import { supabase, errorMessage } from "./supabase.js";
 import { isSupabaseConfigured } from "./config.js";
-import { signInGuest, getMyProfile } from "./auth.js";
+import { signInGuest, getMyProfile, normalizeStayDate } from "./auth.js";
 import { compressAvatar } from "./image-upload.js";
 import { initGuestbook, scheduleFeedRefresh } from "./guestbook.js";
 import { initCommunity, scheduleCommunityRefresh } from "./community.js";
@@ -40,6 +40,37 @@ async function boot() {
   }
   show("login");
 }
+
+// Keep free-text entry (including the operator code) alongside a native calendar.
+$$("[data-stay-calendar]").forEach((picker) => {
+  const input = $("#loginForm").elements[picker.dataset.stayCalendar];
+  const syncCalendar = () => {
+    try {
+      const value = normalizeStayDate(input.value);
+      picker.value = value === "999222" ? "" : value;
+    } catch {
+      picker.value = "";
+    }
+  };
+  const openCalendar = () => {
+    syncCalendar();
+    try { picker.showPicker?.(); } catch { /* Native control remains clickable. */ }
+  };
+  input.addEventListener("input", syncCalendar);
+  input.addEventListener("click", openCalendar);
+  picker.addEventListener("click", openCalendar);
+  picker.addEventListener("keydown", (event) => {
+    if ((event.key === "Enter" || event.key === " ") && picker.showPicker) {
+      event.preventDefault();
+      openCalendar();
+    }
+  });
+  picker.addEventListener("change", () => {
+    if (!picker.value) return;
+    input.value = picker.value;
+    input.dispatchEvent(new Event("input", { bubbles: true }));
+  });
+});
 
 // Optional round profile photo. Only the compressed square crop is kept.
 let avatarFile = null;

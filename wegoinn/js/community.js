@@ -7,7 +7,7 @@ import {
 } from "./utils.js";
 import { openSheet, closeSheet } from "./sheet.js";
 import { icon } from "./icons.js";
-import { openChat } from "./chat.js";
+import { openChat, setChatRooms } from "./chat.js";
 
 const COMMUNITY_COLUMNS = `
   *,
@@ -139,6 +139,8 @@ const notHeld = (c) => c.status !== "cancelled" && communityIsLocked(c) && !meet
 const isHost = (c) => c.creator_id === state.me.id;
 // Group chat: host and approved members (enforced again by chat_messages RLS).
 const canChat = (c) => c.status !== "cancelled" && (isHost(c) || state.myApplications.get(c.id) === "approved");
+// "approved" is shown as "joined": JOIN no longer waits for the host.
+const statusLabel = (status) => (status === "approved" ? "joined" : status);
 
 /* ---------------- Calendar ---------------- */
 
@@ -213,7 +215,8 @@ function joinButton(c, { wide = false } = {}) {
   const cls = `btn ${wide ? "btn--block" : ""}`;
   if (communityIsLocked(c)) return `<button type="button" class="${cls}" disabled>${c.status === "cancelled" ? "CANCELLED" : notHeld(c) ? "NOT HELD · MINIMUM NOT MET" : "PAST · READ ONLY"}</button>`;
   if (isHost(c)) return `<button type="button" class="${cls} btn--dark" data-action="view" data-id="${c.id}">MANAGE</button>`;
-  if (status) return `<button type="button" class="${cls} btn--status btn--${status}" disabled>${status.toUpperCase()}</button>`;
+  // Pending (from before instant join) and withdrawn guests can simply join again.
+  if (status === "approved" || status === "declined") return `<button type="button" class="${cls} btn--status btn--${status}" disabled>${statusLabel(status).toUpperCase()}</button>`;
   if (applicationsClosed(c)) return `<button type="button" class="${cls} btn--status btn--full" disabled>APPLICATIONS CLOSED</button>`;
   if (isFull(c)) return `<button type="button" class="${cls} btn--status btn--full" disabled>FULL</button>`;
   return `<button type="button" class="${cls} btn--primary" data-action="join" data-id="${c.id}">JOIN</button>`;
@@ -259,7 +262,7 @@ function cardHtml(c) {
           <p>hosted by ${escapeHtml(host)}</p>
         </div>
         ${communityIsLocked(c) ? `<span class="tag">${c.status === "cancelled" ? "Cancelled" : notHeld(c) ? "Not held" : "Past"}</span>` : ""}
-        ${isHost(c) ? `<span class="tag tag--host">Hosting</span>` : status ? `<span class="tag tag--${status}">${status}</span>` : ""}
+        ${isHost(c) ? `<span class="tag tag--host">Hosting</span>` : status ? `<span class="tag tag--${status}">${statusLabel(status)}</span>` : ""}
       </div>
 
       <ul class="meta-list">
@@ -286,21 +289,23 @@ async function onCardClick(event) {
   if (btn.dataset.action === "join") requestJoin(btn.dataset.id, btn);
 }
 
-/* ---------------- JOIN (pending → creator reviews) ---------------- */
+/* ---------------- JOIN (straight in, no host review) ---------------- */
 
 async function requestJoin(communityId, button) {
   const c = findCommunity(communityId);
   if (!c || isHost(c) || communityIsLocked(c)) return;
   if (applicationsClosed(c)) return toast("Applications are closed", "error");
-  setBusy(button, true, "Sending…");
-  // applicant_id and status='pending' come from DB defaults; RLS re-checks everything.
-  const { error } = await supabase.from("community_applications").insert({ community_id: communityId });
+  setBusy(button, true, "Joining…");
+  // Atomic on the DB side: locks the community row, enforces the deadline and max_participants.
+  const { data, error } = await supabase.rpc("join_community", { p_community_id: communityId }).single();
   setBusy(button, false);
-  if (error) return toast(errorMessage(error), "error");
-  toast("Request sent! The host will review it soon.");
-  state.myApplications.set(communityId, "pending");
+  if (error) { toast(errorMessage(error), "error"); return loadMonth(); }
+  toast("You're in! Say hi in the group chat.");
+  state.myApplications.set(communityId, "approved");
+  if (data) c.approved_count = data.approved_count;
   renderDay();
   if (state.detailId) renderDetail();
+  await loadMine();
 }
 
 /* ---------------- Detail sheet (+ creator management) ---------------- */
@@ -340,7 +345,7 @@ async function renderDetail() {
     ${!communityIsLocked(c) && !meetsMin(c) ? `<p class="host-note">Not confirmed yet. If fewer than the minimum are approved by the start time, this community won't go ahead.</p>` : ""}
     ${isHost(c) && !communityIsLocked(c) ? `<div class="community-card__actions"><button class="btn btn--ghost" type="button" data-action="edit" data-id="${c.id}">Edit community</button><button class="btn btn--soft" type="button" data-action="cancel" data-id="${c.id}">Cancel community</button></div>` : ""}
     ${canChat(c) ? `<button class="btn btn--dark btn--block" type="button" data-action="chat" data-id="${c.id}">${icon("message")} Open group chat</button>` : ""}
-    ${!isHost(c) && !communityIsLocked(c) && ["pending","approved"].includes(state.myApplications.get(c.id)) ? `<button class="btn btn--ghost" type="button" data-action="withdraw" data-id="${c.id}">Withdraw application</button>` : ""}
+    ${!isHost(c) && !communityIsLocked(c) && ["pending","approved"].includes(state.myApplications.get(c.id)) ? `<button class="btn btn--ghost" type="button" data-action="withdraw" data-id="${c.id}">Leave community</button>` : ""}
 
     <section class="detail-block"><h3>What we'll do</h3><p data-user-content>${escapeHtml(c.activity)}</p></section>
     <section class="detail-block"><h3>Who we'd love to meet</h3><p data-user-content>${escapeHtml(c.preferred_participants)}</p></section>
@@ -412,7 +417,7 @@ async function onDetailClick(event) {
     const c = findCommunity(action.dataset.id);
     if (!c || communityIsLocked(c)) return toast("This community is read-only", "error");
     if (action.dataset.action === "edit") return openEditForm(c);
-    if (!confirm(action.dataset.action === "cancel" ? "Cancel this community? History will be preserved." : "Withdraw your application?")) return;
+    if (!confirm(action.dataset.action === "cancel" ? "Cancel this community? History will be preserved." : "Leave this community?")) return;
     setBusy(action, true);
     try {
       const { error } = await supabase.rpc(action.dataset.action === "cancel" ? "cancel_community" : "withdraw_application", { p_community_id: c.id });
@@ -593,6 +598,7 @@ async function loadMine() {
   if (error) { $("#myCommunityList").textContent = errorMessage(error); return; }
   state.mine = data;
   renderMine();
+  setChatRooms(state.mine.filter(canChat).map((c) => ({ id: c.id, title: c.title, date: c.community_date, time: c.community_time })));
 }
 function renderMine() {
   $("#myCommunityList").innerHTML = state.mine.length ? state.mine.map(cardHtml).join("") : '<p class="empty-state">No communities yet.</p>';

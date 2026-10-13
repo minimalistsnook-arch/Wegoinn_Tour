@@ -423,6 +423,39 @@ h1 em, h2 em, h3 em { color: var(--copper); font-family: var(--font-serif); }
   color: var(--ink);
   font-size: 16px; /* prevents iOS zoom */
 }
+/* Native calendar control beside the editable stay date. */
+.stay-calendar {
+  position: relative;
+  display: grid;
+  place-items: center;
+  flex: 0 0 44px;
+  width: 44px;
+  height: 44px;
+  border-radius: var(--r-md);
+  color: var(--ink-2);
+}
+.stay-calendar:hover, .stay-calendar:focus-within {
+  background: var(--surface);
+  box-shadow: 0 0 0 2px var(--focus);
+}
+.field__box .stay-calendar input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+.stay-calendar input::-webkit-calendar-picker-indicator {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  cursor: pointer;
+}
+
 .field__box select {
   flex: 1;
   min-width: 0;
@@ -1547,3 +1580,37 @@ html:has(.layout :is(input, textarea, select):focus) { scroll-snap-type: none; }
 
 /* Inner scrollers keep their own scroll instead of handing it to the page. */
 #myCommunityList { overscroll-behavior: contain; }
+
+/* Live Chat categories: Global Chat + the community chats this guest hosts or joined. */
+.chat-rooms {
+  flex-shrink: 0;
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--line);
+  scrollbar-width: thin;
+}
+.chat-rooms[hidden] { display: none; }
+.chat-room {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 220px;
+  min-height: 36px;
+  padding: 0 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-pill);
+  background: var(--surface);
+  color: var(--ink-2);
+  font-size: 13px;
+  font-weight: 600;
+  transition: all .2s var(--ease);
+}
+.chat-room span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.chat-room small { flex-shrink: 0; color: var(--muted); font-size: 11px; font-weight: 500; }
+.chat-room .icon { width: 14px; height: 14px; flex-shrink: 0; }
+.chat-room.is-active { border-color: var(--pine); background: var(--pine); color: var(--on-accent); }
+.chat-room.is-active small { color: var(--on-accent-dim); }

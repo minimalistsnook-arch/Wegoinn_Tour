@@ -45,14 +45,26 @@
         <h2>Welcome in</h2>
         <p class="login-card__sub">Enter your stay dates, room number and nickname. Use the same details to return to your account.</p>
 
-        <label class="field">
-          <span class="field__label">Check in date</span>
-          <span class="field__box"><input name="check_in" type="text" placeholder="2026-10-13" maxlength="10" autocomplete="off" required /></span>
-        </label>
-        <label class="field">
-          <span class="field__label">Check out date</span>
-          <span class="field__box"><input name="check_out" type="text" placeholder="2026-10-25" maxlength="10" autocomplete="off" required /></span>
-        </label>
+        <div class="field">
+          <label class="field__label" for="check_in">Check in date</label>
+          <span class="field__box">
+            <input id="check_in" name="check_in" type="text" placeholder="2026-10-13" maxlength="10" autocomplete="off" required />
+            <span class="stay-calendar">
+              <i data-icon="calendar" aria-hidden="true"></i>
+              <input type="date" data-stay-calendar="check_in" aria-label="Check in date calendar" title="Check in date calendar" />
+            </span>
+          </span>
+        </div>
+        <div class="field">
+          <label class="field__label" for="check_out">Check out date</label>
+          <span class="field__box">
+            <input id="check_out" name="check_out" type="text" placeholder="2026-10-25" maxlength="10" autocomplete="off" required />
+            <span class="stay-calendar">
+              <i data-icon="calendar" aria-hidden="true"></i>
+              <input type="date" data-stay-calendar="check_out" aria-label="Check out date calendar" title="Check out date calendar" />
+            </span>
+          </span>
+        </div>
         <label class="field">
           <span class="field__label">Room number</span>
           <span class="field__box"><input name="room_number" type="text" inputmode="numeric" placeholder="701" maxlength="3" autocomplete="off" required /></span>
@@ -216,6 +228,7 @@
             <button id="chatBackBtn" type="button" class="pill-btn" hidden><i data-icon="left"></i> Global Chat</button>
             <button id="chatCloseFullscreen" type="button" class="icon-btn" aria-label="Close fullscreen chat" hidden><i data-icon="close"></i></button>
           </div>
+          <div id="chatRooms" class="chat-rooms" role="group" aria-label="My chats" hidden></div>
           <div id="chatMessages" class="chat-messages" aria-live="polite"></div>
           <form id="chatForm" class="chat-composer" novalidate>
             <textarea id="chatInput" rows="1" maxlength="500" placeholder="Type a message…" aria-label="Type a message"></textarea>

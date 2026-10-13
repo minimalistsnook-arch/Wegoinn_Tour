@@ -15,7 +15,7 @@ vi.mock('./supabase.js', () => {
   const channel = { on: vi.fn(() => channel), subscribe: vi.fn((cb) => { mock.subscribed = cb; return channel; }), track: vi.fn(), presenceState: () => ({}) };
   return { supabase: { from: vi.fn(chain), channel: vi.fn(() => channel), removeChannel: vi.fn() }, errorMessage: (err) => err.message };
 });
-import { initChat, openChat, onChatInsert, onChatDelete } from './chat.js';
+import { initChat, openChat, onChatInsert, onChatDelete, setChatRooms } from './chat.js';
 const html = readFileSync(`${process.cwd()}/wegoinn/index.html`, 'utf8');
 const settle = () => new Promise((r) => setTimeout(r, 20));
 const me = { id: 'me', nickname: 'Mina' };
@@ -144,4 +144,17 @@ it('keeps desktop chat inline and exits fullscreen when the viewport becomes wid
   expect(document.querySelector('#chat').classList.contains('is-fullscreen')).toBe(true);
   mock.mobile = false; window.dispatchEvent(new Event('resize'));
   expect(document.querySelector('#chat').classList.contains('is-fullscreen')).toBe(false);
+});
+
+it('lists joined community chats under Live Chat and switches rooms from there', async () => {
+  setChatRooms([{ id: 'c-1', title: 'Hongdae walk', date: '2099-01-01', time: '19:00:00' }]);
+  const rooms = document.querySelector('#chatRooms');
+  expect(rooms.hidden).toBe(false);
+  expect(rooms.textContent).toContain('Global Chat');
+  expect(rooms.textContent).toContain('Hongdae walk');
+  rooms.querySelector('[data-room="c-1"]').click(); await settle();
+  expect(document.querySelector('#chatTitle').textContent).toBe('Hongdae walk');
+  expect(rooms.querySelector('[data-room="c-1"]').getAttribute('aria-pressed')).toBe('true');
+  rooms.querySelector('[data-room=""]').click(); await settle();
+  expect(document.querySelector('#chatTitle').textContent).toBe('Global Chat');
 });

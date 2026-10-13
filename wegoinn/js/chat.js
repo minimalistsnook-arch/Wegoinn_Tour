@@ -3,7 +3,7 @@
 // Messages are stored in chat_messages and pushed through Supabase Realtime;
 // "online now" uses Realtime Presence.
 import { supabase, errorMessage } from "./supabase.js";
-import { $, escapeHtml, avatarHtml, formatDate, formatTime, toast, setBusy } from "./utils.js";
+import { $, escapeHtml, avatarHtml, formatDate, formatTime, formatDateKey, shortTime, toast, setBusy, communityIsLocked } from "./utils.js";
 import { detectLanguage } from "./translation.js";
 import { closeSheet } from "./sheet.js";
 import { icon } from "./icons.js";
@@ -24,6 +24,7 @@ const state = {
   pending: [],         // realtime rows that arrived while history was loading
   lastAt: null,        // created_at of the newest rendered message (for resync)
   channel: null,
+  rooms: [],           // community group chats this guest hosts or joined: { id, title, date, time }
 };
 
 const els = {};
@@ -45,6 +46,13 @@ export function initChat(me) {
     input: $("#chatInput"),
     send: $("#chatSend"),
     closeFullscreen: $("#chatCloseFullscreen"),
+    rooms: $("#chatRooms"),
+  });
+  els.rooms.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-room]");
+    if (!button) return;
+    const room = state.rooms.find((r) => r.id === button.dataset.room) || null;
+    if ((room?.id ?? null) !== (state.room?.id ?? null)) openChat(room);
   });
 
   els.back.addEventListener("click", () => openChat());
@@ -135,8 +143,30 @@ export async function openChat(room = null) {
   els.input.focus({ preventScroll: true });
 }
 
+/** Sets the community chats listed under Live Chat (called whenever "My communities" reloads). */
+export function setChatRooms(rooms) {
+  const upcoming = (r) => !communityIsLocked({ community_date: r.date, community_time: r.time, status: "active" });
+  const key = (r) => `${r.date}T${r.time}`;
+  // Upcoming first (soonest on top), then past ones (most recent first).
+  state.rooms = [...rooms].sort((a, b) => (upcoming(b) - upcoming(a)) || (upcoming(a) ? key(a).localeCompare(key(b)) : key(b).localeCompare(key(a))));
+  renderRooms();
+}
+
+function renderRooms() {
+  if (!els.rooms) return;
+  const current = state.room?.id ?? "";
+  const chip = (id, label, sub = "") => `
+    <button type="button" class="chat-room ${id === current ? "is-active" : ""}" data-room="${escapeHtml(id)}" aria-pressed="${id === current}">
+      ${label}${sub ? `<small>${escapeHtml(sub)}</small>` : ""}
+    </button>`;
+  els.rooms.innerHTML = chip("", `${icon("globe")} <span>Global Chat</span>`) + state.rooms.map((r) =>
+    chip(r.id, `${icon("users")} <span data-user-content>${escapeHtml(r.title)}</span>`, `${formatDateKey(r.date, { month: "short", day: "numeric" })} ${shortTime(r.time)}`)).join("");
+  els.rooms.hidden = false;
+}
+
 function showRoom(room) {
   state.room = room;
+  renderRooms();
   if (!room) setUnread(0);
   els.eyebrow.textContent = room ? "Group chat" : "Everyone at Wegoinn";
   els.title.textContent = room ? room.title : "Global Chat";
