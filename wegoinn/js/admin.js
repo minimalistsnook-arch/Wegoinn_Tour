@@ -289,6 +289,9 @@ async function openCommunityDrawer(id) {
       <div><dt>Reservation No. (community)</dt><dd>${secret(c.reservation_number)}</dd></div>
       <div><dt>Reservation No. (creator profile)</dt><dd>${secret(c.creator_profile_reservation_number)}</dd></div>
       <div><dt>Participants</dt><dd>${c.approved_count} / ${c.max_participants}</dd></div>
+      <div><dt>Minimum</dt><dd>${c.min_participants ?? 1}</dd></div>
+      <div><dt>Language</dt><dd>${escapeHtml(c.language || "—")}</dd></div>
+      <div><dt>Apply by</dt><dd>${escapeHtml(c.application_deadline ? `${String(c.application_deadline).replace("T", " ").slice(0, 16)} KST` : "—")}</dd></div>
       <div><dt>Pending</dt><dd>${c.pending_count}</dd></div>
       <div><dt>Fee</dt><dd>${escapeHtml(formatFee(c.participation_fee))}</dd></div>
       <div><dt>Created</dt><dd>${escapeHtml(formatDateTime(c.created_at))}</dd></div>

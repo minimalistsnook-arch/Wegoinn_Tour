@@ -101,6 +101,18 @@ export function koreaToday(now = new Date()) {
   const get = (key) => parts.find((p) => p.type === key).value;
   return `${get("year")}-${get("month")}-${get("day")}`;
 }
+// Languages a community can be held in (ISO 639-1; must match communities_language_check).
+export const COMMUNITY_LANGUAGES = ["en", "ko", "ja", "zh", "es", "fr", "de", "ru", "pt", "ar", "hi", "vi", "th", "id", "it"];
+export function languageName(code, locale = displayLocale()) {
+  if (!code) return "";
+  try { return new Intl.DisplayNames([locale], { type: "language" }).of(code) || code; } catch { return code; }
+}
+// Application deadline is stored as KST wall-clock time ("2026-10-12T18:00:00"); null = until the start.
+export function applicationsClosed(c, now = Date.now()) {
+  if (!c?.application_deadline) return false;
+  const deadline = new Date(`${String(c.application_deadline).replace(" ", "T").slice(0, 19)}+09:00`).getTime();
+  return Number.isFinite(deadline) && deadline <= now;
+}
 export function communityIsLocked(c, now = Date.now()) {
   if (!c) return true;
   const start = new Date(`${c.community_date}T${c.community_time}+09:00`).getTime();

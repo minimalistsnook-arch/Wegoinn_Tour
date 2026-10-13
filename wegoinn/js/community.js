@@ -3,6 +3,7 @@ import { supabase, errorMessage } from "./supabase.js";
 import {
   $, escapeHtml, avatarHtml, avatarTone, toDateKey, parseDateKey, formatDateKey,
   shortTime, formatFee, toast, setBusy, debounce, koreaToday, communityIsLocked, safeMapUrl, displayLocale,
+  COMMUNITY_LANGUAGES, languageName, applicationsClosed,
 } from "./utils.js";
 import { openSheet, closeSheet } from "./sheet.js";
 import { icon } from "./icons.js";
@@ -48,6 +49,9 @@ export function initCommunity(me) {
     feeAmount: $("#communityFee"),
     detail: $("#communityDetail"),
   });
+
+  els.form.elements.language.insertAdjacentHTML("beforeend", COMMUNITY_LANGUAGES
+    .map((code) => `<option value="${code}">${escapeHtml(languageName(code, code))}</option>`).join(""));
 
   $("#myCommunityList").addEventListener("click", onCardClick);
   document.addEventListener("site-language-change", () => { renderCalendar(); renderDay(); renderMine(); if (state.detailId) renderDetail(); });
@@ -118,6 +122,20 @@ function shiftMonth(delta) {
 const byDate = (key) => state.communities.filter((c) => c.community_date === key);
 const findCommunity = (id) => state.communities.find((c) => c.id === id) || state.mine.find((c) => c.id === id) || state.extra.get(id);
 const isFull = (c) => c.approved_count >= c.max_participants;
+// Communities created before the minimum existed default to 1.
+const minOf = (c) => c.min_participants ?? 1;
+const meetsMin = (c) => c.approved_count >= minOf(c);
+// "2026-10-12T18:00:00" → { date: "2026-10-12", time: "18:00" }
+const splitDeadline = (c) => {
+  const [date = "", time = ""] = String(c.application_deadline || "").replace(" ", "T").split("T");
+  return { date, time: time.slice(0, 5) };
+};
+function deadlineLabel(c) {
+  const { date, time } = splitDeadline(c);
+  return date ? `${formatDateKey(date, { month: "short", day: "numeric" })} ${time} KST` : "";
+}
+// Started without enough approved people: it does not go ahead.
+const notHeld = (c) => c.status !== "cancelled" && communityIsLocked(c) && !meetsMin(c);
 const isHost = (c) => c.creator_id === state.me.id;
 // Group chat: host and approved members (enforced again by chat_messages RLS).
 const canChat = (c) => c.status !== "cancelled" && (isHost(c) || state.myApplications.get(c.id) === "approved");
@@ -193,15 +211,24 @@ function renderDay() {
 function joinButton(c, { wide = false } = {}) {
   const status = state.myApplications.get(c.id);
   const cls = `btn ${wide ? "btn--block" : ""}`;
-  if (communityIsLocked(c)) return `<button type="button" class="${cls}" disabled>${c.status === "cancelled" ? "CANCELLED" : "PAST · READ ONLY"}</button>`;
+  if (communityIsLocked(c)) return `<button type="button" class="${cls}" disabled>${c.status === "cancelled" ? "CANCELLED" : notHeld(c) ? "NOT HELD · MINIMUM NOT MET" : "PAST · READ ONLY"}</button>`;
   if (isHost(c)) return `<button type="button" class="${cls} btn--dark" data-action="view" data-id="${c.id}">MANAGE</button>`;
   if (status) return `<button type="button" class="${cls} btn--status btn--${status}" disabled>${status.toUpperCase()}</button>`;
+  if (applicationsClosed(c)) return `<button type="button" class="${cls} btn--status btn--full" disabled>APPLICATIONS CLOSED</button>`;
   if (isFull(c)) return `<button type="button" class="${cls} btn--status btn--full" disabled>FULL</button>`;
   return `<button type="button" class="${cls} btn--primary" data-action="join" data-id="${c.id}">JOIN</button>`;
 }
 
 function capacityHtml(c) {
   const pct = Math.round((c.approved_count / c.max_participants) * 100);
+  const min = minOf(c);
+  const minPct = Math.round((min / c.max_participants) * 100);
+  let minStatus = "";
+  if (c.status !== "cancelled" && min > 1) {
+    if (meetsMin(c)) minStatus = `<span class="tag tag--approved">Confirmed</span>`;
+    else if (notHeld(c)) minStatus = `<span class="tag tag--declined">Not held</span>`;
+    else minStatus = `<span class="tag tag--pending">Not confirmed</span><span><b>${min - c.approved_count}</b> more needed</span>`;
+  }
   return `
     <div class="capacity ${isFull(c) ? "is-full" : ""}">
       <div class="capacity__label">
@@ -210,7 +237,9 @@ function capacityHtml(c) {
       </div>
       <div class="capacity__bar" role="progressbar" aria-valuemin="0" aria-valuemax="${c.max_participants}" aria-valuenow="${c.approved_count}">
         <span style="width:${pct}%"></span>
+        ${min > 1 ? `<i class="capacity__min-mark" style="left:${minPct}%" aria-hidden="true"></i>` : ""}
       </div>
+      ${min > 1 ? `<div class="capacity__min"><span>Min</span> <b>${min}</b> ${minStatus}</div>` : ""}
     </div>`;
 }
 
@@ -229,7 +258,7 @@ function cardHtml(c) {
           <h3 data-user-content>${escapeHtml(c.title)}</h3>
           <p>hosted by ${escapeHtml(host)}</p>
         </div>
-        ${communityIsLocked(c) ? `<span class="tag">${c.status === "cancelled" ? "Cancelled" : "Past"}</span>` : ""}
+        ${communityIsLocked(c) ? `<span class="tag">${c.status === "cancelled" ? "Cancelled" : notHeld(c) ? "Not held" : "Past"}</span>` : ""}
         ${isHost(c) ? `<span class="tag tag--host">Hosting</span>` : status ? `<span class="tag tag--${status}">${status}</span>` : ""}
       </div>
 
@@ -237,6 +266,8 @@ function cardHtml(c) {
         <li>${icon("calendar")} ${escapeHtml(formatDateKey(c.community_date, { weekday: "short", month: "short", day: "numeric" }))}</li>
         <li>${icon("clock")} ${escapeHtml(shortTime(c.community_time))} KST</li>
         <li>${icon("ticket")} ${escapeHtml(formatFee(c.participation_fee))}</li>
+        ${c.language ? `<li>${icon("globe")} ${escapeHtml(languageName(c.language))}</li>` : ""}
+        ${c.application_deadline ? `<li>${icon("clock")} <span>${applicationsClosed(c) ? "Applications closed" : "Apply by"}</span> ${escapeHtml(deadlineLabel(c))}</li>` : ""}
       </ul>
 
       ${capacityHtml(c)}
@@ -260,6 +291,7 @@ async function onCardClick(event) {
 async function requestJoin(communityId, button) {
   const c = findCommunity(communityId);
   if (!c || isHost(c) || communityIsLocked(c)) return;
+  if (applicationsClosed(c)) return toast("Applications are closed", "error");
   setBusy(button, true, "Sending…");
   // applicant_id and status='pending' come from DB defaults; RLS re-checks everything.
   const { error } = await supabase.from("community_applications").insert({ community_id: communityId });
@@ -298,11 +330,14 @@ async function renderDetail() {
       <div><small>Date</small><b>${escapeHtml(formatDateKey(c.community_date, { month: "short", day: "numeric" }))}</b></div>
       <div><small>Time</small><b>${escapeHtml(shortTime(c.community_time))} KST</b></div>
       <div><small>Fee</small><b>${escapeHtml(formatFee(c.participation_fee))}</b></div>
+      ${c.language ? `<div><small>Language</small><b>${escapeHtml(languageName(c.language))}</b></div>` : ""}
+      ${c.application_deadline ? `<div class="detail-facts__wide"><small>${applicationsClosed(c) ? "Applications closed" : "Apply by"}</small><b>${escapeHtml(deadlineLabel(c))}</b></div>` : ""}
     </div>
 
     ${capacityHtml(c)}
     <section class="detail-block"><h3>Meeting place</h3><p data-user-content>${escapeHtml(c.meeting_place || "Not specified")}</p>${mapLocation(c.map_url)?.coordinates ? `<p>${escapeHtml(mapLocation(c.map_url).coordinates)}</p>` : ""}${safeMapUrl(c.map_url) ? `<a class="btn btn--ghost" href="${escapeHtml(safeMapUrl(c.map_url))}" target="_blank" rel="noopener noreferrer">Open map</a>` : ""}</section>
-    ${communityIsLocked(c) ? `<p class="host-note">${c.status === "cancelled" ? "This community was cancelled. History is preserved." : "This community has started. History is read-only."}</p>` : ""}
+    ${communityIsLocked(c) ? `<p class="host-note">${c.status === "cancelled" ? "This community was cancelled. History is preserved." : notHeld(c) ? "This community didn't reach its minimum number of participants, so it won't go ahead." : "This community has started. History is read-only."}</p>` : ""}
+    ${!communityIsLocked(c) && !meetsMin(c) ? `<p class="host-note">Not confirmed yet. If fewer than the minimum are approved by the start time, this community won't go ahead.</p>` : ""}
     ${isHost(c) && !communityIsLocked(c) ? `<div class="community-card__actions"><button class="btn btn--ghost" type="button" data-action="edit" data-id="${c.id}">Edit community</button><button class="btn btn--soft" type="button" data-action="cancel" data-id="${c.id}">Cancel community</button></div>` : ""}
     ${canChat(c) ? `<button class="btn btn--dark btn--block" type="button" data-action="chat" data-id="${c.id}">${icon("message")} Open group chat</button>` : ""}
     ${!isHost(c) && !communityIsLocked(c) && ["pending","approved"].includes(state.myApplications.get(c.id)) ? `<button class="btn btn--ghost" type="button" data-action="withdraw" data-id="${c.id}">Withdraw application</button>` : ""}
@@ -348,6 +383,7 @@ async function renderHostPanel(c) {
     <div class="host-stats">
       <div><b>${c.approved_count}</b><small>Approved</small></div>
       <div><b>${pending.length}</b><small>Pending</small></div>
+      <div><b>${minOf(c)}</b><small>Min</small></div>
       <div><b>${c.max_participants}</b><small>Max</small></div>
     </div>
     ${full && pending.length ? `<p class="host-note">You've reached the maximum — no more approvals possible.</p>` : ""}
@@ -461,6 +497,7 @@ function openCreateForm() {
   updateMapPreview();
   f.elements.community_date.value = state.selectedDate;
   f.elements.community_date.min = today();
+  f.elements.deadline_date.min = today();
   toggleFeeAmount();
   openSheet("createSheet");
   setTimeout(() => f.elements.title.focus({ preventScroll: true }), 300);
@@ -473,11 +510,13 @@ async function submitCommunity(event) {
 
   if (v("map_url") && !v("meeting_place")) await updateMapPreview();
 
-  const required = ["community_date", "community_time", "title", "activity", "preferred_participants", "schedule", "max_participants", "meeting_place"];
+  const required = ["community_date", "community_time", "deadline_date", "deadline_time", "language", "title", "activity", "preferred_participants", "schedule", "max_participants", "min_participants", "meeting_place"];
   if (required.some((name) => !v(name))) return toast("Please fill in every field.", "error");
 
   const max = Number(v("max_participants"));
   if (!Number.isInteger(max) || max < 1 || max > 30) return toast("Maximum participants must be 1 – 30.", "error");
+  const min = Number(v("min_participants"));
+  if (!Number.isInteger(min) || min < 1 || min > max) return toast("Minimum participants must be between 1 and the maximum.", "error");
 
   const paid = f.elements.feeType.value === "paid";
   const fee = paid ? Number(v("participation_fee")) : 0;
@@ -486,11 +525,20 @@ async function submitCommunity(event) {
   if (communityIsLocked({ community_date: v("community_date"), community_time: v("community_time"), status: "active" })) return toast("Choose a future start time (KST)", "error");
   if (v("map_url") && !mapLink(v("map_url"))) return toast("Paste a Google, Naver or Kakao Maps link.", "error");
 
+  const deadline = `${v("deadline_date")}T${v("deadline_time")}`;
+  if (deadline > `${v("community_date")}T${v("community_time")}`) return toast("The application deadline must be on or before the start time.", "error");
+  const original = state.editId && splitDeadline(findCommunity(state.editId) || {});
+  const deadlineChanged = !original || `${original.date}T${original.time}` !== deadline;
+  if (deadlineChanged && applicationsClosed({ application_deadline: deadline })) return toast("Choose a future application deadline (KST)", "error");
+
   const submit = f.querySelector('[type="submit"]');
   setBusy(submit, true, "Creating…");
   const details = Object.fromEntries(["title", "activity", "preferred_participants", "schedule", "community_date", "community_time", "meeting_place", "map_url"].map((name) => [name, v(name)]));
   details.map_url = resolvedMap?.input === v("map_url") ? mapLink(resolvedMap.info.url) : mapLink(v("map_url"));
   details.max_participants = max;
+  details.min_participants = min;
+  details.application_deadline = deadline;
+  details.language = v("language");
   details.participation_fee = fee;
   let error;
   try {
@@ -525,6 +573,12 @@ function openEditForm(c) {
   $("#communityReservationField").hidden = true;
   els.form.elements.reservation_number.required = false;
   for (const key of ["title","activity","preferred_participants","schedule","community_date","community_time","max_participants","meeting_place","map_url"]) els.form.elements[key].value = c[key] ?? "";
+  els.form.elements.min_participants.value = minOf(c);
+  // Communities created before deadlines existed accepted requests until the start.
+  const { date, time } = c.application_deadline ? splitDeadline(c) : { date: c.community_date, time: shortTime(c.community_time) };
+  els.form.elements.deadline_date.value = date;
+  els.form.elements.deadline_time.value = time;
+  els.form.elements.language.value = c.language || "";
   updateMapPreview();
   els.form.elements.feeType.value = c.participation_fee > 0 ? "paid" : "free";
   toggleFeeAmount();

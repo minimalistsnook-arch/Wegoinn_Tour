@@ -83,6 +83,7 @@ describe('community workflows',()=>{
    expect(form.elements.title.value).toBe('Walk');
    expect(form.elements.reservation_number.required).toBe(false);
    form.elements.title.value='New walk';
+   form.elements.language.value='en';
    form.dispatchEvent(new Event('submit',{bubbles:true,cancelable:true})); await settle();
    expect(mock.rpc).toHaveBeenCalledWith('update_community',expect.objectContaining({p_community_id:community().id,p_details:expect.objectContaining({title:'New walk',meeting_place:'Lobby'})}));
  });
@@ -92,15 +93,57 @@ describe('community workflows',()=>{
    const form=document.querySelector('#communityForm');
    expect(document.querySelector('#communityReservationField').hidden).toBe(true);
    expect(form.elements.reservation_number.required).toBe(false);
-   for (const [key,value] of Object.entries({title:'Walk',activity:'Explore',preferred_participants:'Everyone',schedule:'Lobby',community_date:'2099-01-01',community_time:'19:00',max_participants:'8',meeting_place:'Lobby'})) form.elements[key].value=value;
+   for (const [key,value] of Object.entries({title:'Walk',activity:'Explore',preferred_participants:'Everyone',schedule:'Lobby',community_date:'2099-01-01',community_time:'19:00',deadline_date:'2099-01-01',deadline_time:'12:00',language:'ko',max_participants:'8',meeting_place:'Lobby'})) form.elements[key].value=value;
    form.dispatchEvent(new Event('submit',{bubbles:true,cancelable:true})); await settle();
    expect(mock.rpc).toHaveBeenCalledWith('create_community_v2',expect.objectContaining({p_reservation_number:null,p_details:expect.objectContaining({title:'Walk',meeting_place:'Lobby'})}));
+ });
+ it('sends the minimum participants and rejects a minimum above the maximum',async()=>{
+   await initCommunity(me);
+   document.querySelector('#openCreateCommunity').click();
+   const form=document.querySelector('#communityForm');
+   for (const [key,value] of Object.entries({title:'Walk',activity:'Explore',preferred_participants:'Everyone',schedule:'Lobby',community_date:'2099-01-01',community_time:'19:00',deadline_date:'2099-01-01',deadline_time:'12:00',language:'ko',max_participants:'8',min_participants:'9',meeting_place:'Lobby'})) form.elements[key].value=value;
+   form.dispatchEvent(new Event('submit',{bubbles:true,cancelable:true})); await settle();
+   expect(mock.rpc).not.toHaveBeenCalled();
+   form.elements.min_participants.value='3';
+   form.dispatchEvent(new Event('submit',{bubbles:true,cancelable:true})); await settle();
+   expect(mock.rpc).toHaveBeenCalledWith('create_community_v2',expect.objectContaining({p_details:expect.objectContaining({max_participants:8,min_participants:3})}));
+ });
+ it('marks communities below the minimum as unconfirmed, then not held once started',async()=>{
+   mock.communities=[community({min_participants:3})];
+   await initCommunity(me);
+   expect(document.querySelector('#myCommunityList').textContent).toContain('Not confirmed');
+   mock.communities=[community({min_participants:3,community_date:'2000-01-01'})];
+   await initCommunity(me);
+   expect(document.querySelector('#myCommunityList').textContent).toContain('NOT HELD · MINIMUM NOT MET');
+   document.querySelector('#myCommunityList [data-action=view]').click(); await settle();
+   expect(document.querySelector('#communityDetail').textContent).toContain("won't go ahead");
+ });
+ it('sends the deadline and language, and rejects a deadline after the start',async()=>{
+   await initCommunity(me);
+   document.querySelector('#openCreateCommunity').click();
+   const form=document.querySelector('#communityForm');
+   for (const [key,value] of Object.entries({title:'Walk',activity:'Explore',preferred_participants:'Everyone',schedule:'Lobby',community_date:'2099-01-01',community_time:'19:00',deadline_date:'2099-01-01',deadline_time:'20:00',language:'ja',max_participants:'8',min_participants:'1',meeting_place:'Lobby'})) form.elements[key].value=value;
+   form.dispatchEvent(new Event('submit',{bubbles:true,cancelable:true})); await settle();
+   expect(mock.rpc).not.toHaveBeenCalled();
+   form.elements.deadline_time.value='18:00';
+   form.dispatchEvent(new Event('submit',{bubbles:true,cancelable:true})); await settle();
+   expect(mock.rpc).toHaveBeenCalledWith('create_community_v2',expect.objectContaining({p_details:expect.objectContaining({application_deadline:'2099-01-01T18:00',language:'ja'})}));
+ });
+ it('shows the language and closes join requests after the deadline',async()=>{
+   const other={...me,id:'00000000-0000-0000-0000-000000000002'};
+   mock.communities=[community({language:'ko',application_deadline:'2000-01-01T00:00:00'})];
+   await initCommunity(other);
+   const list=document.querySelector('#communityList');
+   expect(list.textContent).toContain('Applications closed');
+   expect(list.querySelector('[data-action=join]')).toBeNull();
+   expect(list.textContent).toContain('APPLICATIONS CLOSED');
+   expect(list.textContent).toMatch(/Korean|한국어/);
  });
  it('keeps the draft and avoids duplicate creation when the RPC is missing',async()=>{
    await initCommunity(me);
    document.querySelector('#openCreateCommunity').click();
    const form=document.querySelector('#communityForm');
-   for (const [key,value] of Object.entries({title:'Walk',activity:'Explore',preferred_participants:'Everyone',schedule:'Lobby',community_date:'2099-01-01',community_time:'19:00',max_participants:'8',meeting_place:'Lobby'})) form.elements[key].value=value;
+   for (const [key,value] of Object.entries({title:'Walk',activity:'Explore',preferred_participants:'Everyone',schedule:'Lobby',community_date:'2099-01-01',community_time:'19:00',deadline_date:'2099-01-01',deadline_time:'12:00',language:'ko',max_participants:'8',meeting_place:'Lobby'})) form.elements[key].value=value;
    mock.rpc.mockResolvedValueOnce({data:null,error:{code:'PGRST202',message:'Could not find the function public.create_community_v2 in the schema cache'}});
    form.dispatchEvent(new Event('submit',{bubbles:true,cancelable:true})); await settle();
    expect(mock.rpc).toHaveBeenCalledTimes(1);
