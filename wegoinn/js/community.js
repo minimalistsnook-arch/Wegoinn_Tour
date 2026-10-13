@@ -211,9 +211,9 @@ function renderDay() {
        </div>`;
 }
 
-function joinButton(c, { wide = false } = {}) {
+function joinButton(c, { wide = false, compact = false } = {}) {
   const status = state.myApplications.get(c.id);
-  const cls = `btn ${wide ? "btn--block" : ""}`;
+  const cls = `btn ${wide ? "btn--block" : ""} ${compact ? "btn--sm community-row__action" : ""}`;
   if (communityIsLocked(c)) return `<button type="button" class="${cls}" disabled>${c.status === "cancelled" ? "CANCELLED" : notHeld(c) ? "NOT HELD · MINIMUM NOT MET" : "PAST · READ ONLY"}</button>`;
   if (isHost(c)) return `<button type="button" class="${cls} btn--dark" data-action="view" data-id="${c.id}">MANAGE</button>`;
   // Pending (from before instant join) and withdrawn guests can simply join again.
@@ -247,39 +247,49 @@ function capacityHtml(c) {
     </div>`;
 }
 
+// Compact list row: when/language · title · activity preview · host, people, fee, deadline · action.
+// The title button stretches over the whole row, so tapping anywhere opens the detail sheet.
 function cardHtml(c) {
   const d = parseDateKey(c.community_date);
   const host = c.creator?.nickname ?? "Guest";
   const status = state.myApplications.get(c.id);
+  const min = minOf(c);
+  let minTag = "";
+  if (c.status !== "cancelled" && min > 1) {
+    if (meetsMin(c)) minTag = `<span class="tag tag--approved">Confirmed</span>`;
+    else if (!notHeld(c)) minTag = `<span class="tag tag--pending">Not confirmed</span> <span><b>${min - c.approved_count}</b> more needed</span>`;
+  }
+  const tags = [
+    isNew("community", c.created_at, c.creator_id) && `<span class="tag tag--new">NEW</span>`,
+    communityIsLocked(c) && `<span class="tag">${c.status === "cancelled" ? "Cancelled" : notHeld(c) ? "Not held" : "Past"}</span>`,
+    isHost(c) ? `<span class="tag tag--host">Hosting</span>` : status && `<span class="tag tag--${status}">${statusLabel(status)}</span>`,
+  ].filter(Boolean).join("");
+  const action = isHost(c) ? "" : joinButton(c, { compact: true });
   return `
-    <article class="community-card tone--${avatarTone(c.title)}" data-id="${c.id}">
-      <div class="community-card__top">
-        <div class="date-chip" aria-hidden="true">
+    <article class="community-row" data-id="${c.id}">
+      <div class="community-row__body">
+        <div class="community-row__text">
+          <p class="community-row__cat">
+            <span>${escapeHtml(formatDateKey(c.community_date, { weekday: "short" }))} ${escapeHtml(shortTime(c.community_time))} KST${c.language ? ` · ${escapeHtml(languageName(c.language))}` : ""}</span>
+            ${tags}
+          </p>
+          <h3 class="community-row__title"><button type="button" data-action="view" data-id="${c.id}" data-user-content>${escapeHtml(c.title)}</button></h3>
+          <p class="community-row__preview" data-user-content>${escapeHtml(c.activity)}</p>
+        </div>
+        <div class="date-chip date-chip--sm tone--${avatarTone(c.title)}" aria-hidden="true">
           <small>${new Intl.DateTimeFormat(displayLocale(), { month: "short" }).format(d)}</small>
           <b>${d.getDate()}</b>
         </div>
-        <div class="community-card__heading">
-          <h3 data-user-content>${escapeHtml(c.title)}</h3>
-          <p>hosted by ${escapeHtml(host)}</p>
-        </div>
-        ${isNew("community", c.created_at, c.creator_id) ? `<span class="tag tag--new">NEW</span>` : ""}
-        ${communityIsLocked(c) ? `<span class="tag">${c.status === "cancelled" ? "Cancelled" : notHeld(c) ? "Not held" : "Past"}</span>` : ""}
-        ${isHost(c) ? `<span class="tag tag--host">Hosting</span>` : status ? `<span class="tag tag--${status}">${statusLabel(status)}</span>` : ""}
       </div>
-
-      <ul class="meta-list">
-        <li>${icon("calendar")} ${escapeHtml(formatDateKey(c.community_date, { weekday: "short", month: "short", day: "numeric" }))}</li>
-        <li>${icon("clock")} ${escapeHtml(shortTime(c.community_time))} KST</li>
-        <li>${icon("ticket")} ${escapeHtml(formatFee(c.participation_fee))}</li>
-        ${c.language ? `<li>${icon("globe")} ${escapeHtml(languageName(c.language))}</li>` : ""}
-        ${c.application_deadline ? `<li>${icon("clock")} <span>${applicationsClosed(c) ? "Applications closed" : "Apply by"}</span> ${escapeHtml(deadlineLabel(c))}</li>` : ""}
-      </ul>
-
-      ${capacityHtml(c)}
-
-      <div class="community-card__actions">
-        <button type="button" class="btn btn--ghost" data-action="view" data-id="${c.id}">VIEW</button>
-        ${joinButton(c)}
+      <div class="community-row__foot">
+        <ul class="community-row__meta">
+          <li class="community-row__host">${icon("user")}<span>${escapeHtml(host)}</span></li>
+          <li class="${isFull(c) ? "is-full" : ""}">${icon("users")} <b>${c.approved_count}/${c.max_participants}</b>${min > 1 ? ` <span>Min</span> ${min}` : ""}</li>
+          <li>${icon("ticket")} ${escapeHtml(formatFee(c.participation_fee))}</li>
+          ${c.application_deadline ? `<li>${icon("clock")} <span>${applicationsClosed(c) ? "Applications closed" : "Apply by"}</span> ${escapeHtml(deadlineLabel(c))}</li>` : ""}
+          ${minTag ? `<li>${minTag}</li>` : ""}
+        </ul>
+        ${action}
       </div>
     </article>`;
 }

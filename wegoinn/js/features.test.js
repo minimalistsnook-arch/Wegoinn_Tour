@@ -114,7 +114,7 @@ describe('community workflows',()=>{
    expect(document.querySelector('#myCommunityList').textContent).toContain('Not confirmed');
    mock.communities=[community({min_participants:3,community_date:'2000-01-01'})];
    await initCommunity(me);
-   expect(document.querySelector('#myCommunityList').textContent).toContain('NOT HELD · MINIMUM NOT MET');
+   expect(document.querySelector('#myCommunityList').textContent).toContain('Not held');
    document.querySelector('#myCommunityList [data-action=view]').click(); await settle();
    expect(document.querySelector('#communityDetail').textContent).toContain("won't go ahead");
  });
