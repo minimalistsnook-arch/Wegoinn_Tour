@@ -13,6 +13,8 @@ import { hydrateIcons } from "./icons.js";
 import { initTheme } from "./theme.js";
 import { loginErrorMessage } from "./login-errors.js";
 
+import { initOperatorAccounts, watchSessionActivity } from "./operator-accounts.js";
+
 hydrateIcons();
 initTheme();
 initSiteLanguage();
@@ -25,6 +27,7 @@ const storage = {
 };
 
 $("#logoutBtn").addEventListener("click", async () => {
+  await Promise.resolve(supabase.rpc("touch_guest_session", { p_sign_out: true })).catch(() => {});
   storage.set(SIGNED_IN, null);
   const { error } = await supabase.auth.signOut();
   if (error) toast(errorMessage(error), "error");
@@ -193,10 +196,13 @@ async function enterApp(profile) {
     new ResizeObserver(() => document.documentElement.style.setProperty("--measured-topbar-h", `${header.getBoundingClientRect().height}px`)).observe(header);
   }
   setupAutoHideHeader();
-  setupSectionNav();
+  initOperatorAccounts(profile);
+  watchSessionActivity();
+  setupSectionNav(profile);
   initNews(profile);
   initChat(profile);
   await Promise.all([initGuestbook(profile), initCommunity(profile), initNotifications()]);
+  document.addEventListener("operator-account-deleted", () => { scheduleFeedRefresh(); scheduleCommunityRefresh(); });
   subscribeRealtime();
 }
 
@@ -250,9 +256,9 @@ function setupAutoHideHeader() {
 
 // Community / 방명록 / Chat are separate pages: the tab (and the URL hash) decides which one is shown.
 // Links elsewhere can switch pages with location.hash = "chat" etc.
-function setupSectionNav() {
-  const links = $$(".section-nav a");
-  const sections = $$("[data-section]");
+function setupSectionNav(profile) {
+  const links = $$(".section-nav a").filter(a => !a.hidden);
+  const sections = $$("[data-section]").filter(s => !s.dataset.operatorOnly || profile.role === "admin");
   const ids = sections.map((s) => s.id);
   const showSection = (id, { scroll = true } = {}) => {
     if (!ids.includes(id)) id = ids[0];

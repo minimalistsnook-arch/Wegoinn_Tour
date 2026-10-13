@@ -1839,3 +1839,12 @@ html.chrome-hidden { scroll-padding-top: 12px; }
 .post__who, .post__sub, .comment, .comment__bubble, .comment__head { min-width: 0; }
 .post__photo img { display: block; max-width: 100%; height: auto; }
 .post__text, .comment__text { overflow-wrap: anywhere; word-break: break-word; }
+
+/* Operator controls remain usable on narrow phones. */
+.section-nav__inner { overflow-x: auto; }
+.account-row { padding: 1rem 0; border-bottom: 1px solid var(--line); overflow-wrap: anywhere; }
+.account-row p { margin: .5rem 0; }
+#operatorActionsSheet .btn { margin-top: .65rem; }
+#operatorActionsSheet [data-operator-summary] { overflow-wrap: anywhere; }
+
+.operator-account-info { display: block; color: var(--muted); font-size: .75rem; overflow-wrap: anywhere; margin: .4rem 0; }

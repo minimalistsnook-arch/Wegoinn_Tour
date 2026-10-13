@@ -33,6 +33,9 @@ const state = {
   unreadRooms: new Set(), // room ids ("" = Global Chat) with messages the guest hasn't opened yet
 };
 
+import { accountDetailHtml } from "./operator-accounts.js";
+import { installOperatorLongPress } from "./operator-longpress.js";
+
 const els = {};
 
 export function initChat(me) {
@@ -74,6 +77,13 @@ export function initChat(me) {
   });
   els.input.addEventListener("input", onInput);
   setupMobileChat();
+  installOperatorLongPress(els.list, me, 'article[data-msg-id]', element => {
+    const item = state.messages.get(element.dataset.msgId);
+    if (!item) return;
+    return { authorId: item.author_id, title: item.author?.nickname,
+      edit: () => element.querySelector('[data-edit-msg]')?.click(),
+      delete: () => element.querySelector('[data-delete-msg]')?.click() };
+  });
   els.list.addEventListener("click", onListClick);
   trackPresence();
   subscribeChat();
@@ -275,6 +285,7 @@ function messageHtml(row) {
   return `<article class="chat-msg ${mine ? "chat-msg--mine" : ""}" data-msg-id="${escapeHtml(row.id)}">
       ${mine ? "" : avatarHtml(nickname, "avatar--sm", state.avatars.get(row.author_id))}
       <div class="chat-msg__body">
+        ${admin ? accountDetailHtml(row.author_id) : ""}
         <div class="chat-msg__meta"><strong>${escapeHtml(mine ? "you" : nickname)}</strong><time>${escapeHtml(formatTime(row.created_at))}</time></div>
         <p class="chat-msg__text" data-user-content>${escapeHtml(row.content)}</p>
         <div class="chat-msg__actions">

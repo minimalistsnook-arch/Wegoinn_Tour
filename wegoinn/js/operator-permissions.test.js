@@ -20,11 +20,22 @@ async function login(admin,name,room='606'){
 async function as(p){await db.exec('reset role');await db.query("select set_config('request.jwt.claim.sub',$1,false)",[p.uid]);await db.exec('set role authenticated');}
 const guest=await login(false,'guest');const stranger=await login(false,'stranger');const admin=await login(true,'operator');
 await as(guest);
+await db.query('select touch_guest_session()');
+await assert.rejects(db.query('select * from admin_account_roster()'),/Admin only/);
+await assert.rejects(db.query('select admin_delete_account($1)',[stranger.id]),/Admin only/);
+await assert.rejects(db.query('select * from guest_activity'),/permission denied/);
 const post=(await db.query("insert into posts(content) values('original') returning id")).rows[0].id;
 const postComment=(await db.query("insert into comments(post_id,content) values($1,'Original comment') returning id",[post])).rows[0].id;
 const chat=(await db.query("insert into chat_messages(content) values('hello') returning id")).rows[0].id;
 await assert.rejects(db.query("select admin_update_content('post',$1,'tampered',null,false)",[post]),/Admin only/);
 await as(admin);
+const roster=(await db.query('select * from admin_account_roster()')).rows;
+assert.equal(roster.find(p=>p.id===guest.id).is_online,true);
+assert.equal(roster.find(p=>p.id===guest.id).check_in,'2099-10-13');
+assert.equal(roster.find(p=>p.id===admin.id).check_out,'999222');
+await assert.rejects(db.query('select admin_delete_account($1)',[admin.id]),/현재 로그인/);
+await as(guest);await db.query('select touch_guest_session(true)');await as(admin);
+assert.equal((await db.query('select * from admin_account_roster()')).rows.find(p=>p.id===guest.id).is_online,false);
 const community=(await db.query("select create_community_v2(null,$1::jsonb) id",[JSON.stringify({title:'Walk',activity:'Explore',preferred_participants:'All',schedule:'Plan',community_date:'2099-01-01',community_time:'19:00',max_participants:4,min_participants:1,participation_fee:0,meeting_place:'Lobby',map_url:'',language:'en',application_deadline:'2099-01-01T18:00'})])).rows[0].id;
 await db.exec('reset role');await db.query('update communities set creator_id=$1,community_date=$2,application_deadline=null where id=$3',[guest.id,'2000-01-01',community]);
 await as(guest);
@@ -54,6 +65,14 @@ await db.query('delete from communities where id=$1',[community]);
 assert.equal((await db.query('select count(*)::int n from community_comments')).rows[0].n,0);
 await db.query('delete from posts where id=$1',[post]);await db.query('delete from chat_messages where id=$1',[chat]);
 
+await as(stranger);
+const removedPost=(await db.query("insert into posts(content) values('delete with account') returning id")).rows[0].id;
+await db.query('select touch_guest_session()');
+await as(admin);await db.query('select admin_delete_account($1)',[stranger.id]);
+assert.equal((await db.query('select * from admin_account_roster()')).rows.some(p=>p.id===stranger.id),false);
+assert.equal((await db.query('select id from posts where id=$1',[removedPost])).rows.length,0);
+await as(stranger);assert.equal((await db.query('select current_profile_id() id')).rows[0].id,null);
+await assert.rejects(db.query("insert into posts(content) values('revoked')"),/row-level security/);
 } finally { await db.close(); }
 
 },20000);

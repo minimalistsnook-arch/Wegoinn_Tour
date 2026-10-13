@@ -30,6 +30,9 @@ const state = {
   imageLoading: false,
 };
 
+import { accountDetailHtml } from "./operator-accounts.js";
+import { installOperatorLongPress } from "./operator-longpress.js";
+
 const els = {};
 
 export function initGuestbook(me) {
@@ -61,6 +64,13 @@ export function initGuestbook(me) {
   els.fileInput.addEventListener("change", onPickImage);
   els.removeImage.addEventListener("click", clearDraftImage);
   els.publish.addEventListener("click", publishPost);
+  installOperatorLongPress(els.feed, me, 'article[data-post-id]', element => {
+    const item = state.posts.find(p => p.id === element.dataset.postId);
+    if (!item) return;
+    return { authorId: item.author_id, title: item.author?.nickname,
+      edit: () => element.querySelector('[data-action="edit-post"]')?.click(),
+      delete: () => element.querySelector('[data-action="delete-post"]')?.click() };
+  });
   els.feed.addEventListener("click", onFeedClick);
   els.feed.addEventListener("submit", onFeedSubmit);
   // Realtime refreshes wait while the guest is typing in the feed.
@@ -290,6 +300,7 @@ function postHtml(post) {
           </span>
         </div>
       </header>
+      ${me.role === "admin" ? accountDetailHtml(post.author_id) : ""}
 
       ${post.content ? `
         <div class="translatable">

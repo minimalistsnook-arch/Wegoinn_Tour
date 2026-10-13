@@ -32,6 +32,9 @@ const state = {
   detailId: null,         // community open in the detail sheet
 };
 
+import { accountDetailHtml } from "./operator-accounts.js";
+import { installOperatorLongPress } from "./operator-longpress.js";
+
 const els = {};
 
 export function initCommunity(me) {
@@ -62,6 +65,13 @@ export function initCommunity(me) {
   els.form.elements.language.insertAdjacentHTML("beforeend", COMMUNITY_LANGUAGES
     .map((code) => `<option value="${code}">${escapeHtml(languageName(code, code))}</option>`).join(""));
 
+  for (const list of [$('#myCommunityList'), els.list]) installOperatorLongPress(list, me, '.community-row[data-id]', element => {
+    const item = findCommunity(element.dataset.id);
+    if (!item) return;
+    return { authorId: item.creator_id, title: item.creator?.nickname,
+      edit: () => openEditForm(item),
+      delete: () => { const button = document.createElement('button'); button.dataset.action = 'delete-community'; button.dataset.id = item.id; return onDetailClick({ target: button }); } };
+  });
   $("#myCommunityList").addEventListener("click", onCardClick);
   state.languageHandler = () => { renderCalendar(); renderDay(); renderMine(); if (state.detailId) renderDetail(); };
   document.addEventListener("site-language-change", state.languageHandler);
@@ -292,6 +302,7 @@ function cardHtml(c) {
           <b>${d.getDate()}</b>
         </div>
       </div>
+      ${isAdmin() ? accountDetailHtml(c.creator_id) : ""}
       <div class="community-row__foot">
         <ul class="community-row__meta">
           <li class="community-row__host">${icon("user")}<span>${escapeHtml(host)}</span></li>

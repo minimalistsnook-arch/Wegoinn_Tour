@@ -126,6 +126,7 @@
         <a href="#community" class="is-active"><i data-icon="calendar"></i> Community <span id="communityNew" class="nav-badge" aria-label="New communities" hidden>0</span></a>
         <a href="#guestbook"><i data-icon="book"></i> 방명록 <span id="guestbookNew" class="nav-badge" aria-label="New posts" hidden>0</span></a>
         <a href="#chat"><i data-icon="message"></i> Chat <span id="chatUnread" class="nav-badge" hidden>0</span></a>
+        <a id="accountsTab" href="#accounts" hidden>계정 관리</a>
       </div>
     </nav>
 
@@ -244,6 +245,11 @@
           </form>
         </div>
       </section>
+      <section id="accounts" class="block" data-section data-operator-only="true" hidden>
+        <h2>계정 관리</h2><p>접속 중은 최근 90초 안에 화면에서 활동이 확인된 계정입니다. 앱 종료·통신 중단 시 최대 90초 뒤에 반영됩니다.</p>
+        <button id="refreshAccounts" class="btn btn--ghost" type="button">새로고침</button>
+        <p id="accountError" role="alert" hidden></p><div id="accountList" aria-live="polite"></div>
+      </section>
     </main>
 
     <footer class="app-foot">
@@ -252,6 +258,15 @@
     </footer>
   </div>
 
+  <div id="operatorActionsSheet" class="sheet" hidden>
+    <div class="sheet__backdrop" data-close-sheet></div>
+    <div class="sheet__panel" role="dialog" aria-modal="true" aria-labelledby="operatorActionsTitle" tabindex="-1">
+      <h2 id="operatorActionsTitle">운영자 관리</h2><p data-operator-summary data-user-content></p>
+      <button class="btn btn--primary btn--block" type="button" data-operator-edit>수정하기</button>
+      <button class="btn btn--soft btn--block" type="button" data-operator-delete>삭제하기</button>
+      <button class="btn btn--ghost btn--block" type="button" data-close-sheet>닫기</button>
+    </div>
+  </div>
   <!-- COMMUNITY DETAIL -->
   <div id="communitySheet" class="sheet" hidden>
     <div class="sheet__backdrop" data-close-sheet></div>
