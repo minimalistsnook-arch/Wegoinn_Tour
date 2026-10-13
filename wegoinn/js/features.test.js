@@ -216,3 +216,33 @@ it('switches interface language in both directions without translating nicknames
  expect(document.querySelector('#logoutBtn').textContent).toBe('Log out');
  vi.unstubAllGlobals();
 });
+
+
+describe('operator moderation',()=>{
+ it("can edit another host's historical community and enter its group chat",async()=>{
+  const c=community({creator_id:'other-host',community_date:'2000-01-01',application_deadline:'2000-01-01T18:00:00',language:'en'});
+  mock.communities=[c];
+  await initCommunity({...me,role:'admin'});
+  document.querySelector('#myCommunityList [data-action=view]').click();await settle();
+  expect(document.querySelector('#communityDetail [data-action=delete-community]')).not.toBeNull();
+  expect(document.querySelector('#communityDetail [data-action=chat]')).not.toBeNull();
+  document.querySelector('#communityDetail [data-action=edit]').click();
+  const form=document.querySelector('#communityForm');
+  expect(form.elements.community_date.min).toBe('');
+  form.elements.title.value='Corrected history';
+  form.dispatchEvent(new Event('submit',{bubbles:true,cancelable:true}));await settle();
+  expect(mock.rpc).toHaveBeenCalledWith('update_community',expect.objectContaining({p_community_id:c.id,p_details:expect.objectContaining({title:'Corrected history',community_date:'2000-01-01'})}));
+ });
+ it('offers post and comment editing to an operator while retaining the author',async()=>{
+  mock.posts=[{id:'other-post',author_id:'other',content:'Original',created_at:'2026-01-01T00:00:00Z',author:{nickname:'Guest'},comments:[{id:'comment-id',content:'Hello',author_id:'other',created_at:'2026-01-01T00:00:00Z',author:{nickname:'Guest'}}]}];
+  await initGuestbook({...me,role:'admin'});
+  document.querySelector('[data-action=toggle-comments]').click();
+  expect(document.querySelector('[data-action=edit-comment]')).not.toBeNull();
+  document.querySelector('[data-action=edit-post]').click();
+  const form=document.querySelector('#moderationForm');
+  form.elements.content.value='Corrected';
+  form.dispatchEvent(new Event('submit',{bubbles:true,cancelable:true}));await settle();
+  expect(mock.rpc).toHaveBeenCalledWith('admin_update_content',expect.objectContaining({p_kind:'post',p_id:'other-post',p_content:'Corrected'}));
+  expect(mock.posts[0].author_id).toBe('other');
+ });
+});

@@ -3,7 +3,7 @@ import { supabase, errorMessage } from './supabase.js';
 import { $, escapeHtml, formatDateTime, toast } from './utils.js';
 import { openSheet } from './sheet.js';
 let rows = [];
-const labels = { application: 'New participant', approved: 'Application approved', declined: 'Application declined', withdrawn: 'Application withdrawn', updated: 'Community updated', cancelled: 'Community cancelled' };
+const labels = { application: 'New participant', approved: 'Application approved', declined: 'Application declined', withdrawn: 'Application withdrawn', updated: 'Community updated', cancelled: 'Community cancelled', comment: 'New community comment' };
 export async function refreshNotifications() {
   const { data, error } = await supabase.from('notifications').select('id, kind, community_id, community_title, created_at, read_at').order('created_at', { ascending: false }).limit(100);
   if (error) {

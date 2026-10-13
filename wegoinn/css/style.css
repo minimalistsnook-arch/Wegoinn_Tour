@@ -1765,6 +1765,19 @@ html.chrome-hidden { scroll-padding-top: 12px; }
   .composer__bar .pill-btn, .composer__bar .btn { padding-inline: 12px; }
 }
 
+/* Operator moderation and replies. */
+.moderation-form { display: grid; gap: 18px; padding-top: 12px; }
+.moderation-form h2 { font-size: 24px; }
+.moderation-image { display: flex; align-items: center; gap: 8px; font-size: 14px; }
+.chat-msg__actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 5px 4px 0; }
+.chat-msg__actions .chat-msg__delete { opacity: .8; }
+.chat-reply-context { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-left: 3px solid var(--pine); background: var(--surface-soft); font-size: 12px; }
+.chat-reply-context span { flex: 1; min-width: 0; overflow-wrap: anywhere; white-space: pre-wrap; }
+#communityComments .comment-form { margin-top: 12px; }
+#communityComments .comment { margin-top: 12px; }
+
+.chat-history { flex-shrink: 0; align-self: center; padding: 10px; }
+
 /* Site language picker: in the red top bar (app) and next to Dark on the login screen. */
 .lang-select {
   min-width: 0;
@@ -1813,3 +1826,5 @@ html.chrome-hidden { scroll-padding-top: 12px; }
 .translation-status.is-shown { display: block; animation: status-fade 6s var(--ease) forwards; }
 @keyframes status-fade { 0%, 85% { opacity: 1; } 100% { opacity: 0; visibility: hidden; } }
 @media (max-width: 600px) { .lang-select { max-width: 84px; padding: 0 8px; font-size: 11px; } }
+
+.chat-msg__actions:empty { display: none; }

@@ -9,6 +9,8 @@ import { openSheet, closeSheet } from "./sheet.js";
 import { icon } from "./icons.js";
 import { openChat, setChatRooms } from "./chat.js";
 import { isNew } from "./news.js";
+import { mountCommunityComments } from "./community-comments.js";
+import { moderationError } from "./moderation.js";
 
 const COMMUNITY_COLUMNS = `
   *,
@@ -25,6 +27,8 @@ const state = {
   selectedDate: today(),
   communities: [],        // everything in the visible grid range
   myApplications: new Map(), // community_id → status
+  languageHandler: null,
+  refreshTimer: null,
   detailId: null,         // community open in the detail sheet
 };
 
@@ -32,6 +36,10 @@ const els = {};
 
 export function initCommunity(me) {
   state.me = me;
+  state.detailId = null;
+  state.extra.clear();
+  if (state.languageHandler) document.removeEventListener("site-language-change", state.languageHandler);
+  if (state.refreshTimer) clearInterval(state.refreshTimer);
   const now = parseDateKey(today());
   state.cursor = new Date(now.getFullYear(), now.getMonth(), 1);
 
@@ -55,8 +63,9 @@ export function initCommunity(me) {
     .map((code) => `<option value="${code}">${escapeHtml(languageName(code, code))}</option>`).join(""));
 
   $("#myCommunityList").addEventListener("click", onCardClick);
-  document.addEventListener("site-language-change", () => { renderCalendar(); renderDay(); renderMine(); if (state.detailId) renderDetail(); });
-  setInterval(() => { renderDay(); renderMine(); if (state.detailId) renderDetail(); }, 30000);
+  state.languageHandler = () => { renderCalendar(); renderDay(); renderMine(); if (state.detailId) renderDetail(); };
+  document.addEventListener("site-language-change", state.languageHandler);
+  state.refreshTimer = setInterval(() => { renderDay(); renderMine(); if (state.detailId) renderDetail(); }, 30000);
   els.prev.addEventListener("click", () => shiftMonth(-1));
   els.next.addEventListener("click", () => shiftMonth(1));
   els.grid.addEventListener("click", onGridClick);
@@ -138,8 +147,10 @@ function deadlineLabel(c) {
 // Started without enough approved people: it does not go ahead.
 const notHeld = (c) => c.status !== "cancelled" && communityIsLocked(c) && !meetsMin(c);
 const isHost = (c) => c.creator_id === state.me.id;
+const isAdmin = () => state.me?.role === "admin";
+const canEdit = (c) => isAdmin() || (isHost(c) && !communityIsLocked(c));
 // Group chat: host and approved members (enforced again by chat_messages RLS).
-const canChat = (c) => c.status !== "cancelled" && (isHost(c) || state.myApplications.get(c.id) === "approved");
+const canChat = (c) => isAdmin() || (c.status !== "cancelled" && (isHost(c) || state.myApplications.get(c.id) === "approved"));
 // "approved" is shown as "joined": JOIN no longer waits for the host.
 const statusLabel = (status) => (status === "approved" ? "joined" : status);
 
@@ -214,8 +225,8 @@ function renderDay() {
 function joinButton(c, { wide = false, compact = false } = {}) {
   const status = state.myApplications.get(c.id);
   const cls = `btn ${wide ? "btn--block" : ""} ${compact ? "btn--sm community-row__action" : ""}`;
-  if (communityIsLocked(c)) return `<button type="button" class="${cls}" disabled>${c.status === "cancelled" ? "CANCELLED" : notHeld(c) ? "NOT HELD · MINIMUM NOT MET" : "PAST · READ ONLY"}</button>`;
-  if (isHost(c)) return `<button type="button" class="${cls} btn--dark" data-action="view" data-id="${c.id}">MANAGE</button>`;
+  if (!isAdmin() && communityIsLocked(c)) return `<button type="button" class="${cls}" disabled>${c.status === "cancelled" ? "CANCELLED" : notHeld(c) ? "NOT HELD · MINIMUM NOT MET" : "PAST · READ ONLY"}</button>`;
+  if (isHost(c) || isAdmin()) return `<button type="button" class="${cls} btn--dark" data-action="view" data-id="${c.id}">MANAGE</button>`;
   // Pending (from before instant join) and withdrawn guests can simply join again.
   if (status === "approved" || status === "declined") return `<button type="button" class="${cls} btn--status btn--${status}" disabled>${statusLabel(status).toUpperCase()}</button>`;
   if (applicationsClosed(c)) return `<button type="button" class="${cls} btn--status btn--full" disabled>APPLICATIONS CLOSED</button>`;
@@ -329,6 +340,7 @@ function openDetail(id) {
 }
 
 async function renderDetail() {
+  if (document.activeElement?.closest("#communityComments") && document.activeElement.value) return;
   const c = findCommunity(state.detailId);
   if (!c) {
     els.detail.innerHTML = `<div class="empty-state">This community is no longer available.</div>`;
@@ -353,9 +365,9 @@ async function renderDetail() {
 
     ${capacityHtml(c)}
     <section class="detail-block"><h3>Meeting place</h3><p data-user-content>${escapeHtml(c.meeting_place || "Not specified")}</p>${mapLocation(c.map_url)?.coordinates ? `<p>${escapeHtml(mapLocation(c.map_url).coordinates)}</p>` : ""}${safeMapUrl(c.map_url) ? `<a class="btn btn--ghost" href="${escapeHtml(safeMapUrl(c.map_url))}" target="_blank" rel="noopener noreferrer">Open map</a>` : ""}</section>
-    ${communityIsLocked(c) ? `<p class="host-note">${c.status === "cancelled" ? "This community was cancelled. History is preserved." : notHeld(c) ? "This community didn't reach its minimum number of participants, so it won't go ahead." : "This community has started. History is read-only."}</p>` : ""}
+    ${communityIsLocked(c) && !isAdmin() ? `<p class="host-note">${c.status === "cancelled" ? "This community was cancelled. History is preserved." : notHeld(c) ? "This community didn't reach its minimum number of participants, so it won't go ahead." : "This community has started. History is read-only."}</p>` : ""}
     ${!communityIsLocked(c) && !meetsMin(c) ? `<p class="host-note">Not confirmed yet. If fewer than the minimum are approved by the start time, this community won't go ahead.</p>` : ""}
-    ${isHost(c) && !communityIsLocked(c) ? `<div class="community-card__actions"><button class="btn btn--ghost" type="button" data-action="edit" data-id="${c.id}">Edit community</button><button class="btn btn--soft" type="button" data-action="cancel" data-id="${c.id}">Cancel community</button></div>` : ""}
+    ${canEdit(c) ? `<div class="community-card__actions"><button class="btn btn--ghost" type="button" data-action="edit" data-id="${c.id}">Edit community</button>${isAdmin() ? `<button class="btn btn--soft" type="button" data-action="delete-community" data-id="${c.id}">Delete community</button>` : `<button class="btn btn--soft" type="button" data-action="cancel" data-id="${c.id}">Cancel community</button>`}</div>` : ""}
     ${canChat(c) ? `<button class="btn btn--dark btn--block" type="button" data-action="chat" data-id="${c.id}">${icon("message")} Open group chat</button>` : ""}
     ${!isHost(c) && !communityIsLocked(c) && ["pending","approved"].includes(state.myApplications.get(c.id)) ? `<button class="btn btn--ghost" type="button" data-action="withdraw" data-id="${c.id}">Leave community</button>` : ""}
 
@@ -364,10 +376,13 @@ async function renderDetail() {
     <section class="detail-block"><h3>Plan</h3><p data-user-content class="detail-plan">${escapeHtml(c.schedule)}</p></section>
     ${c.participation_fee > 0 ? `<p class="fee-note">${icon("ticket")} The fee is paid directly to the host — not through this app.</p>` : ""}
 
+    <section id="communityComments" class="detail-block comments"><span class="loader"></span></section>
+
     ${isHost(c) ? `<div id="hostPanel" class="host-panel"><div class="loader"></div></div>`
-                : `<div class="detail-cta">${joinButton(c, { wide: true })}</div>`}
+                : isAdmin() ? "" : `<div class="detail-cta">${joinButton(c, { wide: true })}</div>`}
   `;
 
+  mountCommunityComments(els.detail.querySelector("#communityComments"), c, state.me);
   if (isHost(c)) renderHostPanel(c);
 }
 
@@ -425,9 +440,24 @@ async function renderHostPanel(c) {
 
 async function onDetailClick(event) {
   const action = event.target.closest("[data-action]");
+  if (action?.dataset.action === "delete-community" && isAdmin()) {
+    if (!confirm("Delete this community? Its comments, applications and group chat will also be deleted.")) return;
+    setBusy(action, true);
+    try {
+      const { data, error } = await supabase.from("communities").delete().eq("id", action.dataset.id).select("id");
+      if (error) throw error;
+      if (!data?.length) throw new Error("You do not have permission to delete this community.");
+      state.extra.delete(action.dataset.id);
+      closeSheet("communitySheet");
+      state.detailId = null;
+      await loadMonth();
+      toast("Community deleted.");
+    } catch (error) { toast(moderationError(error), "error"); } finally { setBusy(action, false); }
+    return;
+  }
   if (action && ["edit", "cancel", "withdraw"].includes(action.dataset.action)) {
     const c = findCommunity(action.dataset.id);
-    if (!c || communityIsLocked(c)) return toast("This community is read-only", "error");
+    if (!c || (communityIsLocked(c) && !(isAdmin() && action.dataset.action === "edit"))) return toast("This community is read-only", "error");
     if (action.dataset.action === "edit") return openEditForm(c);
     if (!confirm(action.dataset.action === "cancel" ? "Cancel this community? History will be preserved." : "Leave this community?")) return;
     setBusy(action, true);
@@ -539,14 +569,14 @@ async function submitCommunity(event) {
   const fee = paid ? Number(v("participation_fee")) : 0;
   if (paid && (!Number.isInteger(fee) || fee <= 0)) return toast("Please enter the fee in KRW.", "error");
 
-  if (communityIsLocked({ community_date: v("community_date"), community_time: v("community_time"), status: "active" })) return toast("Choose a future start time (KST)", "error");
+  if (!(isAdmin() && state.editId) && communityIsLocked({ community_date: v("community_date"), community_time: v("community_time"), status: "active" })) return toast("Choose a future start time (KST)", "error");
   if (v("map_url") && !mapLink(v("map_url"))) return toast("Paste a Google, Naver or Kakao Maps link.", "error");
 
   const deadline = `${v("deadline_date")}T${v("deadline_time")}`;
   if (deadline > `${v("community_date")}T${v("community_time")}`) return toast("The application deadline must be on or before the start time.", "error");
   const original = state.editId && splitDeadline(findCommunity(state.editId) || {});
   const deadlineChanged = !original || `${original.date}T${original.time}` !== deadline;
-  if (deadlineChanged && applicationsClosed({ application_deadline: deadline })) return toast("Choose a future application deadline (KST)", "error");
+  if (!(isAdmin() && state.editId) && deadlineChanged && applicationsClosed({ application_deadline: deadline })) return toast("Choose a future application deadline (KST)", "error");
 
   const submit = f.querySelector('[type="submit"]');
   setBusy(submit, true, "Creating…");
@@ -581,10 +611,14 @@ async function submitCommunity(event) {
 }
 
 function openEditForm(c) {
-  if (!isHost(c) || communityIsLocked(c)) return;
+  if (!canEdit(c)) return;
   closeSheet("communitySheet");
   openCreateForm();
   state.editId = c.id;
+  if (isAdmin()) {
+    els.form.elements.community_date.min = "";
+    els.form.elements.deadline_date.min = "";
+  }
   $("#createTitle").textContent = "Edit community";
   els.form.querySelector("[type=submit]").textContent = "Save changes";
   $("#communityReservationField").hidden = true;
@@ -605,7 +639,7 @@ function openEditForm(c) {
 async function loadMine() {
   const ids = [...state.myApplications.keys()];
   let query = supabase.from("communities").select(COMMUNITY_COLUMNS).order("community_date", { ascending: false }).order("community_time", { ascending: false });
-  query = ids.length ? query.or(`creator_id.eq.${state.me.id},id.in.(${ids.join(",")})`) : query.eq("creator_id", state.me.id);
+  if (!isAdmin()) query = ids.length ? query.or(`creator_id.eq.${state.me.id},id.in.(${ids.join(",")})`) : query.eq("creator_id", state.me.id);
   const { data, error } = await query;
   if (error) { $("#myCommunityList").textContent = errorMessage(error); return; }
   state.mine = data;

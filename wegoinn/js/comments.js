@@ -25,6 +25,7 @@ function commentHtml(comment, me, { isReply }) {
         <div class="comment__actions">
           ${translationToggleHtml()}
           ${isReply ? "" : `<button type="button" class="link-btn" data-action="reply" data-comment-id="${comment.id}">${icon("reply")} Reply</button>`}
+          ${me?.role === "admin" ? `<button type="button" class="link-btn" data-action="edit-comment" data-comment-id="${comment.id}">Edit comment</button>` : ""}
           ${canDelete(comment, me) ? `<button type="button" class="link-btn link-btn--danger" data-action="delete-comment" data-comment-id="${comment.id}">Delete</button>` : ""}
         </div>
       </div>

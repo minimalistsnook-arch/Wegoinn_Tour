@@ -1,10 +1,10 @@
 import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest';
 import { readFileSync } from 'node:fs';
-const mock = vi.hoisted(() => ({ mobile: false, rows: [], inserted: null, query: [], subscribed: null }));
+const mock = vi.hoisted(() => ({ mobile: false, rows: [], inserted: null, query: [], subscribed: null, rpc:vi.fn() }));
 vi.mock('./supabase.js', () => {
   const chain = () => {
     const c = {};
-    for (const op of ['select', 'is', 'eq', 'gte', 'order', 'delete']) c[op] = vi.fn((...args) => { mock.query.push([op, ...args]); return c; });
+    for (const op of ['select', 'is', 'eq', 'gte', 'order', 'delete', 'or']) c[op] = vi.fn((...args) => { mock.query.push([op, ...args]); return c; });
     c.limit = vi.fn(() => c);
     c.insert = vi.fn((row) => { mock.inserted = row; return c; });
     c.single = vi.fn(async () => ({ data: { id: 'm-new', author_id: 'me', created_at: '2026-10-09T10:00:00Z', author: { nickname: 'Mina' }, ...mock.inserted }, error: null }));
@@ -13,9 +13,9 @@ vi.mock('./supabase.js', () => {
     return c;
   };
   const channel = { on: vi.fn(() => channel), subscribe: vi.fn((cb) => { mock.subscribed = cb; return channel; }), track: vi.fn(), presenceState: () => ({}) };
-  return { supabase: { from: vi.fn(chain), channel: vi.fn(() => channel), removeChannel: vi.fn() }, errorMessage: (err) => err.message };
+  return { supabase: { rpc: mock.rpc, from: vi.fn(chain), channel: vi.fn(() => channel), removeChannel: vi.fn() }, errorMessage: (err) => err.message };
 });
-import { initChat, openChat, onChatInsert, onChatDelete, setChatRooms } from './chat.js';
+import { initChat, openChat, onChatInsert, onChatDelete, onChatUpdate, setChatRooms } from './chat.js';
 const html = readFileSync(`${process.cwd()}/wegoinn/index.html`, 'utf8');
 const settle = () => new Promise((r) => setTimeout(r, 20));
 const me = { id: 'me', nickname: 'Mina' };
@@ -23,6 +23,8 @@ const me = { id: 'me', nickname: 'Mina' };
 let viewport;
 beforeEach(async () => {
   mock.mobile = false;
+  me.role = "guest";
+  mock.rpc.mockReset(); mock.rpc.mockResolvedValue({error:null});
   vi.stubGlobal('matchMedia', () => ({ get matches() { return mock.mobile; } }));
   vi.stubGlobal('requestAnimationFrame', callback => { callback(); return 1; });
   viewport = new EventTarget();
@@ -161,4 +163,40 @@ it('lists joined community chats under Live Chat and switches rooms from there',
   expect(rooms.querySelector('[data-room="c-1"] .chat-room__dot')).not.toBeNull();
   rooms.querySelector('[data-room="c-1"]').click(); await settle();
   expect(rooms.querySelector('[data-room="c-1"] .chat-room__dot')).toBeNull();
+});
+
+
+it("lets an operator edit, delete and reply to another guest's message",async()=>{
+ me.role='admin';await openChat();
+ expect(document.querySelector('[data-delete-msg="m1"]')).not.toBeNull();
+ document.querySelector('[data-edit-msg="m1"]').click();
+ const form=document.querySelector('#moderationForm');
+ form.elements.content.value='Corrected message';form.dispatchEvent(new Event('submit',{bubbles:true,cancelable:true}));await settle();
+ expect(mock.rpc).toHaveBeenCalledWith('admin_update_content',expect.objectContaining({p_kind:'chat',p_id:'m1',p_content:'Corrected message'}));
+ document.querySelector('[data-reply-msg="m1"]').click();
+ expect(document.querySelector('#chatReplyContext').hidden).toBe(false);
+ document.querySelector('#chatInput').value='Please check with reception.';
+ document.querySelector('#chatForm').requestSubmit();await settle();
+ expect(mock.inserted.content).toContain('운영자 답글 → Emma');
+ expect(mock.inserted.content).toContain('Please check with reception.');
+ expect(document.querySelector('#chatReplyContext').hidden).toBe(true);
+});
+
+it('reflects message edits received through realtime without changing the author',()=>{
+ onChatUpdate({new:{id:'m1',content:'Updated by staff',author_id:'u2'}});
+ expect(document.querySelector('[data-msg-id="m1"] .chat-msg__text').textContent).toBe('Updated by staff');
+ expect(document.querySelector('[data-msg-id="m1"] strong').textContent).toBe('Emma');
+});
+
+
+it('allows an operator to load and moderate older chat history',async()=>{
+ me.role='admin';
+ mock.rows=Array.from({length:100},(_,n)=>({id:`m-${String(n).padStart(3,'0')}`,community_id:null,author_id:'u2',content:`Message ${n}`,created_at:`2026-10-09T09:${String(Math.floor(n/60)).padStart(2,'0')}:${String(n%60).padStart(2,'0')}Z`,author:{nickname:'Emma'}}));
+ await openChat();
+ expect(document.querySelector('#chatLoadEarlier').hidden).toBe(false);
+ mock.rows=[{id:'older',community_id:null,author_id:'u2',content:'Older history',created_at:'2026-10-08T09:00:00Z',author:{nickname:'Emma'}}];
+ document.querySelector('#chatLoadEarlier').click();await settle();
+ expect(mock.query.some(q=>q[0]==='or' && q[1].includes('created_at.lt.'))).toBe(true);
+ expect(document.querySelector('[data-msg-id="older"] [data-edit-msg]')).not.toBeNull();
+ expect(document.querySelector('#chatLoadEarlier').hidden).toBe(true);
 });

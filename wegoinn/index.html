@@ -235,7 +235,9 @@
             <button id="chatCloseFullscreen" type="button" class="icon-btn" aria-label="Close fullscreen chat" hidden><i data-icon="close"></i></button>
           </div>
           <div id="chatRooms" class="chat-rooms" role="group" aria-label="My chats" hidden></div>
+          <button id="chatLoadEarlier" type="button" class="link-btn chat-history" hidden>Load earlier messages</button>
           <div id="chatMessages" class="chat-messages" aria-live="polite"></div>
+          <div id="chatReplyContext" class="chat-reply-context" hidden><span id="chatReplyLabel" data-user-content></span><button id="chatCancelReply" type="button" class="link-btn">Cancel</button></div>
           <form id="chatForm" class="chat-composer" novalidate>
             <textarea id="chatInput" rows="1" maxlength="500" placeholder="Type a message…" aria-label="Type a message"></textarea>
             <button id="chatSend" class="btn btn--primary chat-composer__send" type="submit" aria-label="Send" disabled><i data-icon="send"></i></button>
@@ -362,6 +364,21 @@
   <div id="notificationSheet" class="sheet" hidden><div class="sheet__backdrop" data-close-sheet></div><div class="sheet__panel" role="dialog" aria-modal="true" aria-labelledby="notificationTitle" tabindex="-1"><button class="icon-btn sheet__close" type="button" data-close-sheet aria-label="Close">×</button><h2 id="notificationTitle">Notifications</h2><p>Notifications are saved here. Push notifications while the site is closed are not connected.</p><button id="markNotificationsRead" class="btn btn--ghost" type="button">Mark shown as read</button><div id="notificationList"></div></div></div>
 
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <div id="moderationSheet" class="sheet" hidden>
+    <div class="sheet__backdrop" data-close-sheet></div>
+    <div class="sheet__panel" role="dialog" aria-modal="true" aria-labelledby="moderationTitle" tabindex="-1">
+      <span class="sheet__grabber" aria-hidden="true"></span>
+      <button class="icon-btn sheet__close" type="button" data-close-sheet aria-label="Close"><i data-icon="close"></i></button>
+      <form id="moderationForm" class="moderation-form" novalidate>
+        <h2 id="moderationTitle">Edit post</h2>
+        <label class="field"><span class="field__label">Content</span><textarea name="content" class="field__area" rows="6" maxlength="1000"></textarea></label>
+        <label id="moderationImageOption" class="moderation-image" hidden><input name="remove_image" type="checkbox" /> Remove photo</label>
+        <p id="moderationError" class="login-error" role="alert" hidden></p>
+        <button type="submit" class="btn btn--dark btn--block">Save changes</button>
+      </form>
+    </div>
+  </div>
 
   <script type="module" src="js/app.js"></script>
 </body>

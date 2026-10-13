@@ -5,6 +5,7 @@ import { detectLanguage, translationToggleHtml, handleTranslationToggle } from "
 import { commentsSectionHtml, addComment, deleteComment } from "./comments.js";
 import { icon } from "./icons.js";
 import { isNew } from "./news.js";
+import { openContentEditor } from "./moderation.js";
 
 const FEED_LIMIT = 20;
 
@@ -306,6 +307,7 @@ function postHtml(post) {
           aria-label="${commentCount} ${commentCount === 1 ? "comment" : "comments"}">
           ${icon("chat")} <span>${commentCount}</span>
         </button>
+        ${me.role === "admin" ? `<button type="button" class="icon-btn icon-btn--quiet" data-action="edit-post" aria-label="Edit post">${icon("pen")}</button>` : ""}
         ${canDelete ? `<button type="button" class="icon-btn icon-btn--quiet post__delete" data-action="delete-post" aria-label="Delete post">${icon("trash")}</button>` : ""}
       </footer>
 
@@ -350,6 +352,16 @@ async function onFeedClick(event) {
       rerenderPost(postId);
       break;
 
+    case "edit-post": {
+      const item = state.posts.find(post => post.id === postId);
+      if (item) openContentEditor({ me: state.me, kind: "post", item, onSaved: loadFeed });
+      break;
+    }
+    case "edit-comment": {
+      const item = state.posts.find(post => post.id === postId)?.comments?.find(comment => comment.id === target.dataset.commentId);
+      if (item) openContentEditor({ me: state.me, kind: "comment", item, onSaved: loadFeed });
+      break;
+    }
     case "delete-comment":
       if (!confirm("Delete this comment? Replies to it will be removed too.")) return;
       if (await deleteComment(target.dataset.commentId)) {

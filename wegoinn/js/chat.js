@@ -7,6 +7,7 @@ import { $, escapeHtml, avatarHtml, formatDate, formatTime, formatDateKey, short
 import { detectLanguage } from "./translation.js";
 import { closeSheet } from "./sheet.js";
 import { icon } from "./icons.js";
+import { openContentEditor, moderationError } from "./moderation.js";
 
 const HISTORY_LIMIT = 100;
 const CHAT_COLUMNS = "id, community_id, author_id, content, created_at, author:profiles ( nickname, avatar_url )";
@@ -15,6 +16,10 @@ const state = {
   me: null,
   room: null,          // null = Global Chat, otherwise { id, title }
   visible: false,      // is the Chat section on screen?
+  hasEarlier: false,
+  earlierBusy: false,
+  messages: new Map(),
+  replyTo: null,
   ids: new Set(),      // message ids currently rendered
   lastDay: "",
   unread: 0,
@@ -48,6 +53,7 @@ export function initChat(me) {
     send: $("#chatSend"),
     closeFullscreen: $("#chatCloseFullscreen"),
     rooms: $("#chatRooms"),
+    earlier: $("#chatLoadEarlier"),
   });
   els.rooms.addEventListener("click", (event) => {
     const button = event.target.closest("[data-room]");
@@ -56,6 +62,8 @@ export function initChat(me) {
     if ((room?.id ?? null) !== (state.room?.id ?? null)) openChat(room);
   });
 
+  els.earlier.addEventListener("click", loadEarlierMessages);
+  $("#chatCancelReply").addEventListener("click", clearReply);
   els.back.addEventListener("click", () => openChat());
   els.form.addEventListener("submit", sendMessage);
   els.input.addEventListener("keydown", (event) => {
@@ -166,6 +174,7 @@ function renderRooms() {
 }
 
 function showRoom(room) {
+  clearReply();
   state.room = room;
   state.unreadRooms.delete(room?.id ?? "");
   renderRooms();
@@ -185,16 +194,20 @@ async function loadMessages() {
   state.loading = true;
   state.pending = [];
   els.list.innerHTML = `<span class="loader"></span>`;
+  els.earlier.hidden = true;
   let query = supabase.from("chat_messages").select(CHAT_COLUMNS);
   query = state.room ? query.eq("community_id", state.room.id) : query.is("community_id", null);
-  const { data, error } = await query.order("created_at", { ascending: false }).limit(HISTORY_LIMIT);
+  const { data, error } = await query.order("created_at", { ascending: false }).order("id", { ascending: false }).limit(HISTORY_LIMIT);
   if (room !== state.room) return; // the guest switched rooms while this was loading
   state.loading = false;
   if (error) {
     els.list.innerHTML = `<div class="empty-state">${escapeHtml(errorMessage(error, "Messages could not be loaded."))}</div>`;
     return;
   }
+  state.hasEarlier = data.length === HISTORY_LIMIT;
+  els.earlier.hidden = state.me.role !== "admin" || !state.hasEarlier;
   state.ids.clear();
+  state.messages.clear();
   state.lastDay = "";
   state.lastAt = null;
   els.list.innerHTML = "";
@@ -206,6 +219,33 @@ async function loadMessages() {
   scrollToEnd(true);
 }
 
+// Operators can also moderate messages older than the initial 100-message window.
+async function loadEarlierMessages() {
+  if (state.me.role !== "admin" || state.earlierBusy || !state.hasEarlier) return;
+  const room = state.room;
+  const ordered = [...state.messages.values()].sort((a, b) => a.created_at.localeCompare(b.created_at) || a.id.localeCompare(b.id));
+  const oldest = ordered[0];
+  if (!oldest) return;
+  state.earlierBusy = true;
+  setBusy(els.earlier, true);
+  try {
+    let query = supabase.from("chat_messages").select(CHAT_COLUMNS);
+    query = room ? query.eq("community_id", room.id) : query.is("community_id", null);
+    const { data, error } = await query.or(`created_at.lt.${oldest.created_at},and(created_at.eq.${oldest.created_at},id.lt.${oldest.id})`)
+      .order("created_at", { ascending: false }).order("id", { ascending: false }).limit(HISTORY_LIMIT);
+    if (error) throw error;
+    if (room !== state.room) return;
+    const height = els.list.scrollHeight, top = els.list.scrollTop;
+    const rows = [...data, ...state.messages.values()].sort((a,b) => a.created_at.localeCompare(b.created_at) || a.id.localeCompare(b.id));
+    state.ids.clear();state.messages.clear();state.lastDay = "";els.list.innerHTML = "";
+    rows.forEach(appendMessage);
+    state.hasEarlier = data.length === HISTORY_LIMIT;
+    els.earlier.hidden = !state.hasEarlier;
+    requestAnimationFrame(() => { els.list.scrollTop = top + els.list.scrollHeight - height; });
+  } catch (error) { toast(moderationError(error), "error"); }
+  finally { state.earlierBusy = false;setBusy(els.earlier, false); }
+}
+
 function inCurrentRoom(row) {
   return (row.community_id ?? null) === (state.room?.id ?? null);
 }
@@ -213,6 +253,7 @@ function inCurrentRoom(row) {
 function appendMessage(row) {
   if (state.ids.has(row.id)) return;
   state.ids.add(row.id);
+  state.messages.set(row.id, row);
   if (!state.lastAt || Date.parse(row.created_at) > Date.parse(state.lastAt)) state.lastAt = row.created_at;
   const nickname = row.author?.nickname ?? state.nicknames.get(row.author_id) ?? "Guest";
   state.nicknames.set(row.author_id, nickname);
@@ -224,17 +265,43 @@ function appendMessage(row) {
     state.lastDay = day;
     els.list.insertAdjacentHTML("beforeend", `<p class="chat-day"><span>${escapeHtml(day)}</span></p>`);
   }
+  els.list.insertAdjacentHTML("beforeend", messageHtml(row));
+}
+
+function messageHtml(row) {
   const mine = row.author_id === state.me.id;
-  els.list.insertAdjacentHTML("beforeend", `
-    <article class="chat-msg ${mine ? "chat-msg--mine" : ""}" data-msg-id="${escapeHtml(row.id)}">
+  const admin = state.me.role === "admin";
+  const nickname = row.author?.nickname ?? state.nicknames.get(row.author_id) ?? "Guest";
+  return `<article class="chat-msg ${mine ? "chat-msg--mine" : ""}" data-msg-id="${escapeHtml(row.id)}">
       ${mine ? "" : avatarHtml(nickname, "avatar--sm", state.avatars.get(row.author_id))}
       <div class="chat-msg__body">
         <div class="chat-msg__meta"><strong>${escapeHtml(mine ? "you" : nickname)}</strong><time>${escapeHtml(formatTime(row.created_at))}</time></div>
         <p class="chat-msg__text" data-user-content>${escapeHtml(row.content)}</p>
+        <div class="chat-msg__actions">
+          ${admin ? `<button type="button" class="link-btn" data-reply-msg="${escapeHtml(row.id)}">Reply</button><button type="button" class="link-btn" data-edit-msg="${escapeHtml(row.id)}">Edit message</button>` : ""}
+          ${mine || admin ? `<button type="button" class="icon-btn icon-btn--quiet chat-msg__delete" data-delete-msg="${escapeHtml(row.id)}" aria-label="Delete message">${icon("trash")}</button>` : ""}
+        </div>
       </div>
-      ${mine ? `<button type="button" class="icon-btn icon-btn--quiet chat-msg__delete" data-delete-msg="${escapeHtml(row.id)}" aria-label="Delete message">${icon("trash")}</button>` : ""}
-    </article>`);
+    </article>`;
 }
+
+function replyPrefix() {
+  return state.replyTo ? `[운영자 답글 → ${state.replyTo.nickname}]\n“${state.replyTo.preview}”\n` : "";
+}
+function clearReply() {
+  state.replyTo = null;
+  const context = $("#chatReplyContext");
+  if (context) context.hidden = true;
+  if (els.input) els.input.maxLength = 500;
+}
+function beginReply(row) {
+  state.replyTo = { id: row.id, nickname: row.author?.nickname ?? state.nicknames.get(row.author_id) ?? "Guest", preview: row.content.slice(0, 120) };
+  $("#chatReplyLabel").textContent = `Reply to ${state.replyTo.nickname}: ${state.replyTo.preview}`;
+  $("#chatReplyContext").hidden = false;
+  els.input.maxLength = 500 - replyPrefix().length;
+  els.input.focus({ preventScroll: true });
+}
+
 
 function nearBottom() {
   return els.list.scrollHeight - els.list.scrollTop - els.list.clientHeight < 120;
@@ -246,8 +313,10 @@ function scrollToEnd(force = false) {
 
 async function sendMessage(event) {
   event.preventDefault();
-  const content = els.input.value.trim();
-  if (!content) return;
+  const text = els.input.value.trim();
+  if (!text) return;
+  const content = replyPrefix() + text;
+  if (content.length > 500) return toast("답글은 인용한 내용을 포함해 500자까지 보낼 수 있습니다.", "error");
   setBusy(els.send, true, "…");
   try {
     const { data, error } = await supabase
@@ -257,6 +326,7 @@ async function sendMessage(event) {
       .single();
     if (error) throw error;
     els.input.value = "";
+    clearReply();
     onInput();
     if (inCurrentRoom(data)) {
       appendMessage(data);
@@ -272,13 +342,20 @@ async function sendMessage(event) {
 }
 
 async function onListClick(event) {
+  const editButton = event.target.closest("[data-edit-msg], [data-reply-msg]");
+  if (editButton && state.me.role === "admin") {
+    const row = state.messages.get(editButton.dataset.editMsg || editButton.dataset.replyMsg);
+    if (!row) return;
+    if (editButton.hasAttribute("data-reply-msg")) return beginReply(row);
+    return openContentEditor({ me: state.me, kind: "chat", item: row, onSaved: loadMessages });
+  }
   const button = event.target.closest("[data-delete-msg]");
   if (!button || !confirm("Delete this message?")) return;
   button.disabled = true;
   const { data, error } = await supabase.from("chat_messages").delete().eq("id", button.dataset.deleteMsg).select("id");
   if (error || !data?.length) {
     button.disabled = false;
-    return toast(error ? errorMessage(error) : "You don't have permission to do that.", "error");
+    return toast(error ? moderationError(error) : "You don't have permission to do that.", "error");
   }
   removeMessage(button.dataset.deleteMsg);
 }
@@ -286,6 +363,8 @@ async function onListClick(event) {
 function removeMessage(id) {
   [...els.list.querySelectorAll("[data-msg-id]")].find((el) => el.dataset.msgId === id)?.remove();
   state.ids.delete(id);
+  state.messages.delete(id);
+  if (state.replyTo?.id === id) clearReply();
 }
 
 /* ---------------- Realtime ---------------- */
@@ -298,6 +377,7 @@ function subscribeChat() {
   const channel = supabase
     .channel("wegoinn-chat")
     .on("postgres_changes", { event: "INSERT", schema: "public", table: "chat_messages" }, onChatInsert)
+    .on("postgres_changes", { event: "UPDATE", schema: "public", table: "chat_messages" }, onChatUpdate)
     .on("postgres_changes", { event: "DELETE", schema: "public", table: "chat_messages" }, onChatDelete);
   state.channel = channel;
   channel.subscribe((status, err) => {
@@ -353,6 +433,15 @@ export async function onChatInsert(payload) {
   const stick = nearBottom();
   appendMessage(row);
   scrollToEnd(stick);
+}
+
+export function onChatUpdate(payload) {
+  const row = payload.new;
+  if (!row?.id || !state.ids.has(row.id)) return;
+  const next = { ...state.messages.get(row.id), ...row };
+  state.messages.set(row.id, next);
+  const element = [...els.list.querySelectorAll("[data-msg-id]")].find(el => el.dataset.msgId === row.id);
+  if (element) element.outerHTML = messageHtml(next);
 }
 
 export function onChatDelete(payload) {

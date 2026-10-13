@@ -209,6 +209,7 @@ function subscribeRealtime() {
     .on("postgres_changes", { event: "INSERT", schema: "public", table: "posts" }, scheduleNewPosts)
     .on("postgres_changes", { event: "INSERT", schema: "public", table: "communities" }, scheduleNewCommunities)
     .on("postgres_changes", { event: "*", schema: "public", table: "comments" }, scheduleFeedRefresh)
+    .on("postgres_changes", { event: "*", schema: "public", table: "community_comments" }, scheduleCommunityRefresh)
     .on("postgres_changes", { event: "*", schema: "public", table: "communities" }, scheduleCommunityRefresh)
     .on("postgres_changes", { event: "*", schema: "public", table: "community_applications" }, scheduleCommunityRefresh)
     .on("postgres_changes", { event: "INSERT", schema: "public", table: "notifications" }, refreshNotifications)
