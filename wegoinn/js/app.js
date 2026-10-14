@@ -13,12 +13,14 @@ import { hydrateIcons } from "./icons.js";
 import { initTheme } from "./theme.js";
 import { loginErrorMessage } from "./login-errors.js";
 import { initOnlinePresence } from "./online-presence.js";
+import { initProfilePhotoViewer } from "./profile-photo.js";
 
 import { initOperatorAccounts, watchSessionActivity } from "./operator-accounts.js";
 
 hydrateIcons();
 initTheme();
 initSiteLanguage();
+initProfilePhotoViewer();
 const LOGOUT_REASON = "wegoinn-logout-reason";
 const SIGNED_IN = "wegoinn-signed-in";
 const STAY_ENDED_MESSAGE = "체크아웃 날짜가 지났거나 체크아웃 처리되어 자동으로 로그아웃되었습니다.";

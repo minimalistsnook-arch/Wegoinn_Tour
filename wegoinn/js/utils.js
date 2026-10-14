@@ -25,7 +25,7 @@ export function avatarTone(name = "") {
 
 export function avatarHtml(name, size = "", photoUrl = "") {
   if (photoUrl?.startsWith("https://")) {
-    return `<span class="avatar avatar--${avatarTone(name)} avatar--photo ${size}" aria-hidden="true"><img src="${escapeHtml(photoUrl)}" alt="" loading="lazy" decoding="async" /></span>`;
+    return `<button type="button" class="avatar avatar--${avatarTone(name)} avatar--photo ${size}" data-profile-photo="${escapeHtml(photoUrl)}" data-profile-name="${escapeHtml(name)}" aria-label="${escapeHtml(name)} · ${escapeHtml('View profile photo')}"><img src="${escapeHtml(photoUrl)}" alt="" loading="lazy" decoding="async" /></button>`;
   }
   return `<span class="avatar avatar--${avatarTone(name)} ${size}" aria-hidden="true">${escapeHtml(initials(name))}</span>`;
 }

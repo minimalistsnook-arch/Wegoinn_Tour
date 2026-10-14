@@ -502,6 +502,11 @@ async function renderMembers(c) {
     return;
   }
   const members = Array.isArray(data) ? data : [];
+  const host = members.find(m => m.is_host);
+  if (host?.avatar_url) {
+    const avatar = els.detail.querySelector('.detail-host .avatar');
+    if (avatar) avatar.outerHTML = avatarHtml(host.nickname || 'Guest', 'avatar--sm', host.avatar_url);
+  }
   list.innerHTML = members.length ? `<ul class="member-list">${members.map((m) => {
     const name = m.nickname ?? "Guest";
     return `<li class="member">
@@ -518,7 +523,7 @@ async function renderMembers(c) {
 async function renderHostPanel(c) {
   const { data, error } = await supabase
     .from("community_applications")
-    .select("id, status, created_at, reviewed_at, applicant:profiles ( nickname )")
+    .select("id, status, created_at, reviewed_at, applicant:profiles ( nickname, avatar_url )")
     .eq("community_id", c.id)
     .order("created_at");
 

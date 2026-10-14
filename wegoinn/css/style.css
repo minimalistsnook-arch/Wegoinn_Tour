@@ -1396,6 +1396,13 @@ html { scroll-padding-top:calc(var(--measured-topbar-h, var(--topbar-h)) + 64px)
 
 .avatar--photo { overflow: hidden; padding: 0; }
 .avatar--photo img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
+.avatar--photo { border: 0; cursor: zoom-in; font: inherit; }
+.avatar--photo:focus-visible { outline: 2px solid var(--rose); outline-offset: 3px; }
+.profile-photo-viewer { width: min(90vw, 560px); max-height: 90dvh; padding: 44px 16px 16px; border: 0; border-radius: 20px; background: var(--surface); color: var(--ink); text-align: center; }
+.profile-photo-viewer::backdrop { background: rgb(0 0 0 / .75); }
+.profile-photo-viewer > img { display: block; width: 100%; max-height: 70dvh; object-fit: contain; border-radius: 10px; }
+.profile-photo-viewer > p { margin: 12px 0 0; overflow-wrap: anywhere; }
+.profile-photo-viewer__close { position: absolute; top: 4px; right: 8px; width: 36px; height: 36px; border: 0; background: transparent; color: inherit; font-size: 28px; }
 
 .avatar-pick { justify-items: center; text-align: center; }
 .avatar-pick .field__label { justify-self: start; }
