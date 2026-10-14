@@ -65,7 +65,7 @@ export function initCommunity(me) {
   els.form.elements.language.insertAdjacentHTML("beforeend", COMMUNITY_LANGUAGES
     .map((code) => `<option value="${code}">${escapeHtml(languageName(code, code))}</option>`).join(""));
 
-  for (const list of [$('#myCommunityList'), els.list]) installOperatorLongPress(list, me, '.community-row[data-id]', element => {
+  for (const list of [$('#myCommunityList'), els.list]) installOperatorLongPress(list, me, '.community-row[data-id], .meeting-item[data-id]', element => {
     const item = findCommunity(element.dataset.id);
     if (!item) return;
     return { authorId: item.creator_id, title: item.creator?.nickname,
@@ -224,7 +224,7 @@ function renderDay() {
   els.createDateLabel.textContent = formatDateKey(state.selectedDate, { month: "short", day: "numeric" });
 
   els.list.innerHTML = list.length
-    ? list.map(cardHtml).join("")
+    ? list.map(dayItemHtml).join("")
     : `<div class="empty-state empty-state--soft">
          ${icon("sparkle")}
          <strong>${isPast ? "No communities on this day" : "Nothing planned yet"}</strong>
@@ -312,6 +312,52 @@ function cardHtml(c) {
           ${minTag ? `<li>${minTag}</li>` : ""}
         </ul>
         ${action}
+      </div>
+    </article>`;
+}
+
+// Where I stand with a community: joined · pending · full · closed · past …
+function dayStatusHtml(c) {
+  const status = state.myApplications.get(c.id);
+  if (c.status === "cancelled") return `<span class="tag tag--declined">Cancelled</span>`;
+  if (notHeld(c)) return `<span class="tag tag--declined">Not held</span>`;
+  if (isHost(c)) return `<span class="tag tag--host">Hosting</span>`;
+  if (status) return `<span class="tag tag--${status}">${statusLabel(status)}</span>`;
+  if (communityIsLocked(c)) return `<span class="tag tag--declined">Past</span>`;
+  if (applicationsClosed(c)) return `<span class="tag tag--full">Applications closed</span>`;
+  if (isFull(c)) return `<span class="tag tag--full">FULL</span>`;
+  return "";
+}
+
+// Same rules as joinButton(): pending (from before instant join) and withdrawn guests may join again.
+const canJoin = (c) => !isHost(c) && !isAdmin() && !communityIsLocked(c) && !applicationsClosed(c) && !isFull(c)
+  && !["approved", "declined"].includes(state.myApplications.get(c.id));
+
+// Selected-date list item: square thumbnail · title / activity / time · people · fee · status.
+// Communities have no cover photo, so the thumbnail is a brand-tone tile with the title's first letter.
+function dayItemHtml(c) {
+  const min = minOf(c);
+  const locked = communityIsLocked(c);
+  let action = "";
+  if (isAdmin() || (isHost(c) && !locked)) action = `<button type="button" class="btn btn--sm btn--ghost meeting-item__action" data-action="view" data-id="${c.id}">MANAGE</button>`;
+  else if (canJoin(c)) action = `<button type="button" class="btn btn--sm btn--primary meeting-item__action" data-action="join" data-id="${c.id}">JOIN</button>`;
+  const confirm = c.status !== "cancelled" && !locked && min > 1
+    ? `<span class="tag tag--${meetsMin(c) ? "approved" : "pending"}">${meetsMin(c) ? "Confirmed" : "Not confirmed"}</span>` : "";
+  const tags = `${isNew("community", c.created_at, c.creator_id) ? `<span class="tag tag--new">NEW</span>` : ""}${dayStatusHtml(c)}${confirm}`;
+  return `
+    <article class="meeting-item" data-id="${c.id}">
+      <div class="meeting-item__thumb tone--${avatarTone(c.title)}" aria-hidden="true" data-user-content>${escapeHtml(Array.from(c.title.trim())[0] || "")}</div>
+      <div class="meeting-item__content">
+        <h3 class="meeting-item__title"><button type="button" data-action="view" data-id="${c.id}" data-user-content>${escapeHtml(c.title)}</button></h3>
+        <p class="meeting-item__desc" data-user-content>${escapeHtml(c.activity)}</p>
+        <p class="meeting-item__meta">
+          <span>${escapeHtml(shortTime(c.community_time))}</span>
+          <span class="${isFull(c) ? "is-full" : ""}">${icon("users")}<b>${c.approved_count}/${c.max_participants}</b></span>
+          <span>${escapeHtml(formatFee(c.participation_fee))}</span>
+          ${c.language ? `<span>${escapeHtml(languageName(c.language))}</span>` : ""}
+        </p>
+        ${tags || action ? `<div class="meeting-item__foot"><span class="meeting-item__tags">${tags}</span>${action}</div>` : ""}
+        ${isAdmin() ? accountDetailHtml(c.creator_id) : ""}
       </div>
     </article>`;
 }

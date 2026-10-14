@@ -109,6 +109,7 @@
   <div id="appView" class="app" hidden>
     <header class="topbar">
       <a class="wordmark topbar__brand" href="#top">Wegoinn</a>
+      <div class="online-count" role="status" aria-live="polite" aria-atomic="true"><span>Online now</span> <strong id="onlineCount">…</strong></div>
       <div class="topbar__actions">
         <select class="lang-select lang-select--on-pine" data-site-language aria-label="Language"><option value="en">English</option><option value="ko">한국어</option><option value="ja">日本語</option><option value="zh">中文</option></select>
         <button type="button" class="theme-toggle theme-toggle--on-pine" data-theme-toggle aria-pressed="false">Dark</button>
@@ -166,10 +167,7 @@
         </div>
 
         <div class="day-head">
-          <div>
-            <p class="eyebrow">Selected date</p>
-            <h3 id="selectedDateTitle"></h3>
-          </div>
+          <h3 id="selectedDateTitle"></h3>
           <span id="selectedDateCount" class="count"></span>
         </div>
 

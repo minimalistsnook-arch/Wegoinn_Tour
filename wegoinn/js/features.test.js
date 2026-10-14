@@ -136,7 +136,6 @@ describe('community workflows',()=>{
    const list=document.querySelector('#communityList');
    expect(list.textContent).toContain('Applications closed');
    expect(list.querySelector('[data-action=join]')).toBeNull();
-   expect(list.textContent).toContain('APPLICATIONS CLOSED');
    expect(list.textContent).toMatch(/Korean|한국어/);
  });
  it('joins straight away without waiting for the host',async()=>{
@@ -146,7 +145,7 @@ describe('community workflows',()=>{
    await initCommunity(other);
    document.querySelector('#communityList [data-action=join]').click(); await settle();
    expect(mock.rpc).toHaveBeenCalledWith('join_community',{p_community_id:community().id});
-   expect(document.querySelector('#communityList').textContent).toContain('JOINED');
+   expect(document.querySelector('#communityList').textContent).toMatch(/joined|참여 중/);
    expect(document.querySelector('#communityList [data-action=join]')).toBeNull();
  });
  it('keeps the draft and avoids duplicate creation when the RPC is missing',async()=>{
