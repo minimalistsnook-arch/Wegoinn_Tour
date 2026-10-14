@@ -32,6 +32,7 @@ const state = {
   languageHandler: null,
   refreshTimer: null,
   detailId: null,         // community open in the detail sheet
+  detailTab: "info",      // info · members (chat jumps to the Chat page)
   cover: null,            // { file, url } compressed cover photo waiting to upload
   coverRemoved: false,    // editing: the saved photo was removed
   coverLoading: false,
@@ -404,6 +405,7 @@ async function requestJoin(communityId, button) {
 
 function openDetail(id) {
   state.detailId = id;
+  state.detailTab = "info";
   renderDetail();
   openSheet("communitySheet", () => { state.detailId = null; });
 }
@@ -417,43 +419,98 @@ async function renderDetail() {
   }
   const host = c.creator?.nickname ?? "Guest";
 
+  const tab = state.detailTab;
+  const chatAction = canChat(c) ? "chat" : "chat-locked";
   els.detail.innerHTML = `
     <div class="detail-hero tone--${avatarTone(c.title)}">
       <p class="eyebrow">${escapeHtml(formatDateKey(c.community_date, { weekday: "long", month: "long", day: "numeric" }))} · ${escapeHtml(shortTime(c.community_time))} KST</p>
       <h2 data-user-content id="communitySheetTitle">${escapeHtml(c.title)}</h2>
       <div class="detail-host">${avatarHtml(host, "avatar--sm", c.creator?.avatar_url)} <span>hosted by <b>${escapeHtml(host)}</b></span></div>
     </div>
-    ${c.image_url ? `<img class="detail-cover" src="${escapeHtml(c.image_url)}" alt="" decoding="async" />` : ""}
 
-    <div class="detail-facts">
-      <div><small>Date</small><b>${escapeHtml(formatDateKey(c.community_date, { month: "short", day: "numeric" }))}</b></div>
-      <div><small>Time</small><b>${escapeHtml(shortTime(c.community_time))} KST</b></div>
-      <div><small>Fee</small><b>${escapeHtml(formatFee(c.participation_fee))}</b></div>
-      ${c.language ? `<div><small>Language</small><b>${escapeHtml(languageName(c.language))}</b></div>` : ""}
-      ${c.application_deadline ? `<div class="detail-facts__wide"><small>${applicationsClosed(c) ? "Applications closed" : "Apply by"}</small><b>${escapeHtml(deadlineLabel(c))}</b></div>` : ""}
+    <div class="detail-tabs" role="tablist" aria-label="Community">
+      <button type="button" role="tab" id="detailTabInfo" aria-controls="detailPanelInfo" aria-selected="${tab === "info"}" data-tab="info">${icon("calendar")}<span>Info</span></button>
+      <button type="button" role="tab" aria-selected="false" data-action="${chatAction}" data-id="${c.id}">${icon("message")}<span>Chat</span></button>
+      <button type="button" role="tab" id="detailTabMembers" aria-controls="detailPanelMembers" aria-selected="${tab === "members"}" data-tab="members">${icon("users")}<span>Members</span> <b>${c.approved_count}</b></button>
     </div>
 
-    ${capacityHtml(c)}
-    <section class="detail-block"><h3>Meeting place</h3><p data-user-content>${escapeHtml(c.meeting_place || "Not specified")}</p>${mapLocation(c.map_url)?.coordinates ? `<p>${escapeHtml(mapLocation(c.map_url).coordinates)}</p>` : ""}${safeMapUrl(c.map_url) ? `<a class="btn btn--ghost" href="${escapeHtml(safeMapUrl(c.map_url))}" target="_blank" rel="noopener noreferrer">Open map</a>` : ""}</section>
-    ${communityIsLocked(c) && !isAdmin() ? `<p class="host-note">${c.status === "cancelled" ? "This community was cancelled. History is preserved." : notHeld(c) ? "This community didn't reach its minimum number of participants, so it won't go ahead." : "This community has started. History is read-only."}</p>` : ""}
-    ${!communityIsLocked(c) && !meetsMin(c) ? `<p class="host-note">Not confirmed yet. If fewer than the minimum are approved by the start time, this community won't go ahead.</p>` : ""}
-    ${canEdit(c) ? `<div class="community-card__actions"><button class="btn btn--ghost" type="button" data-action="edit" data-id="${c.id}">Edit community</button>${isAdmin() ? `<button class="btn btn--soft" type="button" data-action="delete-community" data-id="${c.id}">Delete community</button>` : `<button class="btn btn--soft" type="button" data-action="cancel" data-id="${c.id}">Cancel community</button>`}</div>` : ""}
-    ${canChat(c) ? `<button class="btn btn--dark btn--block" type="button" data-action="chat" data-id="${c.id}">${icon("message")} Open group chat</button>` : ""}
-    ${!isHost(c) && !communityIsLocked(c) && ["pending","approved"].includes(state.myApplications.get(c.id)) ? `<button class="btn btn--ghost" type="button" data-action="withdraw" data-id="${c.id}">Leave community</button>` : ""}
+    <div id="detailPanelInfo" class="detail-panel" role="tabpanel" aria-labelledby="detailTabInfo" ${tab === "info" ? "" : "hidden"}>
+      ${c.image_url ? `<img class="detail-cover" src="${escapeHtml(c.image_url)}" alt="" decoding="async" />` : ""}
 
-    <section class="detail-block"><h3>What we'll do</h3><p data-user-content>${escapeHtml(c.activity)}</p></section>
-    <section class="detail-block"><h3>Who we'd love to meet</h3><p data-user-content>${escapeHtml(c.preferred_participants)}</p></section>
-    <section class="detail-block"><h3>Plan</h3><p data-user-content class="detail-plan">${escapeHtml(c.schedule)}</p></section>
-    ${c.participation_fee > 0 ? `<p class="fee-note">${icon("ticket")} The fee is paid directly to the host — not through this app.</p>` : ""}
+      <div class="detail-facts">
+        <div><small>Date</small><b>${escapeHtml(formatDateKey(c.community_date, { month: "short", day: "numeric" }))}</b></div>
+        <div><small>Time</small><b>${escapeHtml(shortTime(c.community_time))} KST</b></div>
+        <div><small>Fee</small><b>${escapeHtml(formatFee(c.participation_fee))}</b></div>
+        ${c.language ? `<div><small>Language</small><b>${escapeHtml(languageName(c.language))}</b></div>` : ""}
+        ${c.application_deadline ? `<div class="detail-facts__wide"><small>${applicationsClosed(c) ? "Applications closed" : "Apply by"}</small><b>${escapeHtml(deadlineLabel(c))}</b></div>` : ""}
+      </div>
 
-    <section id="communityComments" class="detail-block comments"><span class="loader"></span></section>
+      ${communityIsLocked(c) && !isAdmin() ? `<p class="host-note">${c.status === "cancelled" ? "This community was cancelled. History is preserved." : notHeld(c) ? "This community didn't reach its minimum number of participants, so it won't go ahead." : "This community has started. History is read-only."}</p>` : ""}
+      ${canEdit(c) ? `<div class="community-card__actions"><button class="btn btn--ghost" type="button" data-action="edit" data-id="${c.id}">Edit community</button>${isAdmin() ? `<button class="btn btn--soft" type="button" data-action="delete-community" data-id="${c.id}">Delete community</button>` : `<button class="btn btn--soft" type="button" data-action="cancel" data-id="${c.id}">Cancel community</button>`}</div>` : ""}
+      ${!isHost(c) && !communityIsLocked(c) && ["pending","approved"].includes(state.myApplications.get(c.id)) ? `<button class="btn btn--ghost" type="button" data-action="withdraw" data-id="${c.id}">Leave community</button>` : ""}
 
-    ${isHost(c) ? `<div id="hostPanel" class="host-panel"><div class="loader"></div></div>`
-                : isAdmin() ? "" : `<div class="detail-cta">${joinButton(c, { wide: true })}</div>`}
+      <section class="detail-block"><h3>What we'll do</h3><p data-user-content>${escapeHtml(c.activity)}</p></section>
+      <section class="detail-block"><h3>Who we'd love to meet</h3><p data-user-content>${escapeHtml(c.preferred_participants)}</p></section>
+      <section class="detail-block"><h3>Plan</h3><p data-user-content class="detail-plan">${escapeHtml(c.schedule)}</p></section>
+      <section class="detail-block"><h3>Meeting place</h3><p data-user-content>${escapeHtml(c.meeting_place || "Not specified")}</p>${mapLocation(c.map_url)?.coordinates ? `<p>${escapeHtml(mapLocation(c.map_url).coordinates)}</p>` : ""}${safeMapUrl(c.map_url) ? `<a class="btn btn--ghost" href="${escapeHtml(safeMapUrl(c.map_url))}" target="_blank" rel="noopener noreferrer">Open map</a>` : ""}</section>
+      ${c.participation_fee > 0 ? `<p class="fee-note">${icon("ticket")} The fee is paid directly to the host — not through this app.</p>` : ""}
+
+      <section id="communityComments" class="detail-block comments"><span class="loader"></span></section>
+    </div>
+
+    <div id="detailPanelMembers" class="detail-panel" role="tabpanel" aria-labelledby="detailTabMembers" ${tab === "members" ? "" : "hidden"}>
+      ${membersSummaryHtml(c)}
+      <section class="detail-block"><h3>Who's going</h3><div id="memberList"><span class="loader"></span></div></section>
+      ${isHost(c) ? `<div id="hostPanel" class="host-panel"><div class="loader"></div></div>` : ""}
+    </div>
+
+    ${isHost(c) || isAdmin() ? "" : `<div class="detail-cta">${joinButton(c, { wide: true })}</div>`}
   `;
 
   mountCommunityComments(els.detail.querySelector("#communityComments"), c, state.me);
   if (isHost(c)) renderHostPanel(c);
+  renderMembers(c);
+}
+
+// Members tab header: joined / max, the capacity bar, and how far the minimum is.
+function membersSummaryHtml(c) {
+  const min = minOf(c);
+  const needed = Math.max(0, min - c.approved_count);
+  const left = Math.max(0, c.max_participants - c.approved_count);
+  let goal;
+  if (c.status === "cancelled") goal = `<p class="members-goal">This community was cancelled.</p>`;
+  else if (notHeld(c)) goal = `<p class="members-goal">This community didn't reach its minimum number of participants, so it won't go ahead.</p>`;
+  else if (needed) goal = `<p class="members-goal is-short"><b>${needed}</b> <span>more needed to go ahead</span> <small>(min ${min})</small></p>`;
+  else goal = `<p class="members-goal is-met">${icon("check")} <span>Minimum reached — this community will go ahead</span></p>`;
+  return `
+    <div class="members-summary">
+      <div class="members-count"><b>${c.approved_count}</b><span>/ ${c.max_participants}</span><small>joined</small></div>
+      ${goal}
+      ${capacityHtml(c)}
+      ${!communityIsLocked(c) ? `<p class="muted">${left ? `<b>${left}</b> <span>${left === 1 ? "spot left" : "spots left"}</span>` : "FULL"}</p>` : ""}
+      ${!communityIsLocked(c) && !meetsMin(c) ? `<p class="host-note">Not confirmed yet. If fewer than the minimum are approved by the start time, this community won't go ahead.</p>` : ""}
+    </div>`;
+}
+
+// Everyone signed in may see who's going (nickname + photo only) via the community_members RPC.
+async function renderMembers(c) {
+  const { data, error } = await supabase.rpc("community_members", { p_community_id: c.id });
+  const list = els.detail.querySelector("#memberList");
+  if (!list || state.detailId !== c.id) return;
+  if (error) {
+    list.innerHTML = `<p class="muted">${error.code === "PGRST202" ? "The member list isn't available yet." : escapeHtml(errorMessage(error))}</p>`;
+    return;
+  }
+  const members = Array.isArray(data) ? data : [];
+  list.innerHTML = members.length ? `<ul class="member-list">${members.map((m) => {
+    const name = m.nickname ?? "Guest";
+    return `<li class="member">
+      ${avatarHtml(name, "avatar--sm", m.avatar_url)}
+      <span class="member__name" data-user-content>${escapeHtml(name)}</span>
+      ${m.is_me ? `<span class="you-tag">you</span>` : ""}
+      ${m.is_host ? `<span class="tag tag--host">Hosting</span>` : ""}
+    </li>`;
+  }).join("")}</ul>` : `<p class="muted">No one has joined yet.</p>`;
 }
 
 // Visible only to the creator — and the data itself is only readable by the
@@ -509,6 +566,15 @@ async function renderHostPanel(c) {
 }
 
 async function onDetailClick(event) {
+  const tabBtn = event.target.closest("[data-tab]");
+  if (tabBtn) {
+    state.detailTab = tabBtn.dataset.tab;
+    for (const b of els.detail.querySelectorAll("[data-tab]")) b.setAttribute("aria-selected", String(b === tabBtn));
+    els.detail.querySelector("#detailPanelInfo").hidden = state.detailTab !== "info";
+    els.detail.querySelector("#detailPanelMembers").hidden = state.detailTab !== "members";
+    return;
+  }
+  if (event.target.closest('[data-action="chat-locked"]')) return toast("Join this community to open its group chat.", "error");
   const action = event.target.closest("[data-action]");
   if (action?.dataset.action === "delete-community" && isAdmin()) {
     if (!confirm("Delete this community? Its comments, applications and group chat will also be deleted.")) return;

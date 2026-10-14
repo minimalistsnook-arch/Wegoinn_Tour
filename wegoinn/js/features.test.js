@@ -156,6 +156,33 @@ describe('community workflows',()=>{
    expect(mock.rpc).toHaveBeenCalledWith('set_community_image',{p_community_id:'new-id',p_image_url:url});
    expect(document.querySelector('#communityList .meeting-item__thumb img').getAttribute('src')).toBe(url);
  });
+ it('splits the detail into Info, Chat and Members tabs',async()=>{
+   const other={...me,id:'00000000-0000-0000-0000-000000000002'};
+   mock.communities=[community({min_participants:4,approved_count:1})];
+   mock.rpc.mockImplementation(async name=>name==='community_members'
+     ? {data:[{nickname:'Host',avatar_url:null,is_host:true,is_me:false},{nickname:'Mina',avatar_url:null,is_host:false,is_me:true}],error:null}
+     : {data:null,error:null});
+   await initCommunity(other);
+   document.querySelector('#communityList [data-action=view]').click(); await settle();
+   const detail=document.querySelector('#communityDetail');
+   expect(detail.querySelector('#detailPanelInfo').hidden).toBe(false);
+   expect(detail.querySelector('#detailPanelMembers').hidden).toBe(true);
+   expect(detail.querySelector('.detail-tabs [data-action=chat-locked]')).not.toBeNull();
+   detail.querySelector('[data-tab=members]').click(); await settle();
+   expect(detail.querySelector('#detailPanelMembers').hidden).toBe(false);
+   expect(detail.querySelector('#detailPanelInfo').hidden).toBe(true);
+   expect(detail.querySelector('.members-goal').textContent).toContain('3');
+   expect([...detail.querySelectorAll('.member__name')].map(n=>n.textContent)).toEqual(['Host','Mina']);
+   expect(mock.rpc).toHaveBeenCalledWith('community_members',{p_community_id:community().id});
+ });
+ it('opens the group chat from the Chat tab for members',async()=>{
+   const other={...me,id:'00000000-0000-0000-0000-000000000002'};
+   mock.communities=[community()];
+   mock.applications=[{community_id:community().id,status:'approved'}];
+   await initCommunity(other);
+   document.querySelector('#communityList [data-action=view]').click(); await settle();
+   expect(document.querySelector('#communityDetail .detail-tabs [data-action=chat]')).not.toBeNull();
+ });
  it('joins straight away without waiting for the host',async()=>{
    const other={...me,id:'00000000-0000-0000-0000-000000000002'};
    mock.communities=[community()];
