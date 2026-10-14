@@ -12,6 +12,7 @@ import { isNew } from "./news.js";
 import { mountCommunityComments } from "./community-comments.js";
 import { moderationError } from "./moderation.js";
 import { compressImage, uploadImage, isImageUploadConfigured } from "./image-upload.js";
+import { validateCommunityRequiredFields } from "./community-validation.js";
 
 const COMMUNITY_COLUMNS = `
   *,
@@ -665,8 +666,7 @@ async function submitCommunity(event) {
 
   if (v("map_url") && !v("meeting_place")) await updateMapPreview();
 
-  const required = ["community_date", "community_time", "deadline_date", "deadline_time", "language", "title", "activity", "preferred_participants", "schedule", "max_participants", "min_participants", "meeting_place"];
-  if (required.some((name) => !v(name))) return toast("Please fill in every field.", "error");
+  if (!validateCommunityRequiredFields(f)) return;
 
   const max = Number(v("max_participants"));
   if (!Number.isInteger(max) || max < 1 || max > 30) return toast("Maximum participants must be 1 – 30.", "error");

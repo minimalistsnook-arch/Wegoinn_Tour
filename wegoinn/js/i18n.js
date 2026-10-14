@@ -1,6 +1,7 @@
 import { isTranslationConfigured, translateText, checkTranslationService } from './translation.js';
 // Interface translations are local; guest-written content uses the authenticated API.
 const rows = [
+['Please fill in:','다음 항목을 입력해 주세요:','次の項目を入力してください：','请填写：'],
 ['Online now','현재 접속','現在オンライン','当前在线'],
 ['Close fullscreen chat','전체 화면 채팅 닫기','全画面チャットを閉じる','关闭全屏聊天'],
 ['Guestbook','방명록','ゲストブック','留言簿'],
