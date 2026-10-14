@@ -22,7 +22,7 @@ export function loginErrorMessage(error) {
   } else if (code === '42501' || /permission denied|row-level security/i.test(raw)) {
     message = '서버에 로그인 처리 권한이 설정되지 않았습니다. 관리자에게 로그인 함수의 실행 권한을 확인해 달라고 요청해 주세요.';
   } else if (stage === 'avatar') {
-    message = '프로필 사진 저장에 실패했습니다. 사진을 제거하고 같은 로그인 정보로 다시 시도해 주세요.';
+    message = '프로필 사진 저장에 실패했습니다. 다른 사진을 골라 같은 로그인 정보로 다시 시도해 주세요.';
   } else {
     // Preserve useful validation and provider messages, including messages over 120 chars.
     const detail = raw.replace(/Bearer\s+\S+|\b(?:sb_secret_|sb_publishable_|sbp_)[A-Za-z0-9_-]+|\beyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+/g, '[인증 정보 숨김]').slice(0, 500);

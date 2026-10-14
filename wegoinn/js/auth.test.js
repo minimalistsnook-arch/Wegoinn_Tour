@@ -20,14 +20,28 @@ describe('stay login',()=>{
  });
  it('supports Korean nicknames',()=>expect(validateNickname('손님')).toBe(true));
  it('uses the returned existing profile and logs without trusting browser stay fields',async()=>{
-  const profile=await signInGuest('26.10.13','26.10.25','701','손님');
+  const { uploadImage } = await import('./image-upload.js');
+  uploadImage.mockResolvedValueOnce('https://x/a.webp');
+  const profile=await signInGuest('26.10.13','26.10.25','701','손님',new File(['x'],'a.webp'));
   expect(profile.id).toBe('existing-profile');
   expect(mocks.rpc).toHaveBeenCalledWith('register_stay_guest',{p_check_in:'2026-10-13',p_check_out:'2026-10-25',p_room_number:'701',p_nickname:'손님'});
-  expect(JSON.parse(fetch.mock.calls[0][1].body)).toEqual({avatarUrl:''});
+  expect(JSON.parse(fetch.mock.calls[0][1].body)).toEqual({avatarUrl:'https://x/a.webp'});
  });
  it('preserves the database error code and identifies the failing step',async()=>{
   mocks.rpc.mockReturnValue({single:async()=>({data:null,error:{code:'PGRST202',message:'Could not find the function public.register_stay_guest in the schema cache'}})});
-  await expect(signInGuest('26.10.13','26.10.25','701','손님')).rejects.toMatchObject({code:'PGRST202',loginStage:'profile'});
+  await expect(signInGuest('26.10.13','26.10.25','701','손님',new File(['x'],'a.webp'))).rejects.toMatchObject({code:'PGRST202',loginStage:'profile'});
+ });
+ it('refuses a guest account without a profile photo',async()=>{
+  await expect(signInGuest('26.10.13','26.10.25','701','손님')).rejects.toThrow('프로필 사진');
+  expect(mocks.signInAnonymously).not.toHaveBeenCalled();
+  expect(mocks.rpc).not.toHaveBeenCalled();
+ });
+ it('creates the account when a photo is added',async()=>{
+  const { uploadImage } = await import('./image-upload.js');
+  uploadImage.mockResolvedValueOnce('https://x/new.webp');
+  mocks.rpc.mockImplementation(name=>name==='set_my_avatar'?Promise.resolve({error:null}):{single:async()=>({data:{id:'new',nickname:'손님',role:'guest'},error:null})});
+  const profile=await signInGuest('26.10.13','26.10.25','701','손님',new File(['x'],'a.webp'));
+  expect(profile.avatar_url).toBe('https://x/new.webp');
  });
  it('allows operator dates with no room',async()=>{
   await signInGuest('999222','999222','','운영자');

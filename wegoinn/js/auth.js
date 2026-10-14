@@ -41,6 +41,8 @@ export async function signInGuest(checkIn, checkOut, roomNumber, nickname, avata
   if (!admin && (arrival === "999222" || departure === "999222")) throw new Error("운영자 로그인은 체크인과 체크아웃 날짜에 모두 999222를 입력해야 합니다.");
   if (!admin && !roomNumber.trim()) throw new Error("객실 번호를 입력하세요.");
   if (!admin && departure <= arrival) throw new Error("체크아웃 날짜는 체크인 날짜보다 이후여야 합니다.");
+  // Every guest needs a profile photo; checked before any server call so no photo-less account is created.
+  if (!admin && !avatarFile) throw new Error(PHOTO_REQUIRED_MESSAGE);
   const sessionResult = await loginStep("session", () => supabase.auth.getSession());
   const session = sessionResult.data.session;
   if (session) await loginStep("session", () => supabase.auth.signOut({ scope: "local" }));
@@ -65,6 +67,7 @@ export async function signInGuest(checkIn, checkOut, roomNumber, nickname, avata
   return { ...data, avatar_url: avatarUrl }; // { id, nickname, role, avatar_url }
 }
 
+export const PHOTO_REQUIRED_MESSAGE = "프로필 사진을 추가해 주세요. 아무 사진이나 괜찮습니다.";
 export const CHECKED_OUT_MESSAGE = "체크아웃 처리된 손님은 다시 로그인할 수 없습니다.";
 
 /**
