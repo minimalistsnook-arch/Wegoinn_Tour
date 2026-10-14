@@ -12,6 +12,7 @@ import { $, $$, avatarHtml, toast, setBusy } from "./utils.js";
 import { hydrateIcons } from "./icons.js";
 import { initTheme } from "./theme.js";
 import { loginErrorMessage } from "./login-errors.js";
+import { initOnlinePresence } from "./online-presence.js";
 
 import { initOperatorAccounts, watchSessionActivity } from "./operator-accounts.js";
 
@@ -190,6 +191,7 @@ async function enterApp(profile) {
 
   storage.set(SIGNED_IN, "1");
   show("app");
+  initOnlinePresence(profile);
   watchStay();
   const header = $(".topbar");
   if (typeof ResizeObserver !== "undefined") {
