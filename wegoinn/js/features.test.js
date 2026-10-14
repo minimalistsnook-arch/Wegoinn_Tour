@@ -23,6 +23,10 @@ beforeEach(() => {
     const chain={};
     for (const op of ['select','gte','lte','order','eq','or','insert','delete']) chain[op]=vi.fn(()=>chain);
     chain.limit=vi.fn(n=>{limit=n;return chain;});
+    chain.range=vi.fn((start,end)=>{
+      chain.then=(resolve,reject)=>Promise.resolve({ ...result(), data:result().data.slice(start,end+1) }).then(resolve,reject);
+      return chain;
+    });
     chain.then=(resolve,reject)=>Promise.resolve(result()).then(resolve,reject);
     return chain;
   });
@@ -47,6 +51,36 @@ describe('Korean time and map safety',()=>{
  });
 });
 describe('community workflows',()=>{
+ it('shows upcoming communities beyond the displayed month and returns to a selected date',async()=>{
+   mock.communities=[
+     community({id:'future-one',title:'Future walk',community_date:'2099-01-01'}),
+     community({id:'future-two',title:'Future dinner',community_date:'2099-04-01'}),
+     community({id:'past-one',title:'Past event',community_date:'2000-01-01'}),
+     community({id:'cancelled',title:'Cancelled event',community_date:'2099-05-01',status:'cancelled'}),
+   ];
+   await initCommunity(me);
+   const button=document.querySelector('#viewAllCommunities');
+   button.click(); await settle();
+   const list=document.querySelector('#communityList');
+   expect(button.getAttribute('aria-pressed')).toBe('true');
+   expect(document.querySelector('#selectedDateTitle').textContent).toBe('Upcoming communities');
+   expect(list.textContent).toContain('Future walk');
+   expect(list.textContent).toContain('Future dinner');
+   expect(list.textContent).not.toContain('Past event');
+   expect(list.textContent).not.toContain('Cancelled event');
+   expect(list.textContent).toContain('2099');
+   list.querySelector('[data-action=view]').click(); await settle();
+   expect(document.querySelector('#communitySheetTitle').textContent).toBe('Future walk');
+   document.querySelector('#calendarGrid [data-date]').click(); await settle();
+   expect(button.getAttribute('aria-pressed')).toBe('false');
+   expect(document.querySelector('#selectedDateTitle').textContent).not.toBe('Upcoming communities');
+ });
+ it('shows an empty message when there are no future communities',async()=>{
+   mock.communities=[community({community_date:'2000-01-01'})];
+   await initCommunity(me);
+   document.querySelector('#viewAllCommunities').click(); await settle();
+   expect(document.querySelector('#communityList').textContent).toContain('No upcoming communities yet.');
+ });
  it('loads registered communities from a schema without lifecycle columns',async()=>{
    const legacy=community();
    delete legacy.status;

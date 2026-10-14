@@ -13,6 +13,7 @@ import { mountCommunityComments } from "./community-comments.js";
 import { moderationError } from "./moderation.js";
 import { compressImage, uploadImage, isImageUploadConfigured } from "./image-upload.js";
 import { validateCommunityRequiredFields } from "./community-validation.js";
+import { t } from './i18n.js';
 
 const COMMUNITY_COLUMNS = `
   *,
@@ -28,6 +29,8 @@ const state = {
   cursor: null,           // first day of the visible month
   selectedDate: today(),
   communities: [],        // everything in the visible grid range
+  showAll: false,
+  upcoming: [],
   myApplications: new Map(), // community_id → status
   languageHandler: null,
   refreshTimer: null,
@@ -46,6 +49,8 @@ const els = {};
 export function initCommunity(me) {
   state.me = me;
   state.detailId = null;
+  state.showAll = false;
+  state.upcoming = [];
   state.extra.clear();
   if (state.languageHandler) document.removeEventListener("site-language-change", state.languageHandler);
   if (state.refreshTimer) clearInterval(state.refreshTimer);
@@ -60,6 +65,7 @@ export function initCommunity(me) {
     dayTitle: $("#selectedDateTitle"),
     dayCount: $("#selectedDateCount"),
     list: $("#communityList"),
+    viewAll: $('#viewAllCommunities'),
     createBtn: $("#openCreateCommunity"),
     createDateLabel: $("#createDateLabel"),
     form: $("#communityForm"),
@@ -89,6 +95,14 @@ export function initCommunity(me) {
   els.next.addEventListener("click", () => shiftMonth(1));
   els.grid.addEventListener("click", onGridClick);
   els.list.addEventListener("click", onCardClick);
+  els.viewAll.addEventListener('click', async () => {
+    state.showAll = !state.showAll;
+    if (state.showAll) {
+      state.selectedDate = today();
+      setBusy(els.viewAll, true);
+      try { await loadMonth(); } finally { setBusy(els.viewAll, false); }
+    } else renderDay();
+  });
   els.detail.addEventListener("click", onDetailClick);
   els.createBtn.addEventListener("click", openCreateForm);
   els.form.addEventListener("submit", submitCommunity);
@@ -137,6 +151,7 @@ export async function loadMonth() {
   state.communities = communities.data;
   if (applications.error) { toast(errorMessage(applications.error), "error"); return; }
   state.myApplications = new Map((applications.data || []).map((a) => [a.community_id, a.status]));
+  if (state.showAll) await loadUpcoming();
   renderCalendar();
   renderDay();
   await loadMine();
@@ -145,13 +160,31 @@ export async function loadMonth() {
 
 export const scheduleCommunityRefresh = debounce(loadMonth, 400);
 
+async function loadUpcoming() {
+  const rows = [];
+  const pageSize = 500;
+  for (let offset = 0; ; offset += pageSize) {
+    const { data, error } = await supabase.from('communities').select(COMMUNITY_COLUMNS)
+      .gte('community_date', today()).order('community_date').order('community_time').order('id')
+      .range(offset, offset + pageSize - 1);
+    if (error) {
+      toast(errorMessage(error, "Couldn't load communities."), 'error');
+      state.showAll = false;
+      return;
+    }
+    rows.push(...(data || []));
+    if ((data || []).length < pageSize) break;
+  }
+  state.upcoming = rows.filter(c => !communityIsLocked(c));
+}
+
 function shiftMonth(delta) {
   state.cursor = new Date(state.cursor.getFullYear(), state.cursor.getMonth() + delta, 1);
   loadMonth();
 }
 
 const byDate = (key) => state.communities.filter((c) => c.community_date === key);
-const findCommunity = (id) => state.communities.find((c) => c.id === id) || state.mine.find((c) => c.id === id) || state.extra.get(id);
+const findCommunity = (id) => state.communities.find((c) => c.id === id) || state.upcoming.find(c => c.id === id) || state.mine.find((c) => c.id === id) || state.extra.get(id);
 const isFull = (c) => c.approved_count >= c.max_participants;
 // Communities created before the minimum existed default to 1.
 const minOf = (c) => c.min_participants ?? 1;
@@ -212,6 +245,7 @@ function renderCalendar() {
 function onGridClick(event) {
   const btn = event.target.closest("[data-date]");
   if (!btn) return;
+  state.showAll = false;
   state.selectedDate = btn.dataset.date;
   const d = parseDateKey(state.selectedDate);
   if (d.getMonth() !== state.cursor.getMonth()) {
@@ -226,8 +260,9 @@ function onGridClick(event) {
 /* ---------------- Selected date ---------------- */
 
 function renderDay() {
-  const list = byDate(state.selectedDate);
-  els.dayTitle.textContent = formatDateKey(state.selectedDate, { weekday: "long", month: "long", day: "numeric" });
+  const list = state.showAll ? state.upcoming.filter(c => !communityIsLocked(c)) : byDate(state.selectedDate);
+  els.viewAll.setAttribute('aria-pressed', String(state.showAll));
+  els.dayTitle.textContent = state.showAll ? t('Upcoming communities') : formatDateKey(state.selectedDate, { weekday: "long", month: "long", day: "numeric" });
   els.dayCount.textContent = `${list.length} ${list.length === 1 ? "community" : "communities"}`;
 
   const isPast = state.selectedDate < today();
@@ -238,7 +273,7 @@ function renderDay() {
     ? list.map(dayItemHtml).join("")
     : `<div class="empty-state empty-state--soft">
          ${icon("sparkle")}
-         <strong>${isPast ? "No communities on this day" : "Nothing planned yet"}</strong>
+         <strong>${state.showAll ? 'No upcoming communities yet.' : isPast ? "No communities on this day" : "Nothing planned yet"}</strong>
          <p>${isPast ? "Pick another date to see what's happening." : "Be the one who brings everyone together."}</p>
        </div>`;
 }
@@ -364,6 +399,7 @@ function dayItemHtml(c) {
         <h3 class="meeting-item__title"><button type="button" data-action="view" data-id="${c.id}" data-user-content>${escapeHtml(c.title)}</button></h3>
         <p class="meeting-item__desc" data-user-content>${escapeHtml(c.activity)}</p>
         <p class="meeting-item__meta">
+          ${state.showAll ? `<span>${escapeHtml(formatDateKey(c.community_date, { year: 'numeric', month: 'short', day: 'numeric' }))}</span>` : ''}
           <span>${escapeHtml(shortTime(c.community_time))}</span>
           <span class="${isFull(c) ? "is-full" : ""}">${icon("users")}<b>${c.approved_count}/${c.max_participants}</b></span>
           <span>${escapeHtml(formatFee(c.participation_fee))}</span>

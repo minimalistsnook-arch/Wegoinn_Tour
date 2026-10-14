@@ -1864,6 +1864,8 @@ html.chrome-hidden { scroll-padding-top: 12px; }
 #operatorActionsSheet [data-operator-summary] { overflow-wrap: anywhere; }
 
 .operator-account-info { display: block; color: var(--muted); font-size: .75rem; overflow-wrap: anywhere; margin: .4rem 0; }
+#viewAllCommunities { margin-top: 14px; }
+#viewAllCommunities[aria-pressed="true"] { background: var(--pine); color: var(--on-accent); }
 
 /* ---------- Selected-date list ----------
    No surrounding card: a plain list of rows, each a square thumbnail
