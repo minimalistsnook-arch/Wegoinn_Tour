@@ -4,6 +4,7 @@ const rows = [
 ['Online now','현재 접속','現在オンライン','当前在线'],
 ['Close fullscreen chat','전체 화면 채팅 닫기','全画面チャットを閉じる','关闭全屏聊天'],
 ['Guestbook','방명록','ゲストブック','留言簿'],
+['Cover Photo','대표 사진','カバー写真','封面照片'],['Add a photo','사진 추가','写真を追加','添加照片'],['A photo helps your community stand out in the list.','사진을 넣으면 목록에서 모임이 더 눈에 띕니다.','写真があるとリストで目立ちます。','添加照片能让活动在列表中更醒目。'],["Photo upload isn't connected yet.",'사진 업로드가 아직 연결되지 않았습니다.','写真のアップロードはまだ利用できません。','照片上传尚未开通。'],['Your photo is still being prepared. Please try again in a moment.','사진을 준비하는 중입니다. 잠시 후 다시 시도해 주세요.','写真を準備中です。しばらくしてからお試しください。','照片正在处理中，请稍后再试。'],["Community saved, but photos aren't enabled yet. Please contact staff.",'모임은 저장되었지만 사진 기능이 아직 활성화되지 않았습니다. 직원에게 문의해 주세요.','コミュニティは保存されましたが、写真機能はまだ利用できません。スタッフにお問い合わせください。','活动已保存，但照片功能尚未开通，请联系工作人员。'],
 ['Show less','접기','折りたたむ','收起'],
 ['Community creation is temporarily unavailable. Please contact staff.','현재 모임을 만들 수 없습니다. 직원에게 문의해 주세요.','現在コミュニティを作成できません。スタッフにお問い合わせください。','暂时无法创建活动，请联系工作人员。'],
 ['Mark shown as read','표시된 알림 읽음 처리','表示中の通知を既読にする','将显示的通知标为已读'],['Entering…','입장 중…','ログイン中…','正在进入…'],['Posting…','게시 중…','投稿中…','正在发布…'],['Sending…','전송 중…','送信中…','正在发送…'],['Creating…','저장 중…','保存中…','正在保存…'],

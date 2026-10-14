@@ -321,6 +321,19 @@
           <span class="field__box"><i data-icon="pen"></i><input name="title" type="text" maxlength="60" placeholder="e.g. Hongdae Night Walk" required /></span>
         </label>
 
+        <div class="field">
+          <span class="field__label">Cover Photo <small>(optional)</small></span>
+          <div class="cover-pick">
+            <label class="cover-pick__frame">
+              <input id="communityImageInput" type="file" accept="image/*" hidden />
+              <img id="communityImagePreview" alt="" hidden />
+              <span class="cover-pick__empty"><i data-icon="camera"></i><span>Add a photo</span></span>
+            </label>
+            <button id="removeCommunityImage" class="cover-pick__remove" type="button" hidden>Remove photo</button>
+          </div>
+          <small class="field__hint">A photo helps your community stand out in the list.</small>
+        </div>
+
         <label class="field">
           <span class="field__label">Activity · What are you going to do?</span>
           <textarea name="activity" class="field__area" rows="3" maxlength="500" placeholder="Street food, music, and a slow walk around Hongdae…" required></textarea>

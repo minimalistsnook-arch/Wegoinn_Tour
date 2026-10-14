@@ -1972,3 +1972,28 @@ html.chrome-hidden { scroll-padding-top: 12px; }
 @media (max-width: 767px) {
   .meeting-item__desc { -webkit-line-clamp: 1; line-clamp: 1; }
 }
+
+/* ---------- Community cover photo ---------- */
+.meeting-item__thumb img { width: 100%; height: 100%; object-fit: cover; }
+.detail-cover { width: 100%; aspect-ratio: 16 / 9; margin-top: 16px; border-radius: var(--r-md); object-fit: cover; background: var(--bg-deep); }
+.cover-pick { display: flex; align-items: flex-end; gap: 12px; }
+.cover-pick__frame {
+  position: relative;
+  display: grid;
+  place-items: center;
+  flex: 0 0 120px;
+  width: 120px;
+  height: 120px;
+  overflow: hidden;
+  border: 1px dashed var(--line-strong);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--muted);
+  cursor: pointer;
+}
+.cover-pick__frame img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.cover-pick__frame img[hidden] { display: none; }
+.cover-pick__empty { display: grid; justify-items: center; gap: 4px; font-size: 12px; font-weight: 700; }
+.cover-pick__empty .icon { width: 22px; height: 22px; color: var(--rose); }
+.cover-pick__frame:focus-within { outline: 2px solid var(--rose); outline-offset: 2px; }
+.cover-pick__remove { border: 0; background: none; color: var(--muted); font-size: 12px; text-decoration: underline; cursor: pointer; }

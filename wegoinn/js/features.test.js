@@ -1,6 +1,7 @@
 import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest';
 import { readFileSync } from 'node:fs';
 const mock = vi.hoisted(() => ({ rpc: vi.fn(), from: vi.fn(), posts: [], communities: [], applications: [], notifications: [] }));
+vi.mock('./image-upload.js', () => ({ isImageUploadConfigured: () => true, compressImage: vi.fn(async file => file), uploadImage: vi.fn(async () => 'https://x.supabase.co/storage/v1/object/public/post-images/u/cover.webp') }));
 vi.mock('./supabase.js', () => ({ supabase: { from: mock.from, rpc: mock.rpc, auth: { getSession: vi.fn(async () => ({ data: { session: { access_token:'test' } } })) } }, errorMessage: err => err.message }));
 import { koreaToday, communityIsLocked, formatDateTime, safeMapUrl } from './utils.js';
 import { initCommunity } from './community.js';
@@ -137,6 +138,23 @@ describe('community workflows',()=>{
    expect(list.textContent).toContain('Applications closed');
    expect(list.querySelector('[data-action=join]')).toBeNull();
    expect(list.textContent).toMatch(/Korean|한국어/);
+ });
+ it('uploads the cover photo after creating and shows it in the list',async()=>{
+   URL.createObjectURL=vi.fn(()=>'blob:cover'); URL.revokeObjectURL=vi.fn();
+   await initCommunity(me);
+   document.querySelector('#openCreateCommunity').click();
+   const input=document.querySelector('#communityImageInput');
+   Object.defineProperty(input,'files',{value:[new File(['x'],'cover.jpg',{type:'image/jpeg'})],configurable:true});
+   input.dispatchEvent(new Event('change')); await settle();
+   expect(document.querySelector('#communityImagePreview').hidden).toBe(false);
+   const form=document.querySelector('#communityForm');
+   for (const [key,value] of Object.entries({title:'Walk',activity:'Explore',preferred_participants:'Everyone',schedule:'Lobby',community_date:'2099-01-01',community_time:'19:00',deadline_date:'2099-01-01',deadline_time:'18:00',language:'ko',max_participants:'8',min_participants:'1',meeting_place:'Lobby'})) form.elements[key].value=value;
+   mock.rpc.mockResolvedValueOnce({data:'new-id',error:null});
+   const url='https://x.supabase.co/storage/v1/object/public/post-images/u/cover.webp';
+   mock.communities=[community({image_url:url})];
+   form.dispatchEvent(new Event('submit',{bubbles:true,cancelable:true})); await settle();
+   expect(mock.rpc).toHaveBeenCalledWith('set_community_image',{p_community_id:'new-id',p_image_url:url});
+   expect(document.querySelector('#communityList .meeting-item__thumb img').getAttribute('src')).toBe(url);
  });
  it('joins straight away without waiting for the host',async()=>{
    const other={...me,id:'00000000-0000-0000-0000-000000000002'};

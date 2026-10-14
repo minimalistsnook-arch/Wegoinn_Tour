@@ -11,6 +11,7 @@ import { openChat, setChatRooms } from "./chat.js";
 import { isNew } from "./news.js";
 import { mountCommunityComments } from "./community-comments.js";
 import { moderationError } from "./moderation.js";
+import { compressImage, uploadImage, isImageUploadConfigured } from "./image-upload.js";
 
 const COMMUNITY_COLUMNS = `
   *,
@@ -30,6 +31,9 @@ const state = {
   languageHandler: null,
   refreshTimer: null,
   detailId: null,         // community open in the detail sheet
+  cover: null,            // { file, url } compressed cover photo waiting to upload
+  coverRemoved: false,    // editing: the saved photo was removed
+  coverLoading: false,
 };
 
 import { accountDetailHtml } from "./operator-accounts.js";
@@ -60,6 +64,9 @@ export function initCommunity(me) {
     feeAmountWrap: $("#feeAmountWrap"),
     feeAmount: $("#communityFee"),
     detail: $("#communityDetail"),
+    coverInput: $("#communityImageInput"),
+    coverPreview: $("#communityImagePreview"),
+    coverRemove: $("#removeCommunityImage"),
   });
 
   els.form.elements.language.insertAdjacentHTML("beforeend", COMMUNITY_LANGUAGES
@@ -83,6 +90,8 @@ export function initCommunity(me) {
   els.detail.addEventListener("click", onDetailClick);
   els.createBtn.addEventListener("click", openCreateForm);
   els.form.addEventListener("submit", submitCommunity);
+  els.coverInput.addEventListener("change", pickCover);
+  els.coverRemove.addEventListener("click", () => { setCover(null); state.coverRemoved = true; });
   els.form.elements.map_url.addEventListener("input", debounce(updateMapPreview, 400));
   els.form.elements.map_url.addEventListener("change", updateMapPreview);
   els.form.addEventListener("change", (e) => {
@@ -334,7 +343,7 @@ const canJoin = (c) => !isHost(c) && !isAdmin() && !communityIsLocked(c) && !app
   && !["approved", "declined"].includes(state.myApplications.get(c.id));
 
 // Selected-date list item: square thumbnail · title / activity / time · people · fee · status.
-// Communities have no cover photo, so the thumbnail is a brand-tone tile with the title's first letter.
+// Without a cover photo the thumbnail is a brand-tone tile with the title's first letter.
 function dayItemHtml(c) {
   const min = minOf(c);
   const locked = communityIsLocked(c);
@@ -346,7 +355,9 @@ function dayItemHtml(c) {
   const tags = `${isNew("community", c.created_at, c.creator_id) ? `<span class="tag tag--new">NEW</span>` : ""}${dayStatusHtml(c)}${confirm}`;
   return `
     <article class="meeting-item" data-id="${c.id}">
-      <div class="meeting-item__thumb tone--${avatarTone(c.title)}" aria-hidden="true" data-user-content>${escapeHtml(Array.from(c.title.trim())[0] || "")}</div>
+      <div class="meeting-item__thumb tone--${avatarTone(c.title)}" aria-hidden="true" data-user-content>${c.image_url
+        ? `<img src="${escapeHtml(c.image_url)}" alt="" loading="lazy" decoding="async" />`
+        : escapeHtml(Array.from(c.title.trim())[0] || "")}</div>
       <div class="meeting-item__content">
         <h3 class="meeting-item__title"><button type="button" data-action="view" data-id="${c.id}" data-user-content>${escapeHtml(c.title)}</button></h3>
         <p class="meeting-item__desc" data-user-content>${escapeHtml(c.activity)}</p>
@@ -411,6 +422,7 @@ async function renderDetail() {
       <h2 data-user-content id="communitySheetTitle">${escapeHtml(c.title)}</h2>
       <div class="detail-host">${avatarHtml(host, "avatar--sm", c.creator?.avatar_url)} <span>hosted by <b>${escapeHtml(host)}</b></span></div>
     </div>
+    ${c.image_url ? `<img class="detail-cover" src="${escapeHtml(c.image_url)}" alt="" decoding="async" />` : ""}
 
     <div class="detail-facts">
       <div><small>Date</small><b>${escapeHtml(formatDateKey(c.community_date, { month: "short", day: "numeric" }))}</b></div>
@@ -590,6 +602,43 @@ function toggleFeeAmount() {
   if (!paid) els.feeAmount.value = "";
 }
 
+/* ---------------- Cover photo ---------------- */
+
+function setCover(cover) {
+  if (state.cover?.url?.startsWith("blob:")) URL.revokeObjectURL(state.cover.url);
+  state.cover = cover;
+  els.coverPreview.hidden = !cover;
+  if (cover) els.coverPreview.src = cover.url; else els.coverPreview.removeAttribute("src");
+  els.coverRemove.hidden = !cover;
+}
+
+async function pickCover() {
+  const file = els.coverInput.files?.[0];
+  els.coverInput.value = "";
+  if (!file || state.coverLoading) return;
+  if (!isImageUploadConfigured()) return toast("Photo upload isn't connected yet.", "error");
+  state.coverLoading = true;
+  try {
+    const compressed = await compressImage(file);
+    setCover({ file: compressed, url: URL.createObjectURL(compressed) });
+    state.coverRemoved = false;
+  } catch (err) { toast(err.message, "error"); } finally { state.coverLoading = false; }
+}
+
+// Runs after the community itself is saved, so a photo problem never loses the community.
+async function saveCover(id) {
+  if (!state.cover?.file && !state.coverRemoved) return true;
+  try {
+    const url = state.cover?.file ? await uploadImage(state.cover.file) : null;
+    const { error } = await supabase.rpc("set_community_image", { p_community_id: id, p_image_url: url });
+    if (error) throw error;
+    return true;
+  } catch (err) {
+    toast(err.code === "PGRST202" ? "Community saved, but photos aren't enabled yet. Please contact staff." : `Community saved, but the photo wasn't: ${errorMessage(err)}`, "error");
+    return false;
+  }
+}
+
 function openCreateForm() {
   const f = els.form;
   state.editId = null;
@@ -598,6 +647,8 @@ function openCreateForm() {
   $("#communityReservationField").hidden = true;
   f.elements.reservation_number.required = false;
   f.reset();
+  setCover(null);
+  state.coverRemoved = false;
   updateMapPreview();
   f.elements.community_date.value = state.selectedDate;
   f.elements.community_date.min = today();
@@ -635,6 +686,7 @@ async function submitCommunity(event) {
   const deadlineChanged = !original || `${original.date}T${original.time}` !== deadline;
   if (!(isAdmin() && state.editId) && deadlineChanged && applicationsClosed({ application_deadline: deadline })) return toast("Choose a future application deadline (KST)", "error");
 
+  if (state.coverLoading) return toast("Your photo is still being prepared. Please try again in a moment.", "error");
   const submit = f.querySelector('[type="submit"]');
   setBusy(submit, true, "Creating…");
   const details = Object.fromEntries(["title", "activity", "preferred_participants", "schedule", "community_date", "community_time", "meeting_place", "map_url"].map((name) => [name, v(name)]));
@@ -644,25 +696,29 @@ async function submitCommunity(event) {
   details.application_deadline = deadline;
   details.language = v("language");
   details.participation_fee = fee;
-  let error;
+  let error, data;
   try {
-    ({ error } = await supabase.rpc(state.editId ? "update_community" : "create_community_v2", state.editId
+    ({ data, error } = await supabase.rpc(state.editId ? "update_community" : "create_community_v2", state.editId
       ? { p_community_id: state.editId, p_details: details }
       : { p_reservation_number: null, p_details: details }));
   } catch (err) { error = err; }
-  setBusy(submit, false);
   if (error) {
+    setBusy(submit, false);
     if (error.code === "PGRST202") return toast("Community creation is temporarily unavailable. Please contact staff.", "error");
     return toast(errorMessage(error), "error");
   }
 
+  const savedId = state.editId || (typeof data === "string" ? data : null);
+  const coverSaved = savedId ? await saveCover(savedId) : true;
+  setBusy(submit, false);
   const date = v("community_date");
   f.reset(); // clears the reservation number from the DOM right away
   closeSheet("createSheet");
   state.selectedDate = date;
   const d = parseDateKey(date);
   state.cursor = new Date(d.getFullYear(), d.getMonth(), 1);
-  toast(state.editId ? "Community updated." : "Your community is live 🎉");
+  if (coverSaved) toast(state.editId ? "Community updated." : "Your community is live 🎉");
+  setCover(null);
   state.editId = null;
   await loadMonth();
 }
@@ -691,6 +747,7 @@ function openEditForm(c) {
   els.form.elements.feeType.value = c.participation_fee > 0 ? "paid" : "free";
   toggleFeeAmount();
   els.form.elements.participation_fee.value = c.participation_fee || "";
+  if (c.image_url) setCover({ url: c.image_url });
 }
 
 async function loadMine() {
