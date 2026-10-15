@@ -126,17 +126,6 @@
     </nav>
 
     <main id="top" class="layout">
-      <section class="hello">
-        <div class="hello__copy">
-          <p class="eyebrow">Welcome home</p>
-          <h1>Hello, <em id="greetingName">traveler</em></h1>
-          <p>Share a little moment from your stay — and find people to explore Seoul with.</p>
-        </div>
-        <div class="hello__art" aria-hidden="true">
-          <span class="arch arch--hello"><i data-icon="sparkle"></i></span>
-        </div>
-      </section>
-
       <!-- COMMUNITY CALENDAR -->
       <section id="community" class="block block--community" aria-labelledby="communityHeading" data-section>
         <div class="block__head">
@@ -148,6 +137,7 @@
 
         <details class="card my-communities"><summary>My communities</summary><p>Hosting, applications and history · All times KST (UTC+9)</p><div id="myCommunityList" class="community-list"></div></details>
         <div class="calendar card">
+          <p class="calendar__guide"><span class="legend-dot"></span> Red dot = a day with a community · tap a date to see it</p>
           <div class="calendar__head">
             <button id="prevMonth" class="icon-btn" type="button" aria-label="Previous month"><i data-icon="left"></i></button>
             <h3 id="calendarMonth" class="calendar__month" aria-live="polite"></h3>
@@ -157,7 +147,6 @@
             <span>Sun</span><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span>
           </div>
           <div id="calendarGrid" class="calendar__grid"></div>
-          <p class="calendar__legend"><span class="legend-dot"></span> A community is planned</p>
         </div>
 
         <button id="viewAllCommunities" class="btn btn--ghost btn--block" type="button" aria-pressed="false" aria-controls="communityList">View all communities</button>

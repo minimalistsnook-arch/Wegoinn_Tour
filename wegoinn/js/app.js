@@ -189,7 +189,6 @@ async function enterApp(profile) {
   // Shown in the UI only — permissions are always decided by the database.
   $("#headerNickname").textContent = profile.role === "admin" ? `${profile.nickname} · 운영자` : profile.nickname;
   $("#headerAvatar").outerHTML = avatarHtml(profile.nickname, "avatar--sm", profile.avatar_url);
-  $("#greetingName").textContent = profile.nickname;
 
   storage.set(SIGNED_IN, "1");
   show("app");
@@ -318,7 +317,6 @@ function setupSectionNav(profile) {
   const showSection = (id, { scroll = true } = {}) => {
     if (!ids.includes(id)) id = ids[0];
     sections.forEach((s) => (s.hidden = s.id !== id));
-    $(".hello").hidden = id !== ids[0]; // the greeting belongs to the first page only
     links.forEach((a) => {
       const active = a.getAttribute("href") === `#${id}`;
       a.classList.toggle("is-active", active);

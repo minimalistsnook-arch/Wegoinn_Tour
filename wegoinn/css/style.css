@@ -998,6 +998,20 @@ h1 em, h2 em, h3 em { color: var(--copper); font-family: var(--font-serif); }
   font-size: 12px;
 }
 .legend-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--rose); }
+/* One-line "how to read the calendar" guide, highlighted above the month. */
+.calendar__guide {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  padding: 10px 12px;
+  border-radius: var(--r-sm);
+  background: var(--rose-50);
+  color: var(--rose-700);
+  font-size: 13px;
+  font-weight: 700;
+}
+.calendar__guide .legend-dot { flex: none; width: 8px; height: 8px; }
 
 .day-head {
   display: flex;
