@@ -2135,7 +2135,7 @@ html, body { overscroll-behavior-y: contain; }
 .pull-refresh.is-refreshing .icon { animation: pull-refresh-spin .8s linear infinite; }
 @keyframes pull-refresh-spin { to { transform: rotate(360deg); } }
 
-/* Guest header: profile left, centered logo, controls right, notices on the bottom row. */
+/* Guest header: profile left, centered logo, controls right. */
 .topbar {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
@@ -2162,8 +2162,6 @@ html, body { overscroll-behavior-y: contain; }
 }
 .topbar__actions .online-count { margin-left: 0; font-size: 11px; }
 .topbar__actions .lang-select { margin-left: 0; max-width: 100%; }
-.topbar__notice { grid-column: 1 / -1; display: flex; justify-content: center; padding-top: 8px; border-top: 1px solid rgba(255, 255, 255, .25); }
-.topbar__notice .pill-btn { min-height: 32px; gap: 6px; }
 @media (max-width: 600px) {
   .topbar { gap: 8px; }
   .topbar__brand .wordmark__logo { width: clamp(100px, 32vw, 150px); }
@@ -2171,7 +2169,8 @@ html, body { overscroll-behavior-y: contain; }
   .topbar__name { font-size: 13px; }
   .topbar__actions .online-count { flex-wrap: wrap; justify-content: flex-end; gap: 3px; white-space: normal; }
 }
-.app-foot__actions { display: flex; justify-content: center; gap: 8px; margin-top: 14px; }
+.app-foot__actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 8px; margin-top: 14px; }
+.app-foot__actions > button { display: inline-flex; align-items: center; justify-content: center; min-height: 36px; padding: 0 14px; font-size: 13px; }
 
 /* =====================================================================
    CHAT LIST — the Chat page after the fullscreen chat is closed (chat.js renderChatList).
