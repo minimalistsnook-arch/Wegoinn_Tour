@@ -146,7 +146,7 @@ body {
   min-height: 100dvh;
   color: var(--ink);
   background: var(--bg);
-  font: 700 15px/1.55 var(--font-sans);
+  font: 400 15px/1.55 var(--font-sans);
   -webkit-font-smoothing: antialiased;
   -webkit-tap-highlight-color: transparent;
 }

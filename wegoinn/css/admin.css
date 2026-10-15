@@ -67,7 +67,7 @@ body {
   min-height: 100vh;
   color: var(--ink);
   background: var(--bg);
-  font: 700 14px/1.5 var(--font-sans);
+  font: 400 14px/1.5 var(--font-sans);
   -webkit-font-smoothing: antialiased;
 }
 button, input { font: inherit; color: inherit; }
