@@ -9,7 +9,7 @@ import { initCommunity, scheduleCommunityRefresh } from "./community.js";
 import { initNews, sectionInView, scheduleNewCommunities, scheduleNewPosts } from "./news.js";
 import { initChat } from "./chat.js";
 import { $, $$, avatarHtml, toast, setBusy } from "./utils.js";
-import { hydrateIcons } from "./icons.js";
+import { hydrateIcons, icon } from "./icons.js";
 import { initTheme } from "./theme.js";
 import { loginErrorMessage } from "./login-errors.js";
 import { initOnlinePresence } from "./online-presence.js";
@@ -112,8 +112,8 @@ $$("[data-stay-calendar]").forEach((picker) => {
     syncCalendar();
     try { picker.showPicker?.(); } catch { /* Native control remains clickable. */ }
   };
+  // Only the calendar icon opens the picker; opening it from the text box steals typing (e.g. 999222).
   input.addEventListener("input", syncCalendar);
-  input.addEventListener("click", openCalendar);
   picker.addEventListener("click", openCalendar);
   picker.addEventListener("keydown", (event) => {
     if ((event.key === "Enter" || event.key === " ") && picker.showPicker) {
@@ -200,6 +200,7 @@ async function enterApp(profile) {
     new ResizeObserver(() => document.documentElement.style.setProperty("--measured-topbar-h", `${header.getBoundingClientRect().height}px`)).observe(header);
   }
   setupAutoHideHeader();
+  setupPullToRefresh();
   initOperatorAccounts(profile);
   watchSessionActivity();
   setupSectionNav(profile);
@@ -256,6 +257,56 @@ function setupAutoHideHeader() {
   }, { passive: true });
   // Keyboard focus moving into the bars (Tab) brings them back.
   chrome.forEach((el) => el.addEventListener("focusin", () => root.classList.remove("chrome-hidden")));
+}
+
+// Pulling down past the top of the page (touch) reloads it, like a native app.
+function setupPullToRefresh() {
+  const root = document.documentElement;
+  const TRIGGER = 80; // px of pull (after resistance) needed to reload
+  const indicator = document.createElement("div");
+  indicator.className = "pull-refresh";
+  indicator.setAttribute("aria-hidden", "true");
+  indicator.innerHTML = icon("refresh");
+  document.body.append(indicator);
+  let startY = null;
+  let pull = 0;
+  const reset = () => {
+    startY = null;
+    pull = 0;
+    indicator.classList.remove("is-pulling", "is-ready");
+    indicator.style.removeProperty("--pull");
+    indicator.style.removeProperty("--pull-turn");
+  };
+  // A touch inside a scrolled box (a list, a textarea) scrolls that box, not the page.
+  const insideScrolledBox = (el) => {
+    for (; el && el !== document.body; el = el.parentElement) if (el.scrollTop > 0) return true;
+    return false;
+  };
+  document.addEventListener("touchstart", (event) => {
+    if (event.touches.length !== 1 || window.scrollY > 0 || root.classList.contains("sheet-open")
+      || root.classList.contains("chat-fullscreen") || insideScrolledBox(event.target)) return;
+    startY = event.touches[0].clientY;
+  }, { passive: true });
+  document.addEventListener("touchmove", (event) => {
+    if (startY === null) return;
+    const distance = event.touches[0].clientY - startY;
+    if (distance <= 0 || window.scrollY > 0) { reset(); return; }
+    pull = Math.min(distance * 0.5, TRIGGER * 1.5);
+    indicator.classList.add("is-pulling");
+    indicator.classList.toggle("is-ready", pull >= TRIGGER);
+    indicator.style.setProperty("--pull", `${pull}px`);
+    indicator.style.setProperty("--pull-turn", `${pull * 3}deg`);
+  }, { passive: true });
+  document.addEventListener("touchend", () => {
+    if (startY === null) return;
+    if (pull >= TRIGGER) {
+      indicator.classList.add("is-refreshing");
+      location.reload();
+      return;
+    }
+    reset();
+  });
+  document.addEventListener("touchcancel", reset);
 }
 
 // Community / 방명록 / Chat are separate pages: the tab (and the URL hash) decides which one is shown.
