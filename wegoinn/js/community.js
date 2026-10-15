@@ -261,6 +261,10 @@ function renderCalendar() {
   els.grid.innerHTML = cells.join("");
 }
 
+// One line of the detail facts list: icon tile · label · value.
+const factRow = (name, label, value) => `
+  <div class="detail-fact"><span class="detail-fact__icon" aria-hidden="true">${icon(name)}</span><small>${label}</small><b>${escapeHtml(value)}</b></div>`;
+
 // My profile photo marks the days of my own communities.
 function myCalendarPhoto() {
   const url = state.me.avatar_url;
@@ -501,11 +505,11 @@ async function renderDetail() {
       ${c.image_url ? `<img class="detail-cover" src="${escapeHtml(c.image_url)}" alt="" decoding="async" />` : ""}
 
       <div class="detail-facts">
-        <div><small>Date</small><b>${escapeHtml(formatDateKey(c.community_date, { month: "short", day: "numeric" }))}</b></div>
-        <div><small>Time</small><b>${escapeHtml(shortTime(c.community_time))} KST</b></div>
-        <div><small>Fee</small><b>${escapeHtml(formatFee(c.participation_fee))}</b></div>
-        ${c.language ? `<div><small>Language</small><b>${escapeHtml(languageName(c.language))}</b></div>` : ""}
-        ${c.application_deadline ? `<div class="detail-facts__wide"><small>${applicationsClosed(c) ? "Applications closed" : "Apply by"}</small><b>${escapeHtml(deadlineLabel(c))}</b></div>` : ""}
+        ${factRow("calendar", "Date", formatDateKey(c.community_date, { month: "short", day: "numeric" }))}
+        ${factRow("clock", "Time", `${shortTime(c.community_time)} KST`)}
+        ${factRow("ticket", "Fee", formatFee(c.participation_fee))}
+        ${c.language ? factRow("globe", "Language", languageName(c.language)) : ""}
+        ${c.application_deadline ? factRow("hourglass", applicationsClosed(c) ? "Applications closed" : "Apply by", deadlineLabel(c)) : ""}
       </div>
 
       ${communityIsLocked(c) && !isAdmin() ? `<p class="host-note">${c.status === "cancelled" ? "This community was cancelled. History is preserved." : notHeld(c) ? "This community didn't reach its minimum number of participants, so it won't go ahead." : "This community has started. History is read-only."}</p>` : ""}
