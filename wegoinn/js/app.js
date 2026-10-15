@@ -13,6 +13,7 @@ import { $, $$, avatarHtml, toast, setBusy } from "./utils.js";
 import { hydrateIcons, icon } from "./icons.js";
 import { initTheme } from "./theme.js";
 import { loginErrorMessage } from "./login-errors.js";
+import { watchIdle, idleExpired, clearIdle, IDLE_MESSAGE } from "./idle-logout.js";
 import { initOnlinePresence } from "./online-presence.js";
 import { initProfilePhotoViewer } from "./profile-photo.js";
 
@@ -33,6 +34,7 @@ const storage = {
 $("#logoutBtn").addEventListener("click", async () => {
   await Promise.resolve(supabase.rpc("touch_guest_session", { p_sign_out: true })).catch(() => {});
   storage.set(SIGNED_IN, null);
+  clearIdle();
   const { error } = await supabase.auth.signOut();
   if (error) toast(errorMessage(error), "error");
 });
@@ -51,6 +53,8 @@ async function boot() {
     return;
   }
   try {
+    // Away for more than 20 minutes since the last visit: sign out before showing the app.
+    if (storage.get(SIGNED_IN) && idleExpired()) return idleLogout();
     const profile = await getMyProfile();
     if (profile) return enterApp(profile);
     // Signed in before but the profile is gone: the stay is over (the database hides ended stays).
@@ -75,6 +79,19 @@ function showLogoutReason() {
 async function endStay() {
   storage.set(SIGNED_IN, null);
   storage.set(LOGOUT_REASON, STAY_ENDED_MESSAGE);
+  await supabase.auth.signOut({ scope: "local" }).catch(() => {});
+  location.reload();
+}
+
+// No activity for 20 minutes (or the app left closed that long): sign out and explain why.
+let idleSigningOut = false;
+async function idleLogout() {
+  if (idleSigningOut) return;
+  idleSigningOut = true;
+  storage.set(SIGNED_IN, null);
+  storage.set(LOGOUT_REASON, IDLE_MESSAGE);
+  clearIdle();
+  await Promise.resolve(supabase.rpc("touch_guest_session", { p_sign_out: true })).catch(() => {});
   await supabase.auth.signOut({ scope: "local" }).catch(() => {});
   location.reload();
 }
@@ -201,6 +218,7 @@ async function enterApp(profile) {
   show("app");
   initOnlinePresence(profile);
   watchStay();
+  watchIdle(idleLogout);
   const header = $(".topbar");
   if (typeof ResizeObserver !== "undefined") {
     new ResizeObserver(() => document.documentElement.style.setProperty("--measured-topbar-h", `${header.getBoundingClientRect().height}px`)).observe(header);
