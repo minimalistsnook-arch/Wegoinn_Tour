@@ -1,20 +1,19 @@
 /* =====================================================================
    WEGOINN — Guest app
-   Same palette as the housekeeping ledger: cream paper, pine red,
-   copper highlights. Light and dark via html[data-theme].
+   Clean white background with pine red accents and copper highlights. Light and dark via html[data-theme].
    ===================================================================== */
 
 :root {
   color-scheme: light;
-  --bg: #f3ecdf;
-  --bg-deep: #e8dccb;
-  --surface: #fffaf3;
-  --surface-soft: #f8ece4;
-  --ink: #241c15;
-  --ink-2: #6d6256;
-  --muted: #6d6256;
-  --line: #e3d6c6;
-  --line-strong: #d4c4b0;
+  --bg: #ffffff;
+  --bg-deep: #f4f4f5;
+  --surface: #ffffff;
+  --surface-soft: #f6f6f7;
+  --ink: #1d1d1f;
+  --ink-2: #5f6368;
+  --muted: #6b6f76;
+  --line: #ececee;
+  --line-strong: #d9d9de;
 
   --pine: #c8000d;
   --pine-deep: #9e000a;
@@ -28,8 +27,8 @@
   --rose-700: #7a0008;
   --rose-100: #f8d0d3;
   --rose-50: #fdebec;
-  --peach: #f8ece4;
-  --lilac: #f3e4d4;
+  --peach: #f6f6f7;
+  --lilac: #f6f6f7;
   --sage: var(--copper);
   --sage-50: #e7f0e4;
   --gold: var(--copper);
@@ -37,31 +36,31 @@
   --danger-50: #fdebec;
 
   --warn: #9a4e2c;
-  --warn-bg: #f8ece4;
+  --warn-bg: #fdf3ee;
   --ok: #2f5a3a;
   --ok-bg: #e7f0e4;
-  --placeholder: #a89888;
+  --placeholder: #a1a1aa;
   --focus: rgba(200, 0, 13, .16);
-  --overlay: rgba(36, 28, 21, .38);
-  --bar: rgba(243, 236, 223, .96);
-  --day-muted: #b7aa9c;
-  --chip: rgba(255, 250, 243, .85);
+  --overlay: rgba(0, 0, 0, .32);
+  --bar: rgba(255, 255, 255, .96);
+  --day-muted: #b4b4bb;
+  --chip: rgba(255, 255, 255, .9);
   --avatar-ring: rgba(255, 255, 255, .6);
   --shimmer: rgba(255, 255, 255, .6);
 
-  --blob-a: #f8c9c6;
-  --blob-b: #f3dfd0;
-  --blob-c: #ead9c4;
-  --hello-a: #f8d0d3;
-  --hello-b: #f3dfd0;
-  --hello-base: #f8ece4;
+  --blob-a: #ffffff;
+  --blob-b: #ffffff;
+  --blob-c: #ffffff;
+  --hello-a: #ffffff;
+  --hello-b: #ffffff;
+  --hello-base: #ffffff;
   --arch-a: #f8d0d3;
-  --arch-b: #f8ece4;
+  --arch-b: #fdebec;
 
   --tone-rose-a: #f8d0d3; --tone-rose-b: #fdebec;
-  --tone-peach-a: #f3dfd0; --tone-peach-b: #f8ece4;
-  --tone-warm-a: #eadcc8; --tone-warm-b: #f6efe4;
-  --tone-sand-a: #e7d7c0; --tone-sand-b: #f8f1e6;
+  --tone-peach-a: #f1f1f3; --tone-peach-b: #f8f8f9;
+  --tone-warm-a: #ededf0; --tone-warm-b: #f7f7f8;
+  --tone-sand-a: #eeeef1; --tone-sand-b: #f9f9fa;
 
   --font-serif: var(--font-ui);
   --font-sans: var(--font-ui);
@@ -71,9 +70,9 @@
   --r-lg: 26px;
   --r-pill: 999px;
 
-  --shadow-sm: 0 1px 2px #241c150a, 0 6px 18px #241c150d;
-  --shadow-md: 0 12px 34px #241c1517;
-  --shadow-lg: 0 18px 40px #241c1514;
+  --shadow-sm: 0 1px 2px #0000000a, 0 4px 14px #0000000a;
+  --shadow-md: 0 12px 30px #00000012;
+  --shadow-lg: 0 18px 40px #00000012;
   --ease: cubic-bezier(.2, .8, .2, 1);
 
   --gutter: 18px;
@@ -1288,8 +1287,8 @@ h1 em, h2 em, h3 em { color: var(--copper); font-family: var(--font-serif); }
 .my-communities { padding:20px; margin-bottom:24px; }
 .my-communities > p { margin:8px 0 20px; font-size:13px; }
 #myCommunityList { max-height:600px; overflow:auto; }
-.notification { padding:16px 12px; border-bottom:1px solid #e4d9d0; }
-.notification--unread { background:#f5ece4; border-left:3px solid #ad6a59; }
+.notification { padding:16px 12px; border-bottom:1px solid var(--line); }
+.notification--unread { background:var(--surface-soft); border-left:3px solid #ad6a59; }
 .notification time { font-size:12px; color:#70645c; }
 #notificationSheet h2 { margin:20px 0 12px; }
 #notificationSheet .sheet__panel > p { margin-bottom:16px; }
