@@ -1129,7 +1129,9 @@ h1 em, h2 em, h3 em { color: var(--copper); font-family: var(--font-serif); }
   transition: transform .32s var(--ease);
 }
 .sheet.is-open .sheet__backdrop { opacity: 1; }
-.sheet.is-open .sheet__panel { transform: translateY(0); }
+.sheet.is-open .sheet__panel { transform: translateY(var(--sheet-drag, 0px)); }
+/* While a finger drags the sheet down (sheet.js), it follows without easing. */
+.sheet.is-dragging .sheet__panel { transition: none; }
 .sheet__grabber { display: block; width: 44px; height: 5px; margin: 0 auto 14px; border-radius: var(--r-pill); background: var(--line-strong); }
 .sheet__close { position: absolute; top: 14px; right: 14px; z-index: 2; }
 .sheet__intro { margin: 8px 0 22px; padding-right: 48px; }

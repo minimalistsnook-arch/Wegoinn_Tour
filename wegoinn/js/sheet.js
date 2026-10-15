@@ -36,3 +36,44 @@ document.addEventListener("keydown", (event) => {
   const open = [...document.querySelectorAll(".sheet.is-open")].pop();
   if (open) closeSheet(open.id);
 });
+
+// Phones: dragging an open sheet down from its top closes it, back to the page underneath.
+const CLOSE_DISTANCE = 100;
+const phoneSheet = window.matchMedia("(max-width: 639px)");
+let drag = null;
+
+document.addEventListener("touchstart", (event) => {
+  drag = null;
+  const panel = event.target.closest?.(".sheet.is-open .sheet__panel");
+  if (!panel || !phoneSheet.matches || event.touches.length !== 1) return;
+  if (event.target.closest("input, textarea, select, [contenteditable]")) return;
+  // Only from the top: a scrolled sheet (or a scrolled box inside it) scrolls up first.
+  for (let el = event.target; el && el !== panel.parentElement; el = el.parentElement) if (el.scrollTop > 0) return;
+  drag = { sheet: panel.closest(".sheet"), x: event.touches[0].clientX, y: event.touches[0].clientY, dy: 0 };
+}, { passive: true });
+
+document.addEventListener("touchmove", (event) => {
+  if (!drag) return;
+  const dx = event.touches[0].clientX - drag.x;
+  const dy = event.touches[0].clientY - drag.y;
+  if (!drag.dy && (dy <= 0 || Math.abs(dx) > Math.abs(dy))) { drag = null; return; } // a scroll up or a sideways swipe
+  if (event.cancelable) event.preventDefault();
+  drag.dy = Math.max(0, dy);
+  drag.sheet.classList.add("is-dragging");
+  drag.sheet.style.setProperty("--sheet-drag", `${drag.dy}px`);
+}, { passive: false });
+
+function endDrag() {
+  if (!drag) return;
+  const { sheet, dy } = drag;
+  drag = null;
+  sheet.classList.remove("is-dragging");
+  if (dy >= CLOSE_DISTANCE) {
+    closeSheet(sheet.id);
+    setTimeout(() => sheet.style.removeProperty("--sheet-drag"), 300); // after the slide-out
+  } else {
+    sheet.style.removeProperty("--sheet-drag");
+  }
+}
+document.addEventListener("touchend", endDrag);
+document.addEventListener("touchcancel", endDrag);
