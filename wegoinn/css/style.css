@@ -2354,3 +2354,6 @@ html[data-theme="dark"] #feed > .post { border-bottom-color: var(--line); }
 html[data-theme="dark"] #feed .post__text { color: var(--ink); }
 html[data-theme="dark"] #feed .post__thumbnail { background: var(--surface-soft); }
 html[data-theme="dark"] #feed .post__comments:hover, html[data-theme="dark"] #feed .post__comments.is-active { color: var(--ink); }
+
+/* In Korean the heading already reads 방명록, so drop the extra 방명록 accent. */
+html[lang="ko"] #guestbookHeading em { display: none; }

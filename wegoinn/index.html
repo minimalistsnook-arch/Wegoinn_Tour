@@ -48,7 +48,7 @@
         <div class="field">
           <label class="field__label" for="check_in">Check in date</label>
           <span class="field__box">
-            <input id="check_in" name="check_in" type="text" placeholder="2026-10-13" maxlength="10" autocomplete="off" required />
+            <input id="check_in" name="check_in" type="text" placeholder="ex) 2026-10-13" maxlength="10" autocomplete="off" required />
             <span class="stay-calendar">
               <i data-icon="calendar" aria-hidden="true"></i>
               <input type="date" data-stay-calendar="check_in" aria-label="Check in date calendar" title="Check in date calendar" />
@@ -58,7 +58,7 @@
         <div class="field">
           <label class="field__label" for="check_out">Check out date</label>
           <span class="field__box">
-            <input id="check_out" name="check_out" type="text" placeholder="2026-10-25" maxlength="10" autocomplete="off" required />
+            <input id="check_out" name="check_out" type="text" placeholder="ex) 2026-10-25" maxlength="10" autocomplete="off" required />
             <span class="stay-calendar">
               <i data-icon="calendar" aria-hidden="true"></i>
               <input type="date" data-stay-calendar="check_out" aria-label="Check out date calendar" title="Check out date calendar" />
@@ -67,14 +67,14 @@
         </div>
         <label class="field">
           <span class="field__label">Room number</span>
-          <span class="field__box"><input name="room_number" type="text" inputmode="numeric" placeholder="701" maxlength="3" autocomplete="off" required /></span>
+          <span class="field__box"><input name="room_number" type="text" inputmode="numeric" placeholder="ex) 701" maxlength="3" autocomplete="off" required /></span>
         </label>
 
         <label class="field">
           <span class="field__label">Nickname</span>
           <span class="field__box">
             <i data-icon="user"></i>
-            <input name="nickname" type="text" placeholder="e.g. SunnyMina" maxlength="20" autocomplete="nickname" spellcheck="false" required />
+            <input name="nickname" type="text" placeholder="ex) SunnyMina" maxlength="20" autocomplete="nickname" spellcheck="false" required />
           </span>
           <small class="field__hint">Use the same nickname when you return.</small>
         </label>
@@ -309,7 +309,7 @@
 
         <label class="field">
           <span class="field__label">Community Name</span>
-          <span class="field__box"><i data-icon="pen"></i><input name="title" type="text" maxlength="60" placeholder="e.g. Hongdae Night Walk" required /></span>
+          <span class="field__box"><i data-icon="pen"></i><input name="title" type="text" maxlength="60" placeholder="ex) Hongdae Night Walk" required /></span>
         </label>
 
         <div class="field">
@@ -327,12 +327,12 @@
 
         <label class="field">
           <span class="field__label">About this community</span>
-          <textarea name="about" class="field__area" rows="7" maxlength="1000" placeholder="What we'll do: street food, music and a slow walk around Hongdae&#10;Who: anyone who loves meeting new people!&#10;Plan:&#10;19:30  Meet at the hostel lobby&#10;20:00  Walk to Hongdae&#10;21:00  Dinner together" required></textarea>
+          <textarea name="about" class="field__area" rows="7" maxlength="1000" placeholder="ex) What we'll do: street food, music and a slow walk around Hongdae&#10;Who: anyone who loves meeting new people!&#10;Plan:&#10;19:30  Meet at the hostel lobby&#10;20:00  Walk to Hongdae&#10;21:00  Dinner together" required></textarea>
           <small class="field__hint">What you'll do, who you'd like to join, and the plan — all in one place.</small>
         </label>
 
-        <label class="field"><span class="field__label">Meeting place</span><span class="field__box"><input name="meeting_place" type="text" maxlength="200" placeholder="e.g. hostel lobby" required /></span></label>
-        <label class="field"><span class="field__label">Map link</span><span class="field__box"><input name="map_url" type="text" maxlength="2000" placeholder="https://maps.google.com/…" /></span><small class="field__hint">Paste a Google, Naver or Kakao Maps share link. The location appears below.</small></label>
+        <label class="field"><span class="field__label">Meeting place</span><span class="field__box"><input name="meeting_place" type="text" maxlength="200" placeholder="ex) hostel lobby" required /></span></label>
+        <label class="field"><span class="field__label">Map link</span><span class="field__box"><input name="map_url" type="text" maxlength="2000" placeholder="ex) https://maps.google.com/…" /></span><small class="field__hint">Paste a Google, Naver or Kakao Maps share link. The location appears below.</small></label>
         <div id="mapLocationPreview" class="detail-block" aria-live="polite" hidden></div>
 
         <label class="field">
@@ -353,7 +353,7 @@
             <label><input type="radio" name="feeType" value="paid" /><span>PAID</span></label>
           </div>
           <label id="feeAmountWrap" class="field" hidden>
-            <span class="field__box field__box--money"><span class="field__prefix">₩</span><input id="communityFee" name="participation_fee" type="number" min="1000" step="1000" placeholder="10,000" inputmode="numeric" /><span class="field__suffix">KRW</span></span>
+            <span class="field__box field__box--money"><span class="field__prefix">₩</span><input id="communityFee" name="participation_fee" type="number" min="1000" step="1000" placeholder="ex) 10,000" inputmode="numeric" /><span class="field__suffix">KRW</span></span>
             <small class="field__hint">For information only — guests pay the host directly, not in this app.</small>
           </label>
         </fieldset>
