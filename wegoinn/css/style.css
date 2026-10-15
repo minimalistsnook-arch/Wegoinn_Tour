@@ -2134,3 +2134,22 @@ html, body { overscroll-behavior-y: contain; }
 .pull-refresh.is-ready { color: var(--rose, var(--ink)); }
 .pull-refresh.is-refreshing .icon { animation: pull-refresh-spin .8s linear infinite; }
 @keyframes pull-refresh-spin { to { transform: rotate(360deg); } }
+
+/* Top bar: logo with the guest's photo and name underneath on the left; online count, notifications
+   and language on the right (language last, at the far edge). Log out and Dark live in the footer. */
+.topbar { display: flex; flex-wrap: nowrap; align-items: center; justify-content: space-between; gap: 10px; }
+.topbar__id { display: grid; justify-items: start; gap: 4px; min-width: 0; }
+.topbar__brand { padding: 0; }
+.topbar__me { display: flex; align-items: center; gap: 8px; max-width: 100%; width: auto; padding: 0; border: 0; border-radius: 0; background: none; }
+.topbar__me .avatar { width: 32px; height: 32px; box-shadow: none; }
+.topbar__name { font-size: 13px; }
+.topbar__actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 8px; width: auto; margin-left: auto; }
+.topbar__actions .online-count { margin-left: 0; }
+.topbar__actions .lang-select { margin-left: auto; }
+@media (max-width: 600px) {
+  .topbar__actions { display: flex; gap: 6px; }
+  .topbar__actions > button { min-height: 32px; padding: 0 9px; font-size: 11px; }
+  .topbar__me .avatar { width: 28px; height: 28px; }
+  .topbar__name { font-size: 12px; }
+}
+.app-foot__actions { display: flex; justify-content: center; gap: 8px; margin-top: 14px; }

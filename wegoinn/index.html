@@ -105,17 +105,17 @@
   <!-- GUEST APP -->
   <div id="appView" class="app" hidden>
     <header class="topbar">
-      <a class="wordmark topbar__brand" href="#top"><img class="wordmark__logo" src="img/logo-white.png" alt="Wegoinn" /></a>
-      <div class="online-count" role="status" aria-live="polite" aria-atomic="true"><span>Online now</span> <strong id="onlineCount">…</strong></div>
-      <div class="topbar__actions">
-        <select class="lang-select lang-select--on-pine" data-site-language aria-label="Language"><option value="en">English</option><option value="ko">한국어</option><option value="ja">日本語</option><option value="zh">中文</option></select>
-        <button type="button" class="theme-toggle theme-toggle--on-pine" data-theme-toggle aria-pressed="false">Dark</button>
-        <button id="notificationBtn" type="button" class="pill-btn">Notifications <span id="notificationCount">0</span></button>
-        <button id="logoutBtn" type="button" class="pill-btn">Log out</button>
+      <div class="topbar__id">
+        <a class="wordmark topbar__brand" href="#top"><img class="wordmark__logo" src="img/logo-white.png" alt="Wegoinn" /></a>
         <div class="topbar__me">
           <span id="headerAvatar"></span>
           <span id="headerNickname" class="topbar__name"></span>
         </div>
+      </div>
+      <div class="topbar__actions">
+        <div class="online-count" role="status" aria-live="polite" aria-atomic="true"><span>Online now</span> <strong id="onlineCount">…</strong></div>
+        <button id="notificationBtn" type="button" class="pill-btn">Notifications <span id="notificationCount">0</span></button>
+        <select class="lang-select lang-select--on-pine" data-site-language aria-label="Language"><option value="en">English</option><option value="ko">한국어</option><option value="ja">日本語</option><option value="zh">中文</option></select>
       </div>
     </header>
 
@@ -250,6 +250,10 @@
     <footer class="app-foot">
       <span class="wordmark"><img class="wordmark__logo" src="img/logo.png" alt="Wegoinn" /></span>
       <p>호스텔 방명록 &amp; Community · Seoul</p>
+      <div class="app-foot__actions">
+        <button type="button" class="theme-toggle" data-theme-toggle aria-pressed="false">Dark</button>
+        <button id="logoutBtn" type="button" class="pill-btn">Log out</button>
+      </div>
     </footer>
   </div>
 
