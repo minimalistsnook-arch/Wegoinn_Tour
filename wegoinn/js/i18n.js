@@ -1,6 +1,7 @@
 import { isTranslationConfigured, translateText, checkTranslationService } from './translation.js';
 // Interface translations are local; guest-written content uses the authenticated API.
 const rows = [
+['Open post','방명록 보기','投稿を見る','查看留言'],
 ['View all communities','모임 전체 보기','すべてのコミュニティを見る','查看所有活动'],
 ['Upcoming communities','앞으로 열릴 모임','今後のコミュニティ','即将举行的活动'],
 ['No upcoming communities yet.','앞으로 예정된 모임이 없습니다.','今後のコミュニティはまだありません。','暂无即将举行的活动。'],

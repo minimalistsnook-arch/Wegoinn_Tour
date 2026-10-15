@@ -393,6 +393,14 @@
 
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
+  <div id="guestbookSheet" class="sheet" hidden>
+    <div class="sheet__backdrop" data-close-sheet></div>
+    <div class="sheet__panel" role="dialog" aria-modal="true" aria-label="Guestbook" tabindex="-1">
+      <button type="button" class="icon-btn sheet__close" data-close-sheet aria-label="Close">×</button>
+      <div id="guestbookDetail"></div>
+    </div>
+  </div>
+
   <div id="moderationSheet" class="sheet" hidden>
     <div class="sheet__backdrop" data-close-sheet></div>
     <div class="sheet__panel" role="dialog" aria-modal="true" aria-labelledby="moderationTitle" tabindex="-1">

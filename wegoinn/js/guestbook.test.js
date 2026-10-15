@@ -47,7 +47,7 @@ it('uploads a photo and registers a photo-only guestbook entry', async () => {
   document.querySelector('#publishPostBtn').click(); await settle();
   expect(mock.upload).toHaveBeenCalledTimes(1);
   expect(mock.insert).toHaveBeenCalledWith(expect.objectContaining({ content: '', image_url: 'https://example.com/photo.webp' }));
-  expect(document.querySelector('#feed .post__photo img').src).toBe('https://example.com/photo.webp');
+  expect(document.querySelector('#feed .post__thumbnail img').src).toBe('https://example.com/photo.webp');
   expect(document.querySelector('#postPreview').hidden).toBe(true);
 });
 

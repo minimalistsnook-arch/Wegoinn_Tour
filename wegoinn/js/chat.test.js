@@ -202,3 +202,24 @@ it('allows an operator to load and moderate older chat history',async()=>{
  expect(document.querySelector('[data-msg-id="older"] [data-edit-msg]')).not.toBeNull();
  expect(document.querySelector('#chatLoadEarlier').hidden).toBe(true);
 });
+
+it('returns a pulled-down group chat to its community Info without interrupting message scrolling', async () => {
+  await openChat({ id: 'c-pull', title: 'Walk' });
+  const returned = vi.fn();
+  document.addEventListener('chat-return-info', returned);
+  const list = document.querySelector('#chatMessages');
+  const touch = (type, y) => {
+    const event = new Event(type, { bubbles: true, cancelable: true });
+    Object.defineProperty(event, 'touches', { value: type === 'touchend' ? [] : [{ clientX: 30, clientY: y }] });
+    list.dispatchEvent(event);
+  };
+  list.scrollTop = 100;
+  touch('touchstart', 20); touch('touchmove', 150); touch('touchend', 150);
+  expect(returned).not.toHaveBeenCalled();
+  list.scrollTop = 0;
+  touch('touchstart', 20); touch('touchmove', 150); touch('touchend', 150);
+  expect(returned.mock.calls[0][0].detail).toBe('c-pull');
+  expect(location.hash).toBe('#community');
+  expect(document.documentElement.classList.contains('chat-fullscreen')).toBe(false);
+  document.removeEventListener('chat-return-info', returned);
+});

@@ -6,6 +6,7 @@ import { commentsSectionHtml, addComment, deleteComment } from "./comments.js";
 import { icon } from "./icons.js";
 import { isNew } from "./news.js";
 import { openContentEditor } from "./moderation.js";
+import { openSheet, closeSheet } from './sheet.js';
 
 const FEED_LIMIT = 20;
 
@@ -20,6 +21,7 @@ const state = {
   visibleLimit: 1,
   loading: false,
   posts: [],
+  detailId: null,
   hasMore: false,
   openComments: new Set(),
   replyingTo: null,        // top-level comment id currently being replied to
@@ -38,9 +40,11 @@ const els = {};
 export function initGuestbook(me) {
   state.me = me;
   state.visibleLimit = 1;
+  state.detailId = null;
   state.openComments.clear();
   Object.assign(els, {
     feed: $("#feed"),
+    detail: $('#guestbookDetail'),
     count: $("#postCount"),
     input: $("#postInput"),
     counter: $("#postCounter"),
@@ -73,8 +77,10 @@ export function initGuestbook(me) {
   });
   els.feed.addEventListener("click", onFeedClick);
   els.feed.addEventListener("submit", onFeedSubmit);
+  els.detail.addEventListener('click', onFeedClick);
+  els.detail.addEventListener('submit', onFeedSubmit);
   // Realtime refreshes wait while the guest is typing in the feed.
-  els.feed.addEventListener("focusout", () => {
+  for (const root of [els.feed, els.detail]) root.addEventListener("focusout", () => {
     if (state.refreshPending) setTimeout(() => !isTypingInFeed() && loadFeed(), 50);
   });
 
@@ -255,7 +261,7 @@ export async function loadFeed() {
 
 function isTypingInFeed() {
   const a = document.activeElement;
-  return a && els.feed.contains(a) && (a.tagName === "INPUT" || a.tagName === "TEXTAREA") && a.value;
+  return a && (els.feed.contains(a) || els.detail.contains(a)) && (a.tagName === "INPUT" || a.tagName === "TEXTAREA") && a.value;
 }
 
 const refreshSoon = debounce(() => {
@@ -270,6 +276,7 @@ export function scheduleFeedRefresh() {
 function renderFeed() {
   els.count.textContent = `${state.posts.length} ${state.posts.length === 1 ? "story" : "stories"}`;
   if (!state.posts.length) {
+    if (state.detailId) closeSheet('guestbookSheet');
     els.feed.innerHTML = `
       <div class="empty-state">
         ${icon("pen")}
@@ -278,10 +285,15 @@ function renderFeed() {
       </div>`;
     return;
   }
-  els.feed.innerHTML = state.posts.map(postHtml).join("");
+  els.feed.innerHTML = state.posts.map(post => postHtml(post)).join("");
+  if (state.detailId) {
+    const post = state.posts.find(p => p.id === state.detailId);
+    if (post) els.detail.innerHTML = postHtml(post, true);
+    else closeSheet('guestbookSheet');
+  }
 }
 
-function postHtml(post) {
+function postHtml(post, detail = false) {
   const me = state.me;
   const name = post.author?.nickname ?? "Guest";
   const canDelete = post.author_id === me.id || me.role === "admin";
@@ -290,6 +302,7 @@ function postHtml(post) {
 
   return `
     <article class="post card" data-post-id="${post.id}">
+      ${detail && post.image_url ? `<figure class="post__detail-photo"><img src="${escapeHtml(post.image_url)}" alt="Photo shared by ${escapeHtml(name)}" decoding="async" /></figure>` : ''}
       <header class="post__head">
         ${avatarHtml(name, "avatar--md", post.author?.avatar_url)}
         <div class="post__who">
@@ -302,15 +315,19 @@ function postHtml(post) {
       </header>
       ${me.role === "admin" ? accountDetailHtml(post.author_id) : ""}
 
+      <div class="post__body">
       ${post.content ? `
         <div class="translatable">
-          <p class="post__text js-text" data-original="${escapeHtml(post.content)}">${escapeHtml(post.content)}</p>
+          ${detail ? '' : '<button type="button" class="post__open" data-action="open-post">'}
+          <${detail ? 'p' : 'span'} class="post__text js-text" data-original="${escapeHtml(post.content)}">${escapeHtml(post.content)}</${detail ? 'p' : 'span'}>
+          ${detail ? '' : '</button>'}
         </div>` : ""}
 
-      ${post.image_url ? `
-        <figure class="post__photo">
+      ${!detail && post.image_url ? `
+        <button type="button" class="post__thumbnail" data-action="open-post" aria-label="Open post">
           <img src="${escapeHtml(post.image_url)}" alt="Photo shared by ${escapeHtml(name)}" loading="lazy" decoding="async" />
-        </figure>` : ""}
+        </button>` : ""}
+      </div>
 
       <footer class="post__foot">
         ${post.content ? translationToggleHtml() : ""}
@@ -329,9 +346,10 @@ function postHtml(post) {
 function rerenderPost(postId, focusSelector) {
   const post = state.posts.find((p) => p.id === postId);
   const el = els.feed.querySelector(`[data-post-id="${postId}"]`);
-  if (!post || !el) return;
-  el.outerHTML = postHtml(post);
-  if (focusSelector) els.feed.querySelector(`[data-post-id="${postId}"] ${focusSelector}`)?.focus();
+  if (!post) return;
+  if (el) el.outerHTML = postHtml(post);
+  if (state.detailId === postId) els.detail.innerHTML = postHtml(post, true);
+  if (focusSelector) (state.detailId === postId ? els.detail : els.feed).querySelector(`[data-post-id="${postId}"] ${focusSelector}`)?.focus();
 }
 
 async function onFeedClick(event) {
@@ -347,6 +365,14 @@ async function onFeedClick(event) {
   }
 
   switch (target.dataset.action) {
+    case 'open-post': {
+      const post = state.posts.find(p => p.id === postId);
+      if (!post) return;
+      state.detailId = postId;
+      els.detail.innerHTML = postHtml(post, true);
+      openSheet('guestbookSheet', () => { state.detailId = null; });
+      break;
+    }
     case "toggle-comments":
       state.openComments.has(postId) ? state.openComments.delete(postId) : state.openComments.add(postId);
       state.replyingTo = null;

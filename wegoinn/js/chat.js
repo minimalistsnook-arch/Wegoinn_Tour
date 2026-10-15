@@ -137,6 +137,33 @@ function setupFullscreenChat() {
   document.addEventListener("keydown", (event) => {
     if (expanded && event.key === "Escape") closeFullscreen();
   });
+  let pullStart = null;
+  els.section.addEventListener("touchstart", (event) => {
+    pullStart = null;
+    if (!expanded || !state.room || event.touches.length !== 1) return;
+    if (event.target.closest("textarea, input, button, .chat-rooms")) return;
+    if (event.target.closest(".chat-messages") && els.list.scrollTop > 0) return;
+    pullStart = { x: event.touches[0].clientX, y: event.touches[0].clientY };
+  }, { passive: true });
+  els.section.addEventListener("touchmove", (event) => {
+    if (!pullStart) return;
+    if (event.touches.length !== 1) { pullStart = null; return; }
+    const dx = event.touches[0].clientX - pullStart.x;
+    const dy = event.touches[0].clientY - pullStart.y;
+    if (dy < -10 || Math.abs(dx) > 40) { pullStart = null; return; }
+    if (dy > 10 && event.cancelable) event.preventDefault();
+    pullStart.distance = dy;
+  }, { passive: false });
+  els.section.addEventListener("touchend", () => {
+    const distance = pullStart?.distance || 0;
+    pullStart = null;
+    if (distance < 90 || !expanded || !state.room) return;
+    const communityId = state.room.id;
+    closeFullscreen();
+    location.hash = "community";
+    document.dispatchEvent(new CustomEvent("chat-return-info", { detail: communityId }));
+  });
+  els.section.addEventListener("touchcancel", () => { pullStart = null; });
   window.addEventListener("resize", syncViewport);
   window.visualViewport?.addEventListener("resize", syncViewport);
   window.visualViewport?.addEventListener("scroll", syncViewport);

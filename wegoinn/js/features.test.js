@@ -247,6 +247,34 @@ describe('community workflows',()=>{
    expect(mock.rpc).toHaveBeenCalledWith('withdraw_application',{p_community_id:community().id});
  });
 });
+it('shows a photo beside the text and opens the post with a large photo first',async()=>{
+ mock.posts=[{id:'photo-post',content:'A beautiful day',image_url:'https://example.com/day.webp',author_id:me.id,author:{nickname:'Host'},created_at:'2026-10-08T00:00:00Z',comments:[]}];
+ await initGuestbook(me);
+ const body=document.querySelector('#feed .post__body');
+ expect(body.querySelector('.post__text').textContent).toBe('A beautiful day');
+ expect(body.lastElementChild.classList.contains('post__thumbnail')).toBe(true);
+ expect(body.querySelector('.post__thumbnail img').src).toBe('https://example.com/day.webp');
+ expect(document.querySelector('#feed .post__detail-photo')).toBeNull();
+ body.querySelector('.post__thumbnail').click(); await settle();
+ const detail=document.querySelector('#guestbookDetail');
+ expect(document.querySelector('#guestbookSheet').hidden).toBe(false);
+ expect(detail.querySelector('article').firstElementChild.classList.contains('post__detail-photo')).toBe(true);
+ expect(detail.querySelector('.post__detail-photo img').src).toBe('https://example.com/day.webp');
+ expect(detail.querySelector('.post__text').textContent).toBe('A beautiful day');
+ detail.querySelector('[data-action=toggle-comments]').click();
+ expect(detail.querySelector('.comment-form')).not.toBeNull();
+ mock.posts[0].content='Updated post';
+ await loadFeed();
+ expect(detail.querySelector('.post__text').textContent).toBe('Updated post');
+});
+it('opens a text-only post without adding an empty photo area',async()=>{
+ mock.posts=[{id:'text-post',content:'Hello everyone',author_id:me.id,author:{nickname:'Host'},created_at:'2026-10-08T00:00:00Z',comments:[]}];
+ await initGuestbook(me);
+ expect(document.querySelector('#feed .post__thumbnail')).toBeNull();
+ document.querySelector('#feed [data-action=open-post]').click(); await settle();
+ expect(document.querySelector('#guestbookDetail .post__text').textContent).toBe('Hello everyone');
+ expect(document.querySelector('#guestbookDetail .post__detail-photo')).toBeNull();
+});
 it('loads older guestbook posts and retains the expanded range on refresh',async()=>{
  mock.posts=Array.from({length:25},(_,i)=>({id:String(i),content:`Post ${i}`,author_id:me.id,author:{nickname:'Host'},created_at:'2026-10-08T00:00:00Z',comments:[]}));
  await initGuestbook(me);

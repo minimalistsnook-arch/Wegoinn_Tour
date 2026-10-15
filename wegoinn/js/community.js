@@ -47,6 +47,7 @@ import { installOperatorLongPress } from "./operator-longpress.js";
 const els = {};
 
 export function initCommunity(me) {
+  document.addEventListener("chat-return-info", ({ detail }) => openDetail(detail));
   state.me = me;
   state.detailId = null;
   state.showAll = false;
