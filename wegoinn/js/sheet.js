@@ -7,6 +7,8 @@ export function openSheet(id, onClose) {
   if (!sheet) return;
   lastFocus = document.activeElement;
   if (onClose) onCloseHandlers.set(id, onClose);
+  // A history entry per sheet, so the phone/browser Back button closes the sheet instead of leaving the page.
+  if (sheet.hidden && history.state?.sheet !== id) history.pushState({ ...history.state, sheet: id }, "");
   sheet.hidden = false;
   requestAnimationFrame(() => sheet.classList.add("is-open"));
   document.documentElement.classList.add("sheet-open");
@@ -26,15 +28,28 @@ export function closeSheet(id) {
   if (!document.querySelector(".sheet.is-open")) lastFocus?.focus?.({ preventScroll: true });
 }
 
+// Closed by the guest (×, backdrop, Escape, swipe): also drop the sheet's history entry so the next Back leaves the page as usual.
+// Sheets closed from code keep theirs (a later Back then just stays on the page) so the pop can't close a sheet opened next.
+function dismissSheet(id) {
+  closeSheet(id);
+  if (history.state?.sheet === id) history.back();
+}
+
+// Back: slide the top sheet down and stay on the Community / 방명록 page underneath.
+window.addEventListener("popstate", () => {
+  const top = [...document.querySelectorAll(".sheet.is-open")].pop();
+  if (top && top.id !== history.state?.sheet) closeSheet(top.id);
+});
+
 document.addEventListener("click", (event) => {
   const closer = event.target.closest("[data-close-sheet]");
-  if (closer) closeSheet(closer.closest(".sheet").id);
+  if (closer) dismissSheet(closer.closest(".sheet").id);
 });
 
 document.addEventListener("keydown", (event) => {
   if (event.key !== "Escape") return;
   const open = [...document.querySelectorAll(".sheet.is-open")].pop();
-  if (open) closeSheet(open.id);
+  if (open) dismissSheet(open.id);
 });
 
 // Phones: dragging an open sheet down from its top closes it, back to the page underneath.
@@ -69,7 +84,7 @@ function endDrag() {
   drag = null;
   sheet.classList.remove("is-dragging");
   if (dy >= CLOSE_DISTANCE) {
-    closeSheet(sheet.id);
+    dismissSheet(sheet.id);
     setTimeout(() => sheet.style.removeProperty("--sheet-drag"), 300); // after the slide-out
   } else {
     sheet.style.removeProperty("--sheet-drag");
