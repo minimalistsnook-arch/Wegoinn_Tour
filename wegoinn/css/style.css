@@ -562,7 +562,7 @@ h1 em, h2 em, h3 em { color: var(--copper); font-family: var(--font-serif); }
 
 .login__inner {
   display: grid;
-  align-content: center;
+  align-content: start; /* logo and form start at the top instead of floating mid-screen */
   gap: 30px;
   width: min(440px, 100%);
   min-height: 100dvh;
@@ -571,7 +571,6 @@ h1 em, h2 em, h3 em { color: var(--copper); font-family: var(--font-serif); }
 }
 
 .login__brand { display: grid; justify-items: center; text-align: center; }
-.login__brand .eyebrow { margin: 18px 0 4px; }
 .login__tagline {
   margin-top: 10px;
   color: var(--ink-2);
