@@ -1552,6 +1552,24 @@ html.chat-fullscreen, html.chat-fullscreen body { overflow: hidden; overscroll-b
   #chat.is-fullscreen .chat-messages { padding: 12px 2px; }
   #chat.is-fullscreen .chat-msg__text { font-size: 16px; line-height: 1.55; }
   #chat.is-fullscreen .chat-composer textarea { max-height: min(120px, 25dvh); }
+  /* Group chat pull-down (chat.js): the screen follows the finger, then slides away to the community's Info. */
+  .layout > #chat.is-fullscreen { transform: translateY(var(--chat-pull, 0px)); transition: transform .22s var(--ease); }
+  .layout > #chat.is-fullscreen.is-pulling { transition: none; box-shadow: 0 -12px 32px rgba(0, 0, 0, .18); }
+  .layout > #chat.is-fullscreen.is-pulled-away { transform: translateY(100%); }
+  /* "↓ Info" sits in the gap the pull opens above the chat. */
+  #chat.is-fullscreen::before {
+    content: "↓ Info";
+    position: absolute;
+    top: -8px;
+    left: 50%;
+    transform: translate(-50%, -100%);
+    color: var(--muted);
+    font-size: 12px;
+    opacity: 0;
+    pointer-events: none;
+  }
+  #chat.is-pulling::before { opacity: 1; }
+  #chat.is-pull-ready::before { color: var(--rose); font-weight: 700; }
 
 /* =====================================================================
    SECTION PAGES — Community, 방명록 and Chat are shown one at a time (app.js setupSectionNav).

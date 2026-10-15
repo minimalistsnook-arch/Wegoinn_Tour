@@ -115,6 +115,8 @@ function setupFullscreenChat() {
     els.closeFullscreen.hidden = true;
     els.section.style.removeProperty("--chat-viewport-top");
     els.section.style.removeProperty("--chat-viewport-height");
+    els.section.classList.remove("is-pulling", "is-pulled-away");
+    els.section.style.removeProperty("--chat-pull");
   };
   const openFullscreen = () => {
     if (expanded) return;
@@ -127,7 +129,15 @@ function setupFullscreenChat() {
     syncViewport();
     scrollToEnd(true);
   };
-  els.input.addEventListener("focus", openFullscreen);
+  // Phone keyboards slide in over ~300ms and report their final size late (iOS especially), so re-measure
+  // a few times and keep the field being typed in above the keyboard.
+  els.input.addEventListener("focus", () => {
+    openFullscreen();
+    for (const delay of [50, 200, 400, 700]) setTimeout(() => {
+      syncViewport();
+      els.input.scrollIntoView({ block: "nearest" });
+    }, delay);
+  });
   document.addEventListener("section-change", ({ detail }) => {
     if (detail === "chat") openFullscreen();
     else closeFullscreen();
@@ -137,33 +147,49 @@ function setupFullscreenChat() {
   document.addEventListener("keydown", (event) => {
     if (expanded && event.key === "Escape") closeFullscreen();
   });
+  // Group chat: pulling the chat down drags the whole screen with the finger; let go past PULL_TO_INFO
+  // and it slides away to that community's Info.
+  const PULL_TO_INFO = 110;
   let pullStart = null;
+  const resetPull = () => {
+    pullStart = null;
+    els.section.classList.remove("is-pulling");
+    els.section.style.removeProperty("--chat-pull");
+  };
   els.section.addEventListener("touchstart", (event) => {
     pullStart = null;
     if (!expanded || !state.room || event.touches.length !== 1) return;
     if (event.target.closest("textarea, input, button, .chat-rooms")) return;
     if (event.target.closest(".chat-messages") && els.list.scrollTop > 0) return;
-    pullStart = { x: event.touches[0].clientX, y: event.touches[0].clientY };
+    pullStart = { x: event.touches[0].clientX, y: event.touches[0].clientY, distance: 0 };
   }, { passive: true });
   els.section.addEventListener("touchmove", (event) => {
     if (!pullStart) return;
-    if (event.touches.length !== 1) { pullStart = null; return; }
+    if (event.touches.length !== 1) { resetPull(); return; }
     const dx = event.touches[0].clientX - pullStart.x;
     const dy = event.touches[0].clientY - pullStart.y;
-    if (dy < -10 || Math.abs(dx) > 40) { pullStart = null; return; }
+    if (!pullStart.distance && (dy < -10 || Math.abs(dx) > 40)) { resetPull(); return; }
     if (dy > 10 && event.cancelable) event.preventDefault();
-    pullStart.distance = dy;
+    pullStart.distance = Math.max(0, dy) * 0.7; // a little resistance
+    els.section.classList.add("is-pulling");
+    els.section.classList.toggle("is-pull-ready", pullStart.distance >= PULL_TO_INFO);
+    els.section.style.setProperty("--chat-pull", `${pullStart.distance}px`);
   }, { passive: false });
   els.section.addEventListener("touchend", () => {
     const distance = pullStart?.distance || 0;
+    els.section.classList.remove("is-pull-ready");
+    if (distance < PULL_TO_INFO || !expanded || !state.room) { resetPull(); return; }
     pullStart = null;
-    if (distance < 90 || !expanded || !state.room) return;
     const communityId = state.room.id;
-    closeFullscreen();
-    location.hash = "community";
-    document.dispatchEvent(new CustomEvent("chat-return-info", { detail: communityId }));
+    els.section.classList.remove("is-pulling");
+    els.section.classList.add("is-pulled-away"); // finishes sliding down, then hands over to Info
+    setTimeout(() => {
+      closeFullscreen();
+      location.hash = "community";
+      document.dispatchEvent(new CustomEvent("chat-return-info", { detail: communityId }));
+    }, 220);
   });
-  els.section.addEventListener("touchcancel", () => { pullStart = null; });
+  els.section.addEventListener("touchcancel", resetPull);
   window.addEventListener("resize", syncViewport);
   window.visualViewport?.addEventListener("resize", syncViewport);
   window.visualViewport?.addEventListener("scroll", syncViewport);
