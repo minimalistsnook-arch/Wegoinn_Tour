@@ -1216,6 +1216,10 @@ h1 em, h2 em, h3 em { color: var(--copper); font-family: var(--font-serif); }
   background: none;
   text-align: start;
 }
+.detail-facts > .detail-fact + .detail-fact {
+  border-top: 1px dashed var(--line);
+  padding-top: 10px;
+}
 .detail-fact__icon { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 12px; background: var(--rose-50); color: var(--rose); }
 .detail-fact__icon .icon { width: 20px; height: 20px; }
 .detail-facts .detail-fact small { font-size: 12px; letter-spacing: .02em; text-transform: none; }
