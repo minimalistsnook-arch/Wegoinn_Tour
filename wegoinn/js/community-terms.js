@@ -1,3 +1,4 @@
+import { TERMS_LANGUAGES, termsCopy, translateTerms } from './community-terms-language.js';
 import { supabase } from './supabase.js';
 import { escapeHtml } from './utils.js';
 
@@ -37,12 +38,13 @@ async function consentGate() {
   dialog.setAttribute('aria-labelledby', 'communityConsentTitle');
   dialog.setAttribute('translate', 'no');
   dialog.innerHTML = `
-    <header class="community-consent__head"><h2 id="communityConsentTitle">커뮤니티 이용 안내</h2><span class="community-consent__version"></span></header>
+    <header class="community-consent__head"><h2 id="communityConsentTitle">커뮤니티 이용 안내</h2><select class="community-consent__language" aria-label="Language">${TERMS_LANGUAGES.map(([code, label]) => `<option value="${code}">${label}</option>`).join('')}</select></header>
     <div class="community-consent__body terms-copy" tabindex="0"></div>
     <form class="community-consent__actions">
       <p class="terms-error" role="alert" hidden></p>
       <button type="button" class="terms-retry" hidden>다시 불러오기</button>
-      <label class="community-consent__check"><input type="checkbox" required /> 위 안내사항을 확인했으며 이용에 동의합니다.</label>
+      <p class="community-consent__read-hint" role="status"></p>
+      <label class="community-consent__check"><input type="checkbox" required /><span class="community-consent__check-label"></span></label>
       <div class="community-consent__buttons"><button type="button" class="terms-exit">로그아웃</button><button type="submit" class="terms-accept" disabled>동의하고 시작하기</button></div>
     </form>`;
   document.body.append(dialog);
@@ -55,23 +57,66 @@ async function consentGate() {
   const accept = dialog.querySelector('.terms-accept');
   const error = dialog.querySelector('.terms-error');
   const retry = dialog.querySelector('.terms-retry');
-  function paint() {
-    checkbox.checked = false;
-    checkbox.disabled = !terms;
-    accept.disabled = true;
-    retry.hidden = Boolean(terms);
-    error.hidden = Boolean(terms);
-    error.textContent = terms ? '' : '이용 안내를 불러오지 못했습니다. 다시 시도해 주세요.';
-    body.innerHTML = terms ? renderTerms(terms.body) : '<p>이용 안내를 확인해야 커뮤니티를 사용할 수 있습니다.</p>';
-    dialog.querySelector('.community-consent__version').textContent = terms ? `안내 v${terms.version}` : '';
+  const languageSelect = dialog.querySelector('.community-consent__language');
+  let language = 'ko';
+  try { const saved = localStorage.getItem('wegoinn-terms-language'); if (TERMS_LANGUAGES.some(([code]) => code === saved)) language = saved; } catch {}
+  languageSelect.value = language;
+  let generation = 0, loading = false, readComplete = false;
+  const syncControls = () => {
+    checkbox.disabled = !terms || loading || !readComplete;
+    accept.disabled = checkbox.disabled || !checkbox.checked;
+    dialog.querySelector('.community-consent__read-hint').hidden = readComplete || loading || !terms;
+  };
+  const checkRead = () => {
+    if (terms && !loading && body.scrollTop + body.clientHeight >= body.scrollHeight - 8) readComplete = true;
+    syncControls();
+  };
+  async function paint() {
+    const token = ++generation;
+    checkbox.checked = false; readComplete = false; loading = true;
+    const [title, agreement, confirm, logout, hint, translating, failure, retryLabel] = termsCopy(language);
+    dialog.lang = language;
+    dialog.querySelector('#communityConsentTitle').textContent = title;
+    dialog.querySelector('.community-consent__check-label').textContent = agreement;
+    accept.textContent = confirm;
+    dialog.querySelector('.terms-exit').textContent = logout;
+    dialog.querySelector('.community-consent__read-hint').textContent = hint;
+    retry.textContent = retryLabel;
+    retry.hidden = true; error.hidden = true;
+    body.textContent = translating;
+    syncControls();
+    try {
+      if (!terms) throw new Error('Missing terms');
+      const translated = await translateTerms(terms.body, language);
+      if (token !== generation) return;
+      body.innerHTML = renderTerms(translated);
+      body.scrollTop = 0;
+      loading = false;
+      requestAnimationFrame(checkRead);
+    } catch {
+      if (token !== generation) return;
+      body.textContent = failure;
+      error.hidden = false; error.textContent = failure;
+      retry.hidden = false;
+      // Partial or failed translations can never be accepted.
+      loading = true;
+    }
+    syncControls();
   }
   paint();
+  body.addEventListener('scroll', checkRead, { passive: true });
+  window.addEventListener('resize', checkRead);
   dialog.addEventListener('cancel', event => event.preventDefault());
-  checkbox.addEventListener('change', () => { accept.disabled = !terms || !checkbox.checked; });
+  checkbox.addEventListener('change', syncControls);
+  languageSelect.addEventListener('change', () => {
+    language = languageSelect.value;
+    try { localStorage.setItem('wegoinn-terms-language', language); } catch {}
+    paint();
+  });
   retry.addEventListener('click', async () => {
     retry.disabled = true;
     try { terms = await getCommunityTerms(); } catch { terms = null; }
-    paint(); retry.disabled = false;
+    await paint(); retry.disabled = false;
   });
   dialog.querySelector('.terms-exit').addEventListener('click', async () => {
     const { error: signOutError } = await supabase.auth.signOut({ scope: 'local' });
@@ -83,13 +128,14 @@ async function consentGate() {
   return new Promise(resolve => {
     dialog.querySelector('form').addEventListener('submit', async event => {
       event.preventDefault();
-      if (!terms || !checkbox.checked || accept.disabled) return;
-      accept.disabled = true; checkbox.disabled = true;
+      if (!terms || loading || !readComplete || !checkbox.checked || accept.disabled) return;
+      accept.disabled = true; checkbox.disabled = true; languageSelect.disabled = true;
       try {
         const { error: saveError } = await supabase.rpc('accept_community_terms', { p_version: terms.version });
         if (saveError) throw saveError;
         const current = await getCommunityTerms();
         if (!current.accepted) { terms = current; paint(); return; }
+        window.removeEventListener('resize', checkRead);
         dialog.close(); dialog.remove();
         document.documentElement.classList.remove('consent-open');
         if (app) app.inert = Boolean(wasInert);
@@ -101,7 +147,7 @@ async function consentGate() {
         } catch { /* Keep the current notice and require a successful save. */ }
         error.hidden = false;
         error.textContent = cause.message || '동의를 저장하지 못했습니다. 다시 시도해 주세요.';
-      } finally { checkbox.disabled = !terms; accept.disabled = !terms || !checkbox.checked; }
+      } finally { languageSelect.disabled = false; syncControls(); }
     });
   });
 }

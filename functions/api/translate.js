@@ -21,7 +21,7 @@ export async function onRequest({ request, env }) {
     if (raw.length > 16000) return json({ error: 'Text too long' }, 413);
     let body;
     try { body = JSON.parse(raw); } catch { return json({ error: 'Invalid JSON' }, 400); }
-    if (typeof body.text !== 'string' || !body.text.trim() || body.text.length > 2000 || !['en','ko','ja','zh'].includes(body.target)) return json({ error: 'Invalid text or language' }, 400);
+    if (typeof body.text !== 'string' || !body.text.trim() || body.text.length > 2000 || !['en','ko','ja','zh','es','fr','de','ru','vi','th'].includes(body.target)) return json({ error: 'Invalid text or language' }, 400);
     const response = await fetch(`https://translation.googleapis.com/language/translate/v2?key=${encodeURIComponent(env.GOOGLE_TRANSLATE_API_KEY)}`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ q: body.text, target: body.target === 'zh' ? 'zh-CN' : body.target, format: 'text' }), signal: AbortSignal.timeout(10000),

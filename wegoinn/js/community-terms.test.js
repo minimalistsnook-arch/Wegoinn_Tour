@@ -1,5 +1,6 @@
 import { beforeEach, afterEach, expect, it, vi } from 'vitest';
-const mock = vi.hoisted(() => ({ rpc: vi.fn(), signOut: vi.fn() }));
+const mock = vi.hoisted(() => ({ rpc: vi.fn(), signOut: vi.fn(), translate: vi.fn() }));
+vi.mock('./translation.js', () => ({ checkTranslationService: async () => true, translateText: (...args) => mock.translate(...args) }));
 vi.mock('./supabase.js', () => ({ supabase: { rpc: mock.rpc, auth: { signOut: mock.signOut } } }));
 import { ensureCommunityConsent, renderTerms, renderTermsSettings } from './community-terms.js';
 const body = '# Welcome!\n\n### 이용 안내\n\n**안내** <script>alert(1)</script>\n\n- 연락처\n\n---\n\n감사합니다.';
@@ -7,12 +8,15 @@ const terms = { version: 1, body, accepted: false };
 const settle = () => new Promise(resolve => setTimeout(resolve, 0));
 beforeEach(() => {
  document.body.innerHTML = '<div id="appView"></div><div id="settings"></div>';
- mock.rpc.mockReset(); mock.signOut.mockReset();
+ localStorage.clear();
+ mock.rpc.mockReset(); mock.signOut.mockReset(); mock.translate.mockReset();
+ mock.translate.mockImplementation(async text => text);
+ vi.stubGlobal('requestAnimationFrame', callback => { callback(); return 1; });
  HTMLDialogElement.prototype.showModal = function () { this.open = true; };
  HTMLDialogElement.prototype.close = function () { this.open = false; };
  document.documentElement.classList.remove('consent-open');
 });
-afterEach(() => { vi.restoreAllMocks(); });
+afterEach(() => { vi.restoreAllMocks(); vi.unstubAllGlobals(); });
 it('renders the requested headings and emphasis while escaping administrator HTML', () => {
  const html = renderTerms(body);
  expect(html).toContain('<h2>Welcome!</h2>');
@@ -57,7 +61,8 @@ it('keeps users blocked after a failed save and resets their checkbox for a chan
  const submit = () => { checkbox.checked = true; checkbox.dispatchEvent(new Event('change')); dialog.querySelector('form').dispatchEvent(new Event('submit', { cancelable: true })); };
  submit(); await settle(); await settle();
  expect(dialog.open).toBe(true); expect(checkbox.checked).toBe(false);
- expect(dialog.querySelector('.community-consent__version').textContent).toContain('2');
+ expect(dialog.querySelector('.community-consent__version')).toBeNull();
+ expect(dialog.querySelectorAll('.community-consent__language option')).toHaveLength(10);
  submit(); await pending;
  expect(mock.rpc).toHaveBeenCalledWith('accept_community_terms', { p_version: 2 });
 });
@@ -82,4 +87,42 @@ it('edits settings safely and sends the expected version to avoid overwriting an
  const form = container.querySelector('form'); form.dispatchEvent(new Event('submit', { cancelable: true })); await settle();
  expect(mock.rpc).toHaveBeenCalledWith('publish_community_terms', { p_body: input.value, p_expected_version: 1 });
  expect(container.querySelector('[role=status]').textContent).toContain('v2');
+});
+
+it('requires reviewing the full notice and resets agreement when switching languages', async () => {
+ let accepted = false;
+ mock.rpc.mockImplementation(async name => name === 'get_community_terms' ? { data: { ...terms, accepted } } : (accepted = true, { error: null }));
+ const pending = ensureCommunityConsent(); await settle();
+ const dialog = document.querySelector('dialog'), bodyEl = dialog.querySelector('.community-consent__body');
+ Object.defineProperty(bodyEl, 'scrollHeight', { configurable: true, value: 1000 });
+ Object.defineProperty(bodyEl, 'clientHeight', { configurable: true, value: 300 });
+ const select = dialog.querySelector('select'); select.value = 'en'; select.dispatchEvent(new Event('change')); await settle();
+ const checkbox = dialog.querySelector('input');
+ expect(checkbox.disabled).toBe(true);
+ expect(dialog.querySelector('#communityConsentTitle').textContent).toBe('Community guidelines');
+ bodyEl.scrollTop = 400; bodyEl.dispatchEvent(new Event('scroll'));
+ expect(checkbox.disabled).toBe(true);
+ bodyEl.scrollTop = 700; bodyEl.dispatchEvent(new Event('scroll'));
+ expect(checkbox.disabled).toBe(false);
+ checkbox.checked = true; checkbox.dispatchEvent(new Event('change'));
+ expect(dialog.querySelector('.terms-accept').disabled).toBe(false);
+ select.value = 'ja'; select.dispatchEvent(new Event('change')); await settle();
+ expect(checkbox.checked).toBe(false); expect(checkbox.disabled).toBe(true);
+ expect(dialog.querySelector('#communityConsentTitle').textContent).toBe('コミュニティ利用案内');
+ bodyEl.scrollTop = 700; bodyEl.dispatchEvent(new Event('scroll'));
+ checkbox.checked = true; checkbox.dispatchEvent(new Event('change'));
+ dialog.querySelector('form').dispatchEvent(new Event('submit', { cancelable: true })); await pending;
+});
+it('does not allow agreement after an incomplete translation, and can recover by selecting Korean', async () => {
+ let accepted = false;
+ mock.rpc.mockImplementation(async name => name === 'get_community_terms' ? { data: { ...terms, accepted } } : (accepted = true, { error: null }));
+ const pending = ensureCommunityConsent(); await settle();
+ mock.translate.mockRejectedValueOnce(new Error('Translation failed'));
+ const dialog = document.querySelector('dialog'), select = dialog.querySelector('select');
+ select.value = 'fr'; select.dispatchEvent(new Event('change')); await settle();
+ expect(dialog.querySelector('input').disabled).toBe(true);
+ expect(dialog.querySelector('.terms-retry').hidden).toBe(false);
+ select.value = 'ko'; select.dispatchEvent(new Event('change')); await settle();
+ const checkbox = dialog.querySelector('input'); checkbox.checked = true; checkbox.dispatchEvent(new Event('change'));
+ dialog.querySelector('form').dispatchEvent(new Event('submit', { cancelable: true })); await pending;
 });

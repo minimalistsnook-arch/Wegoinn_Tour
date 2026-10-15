@@ -31,3 +31,15 @@ describe('authenticated translation endpoint',()=>{
    expect(await response.text()).not.toContain('private-provider');
  });
 });
+
+it('accepts all ten community notice languages and rejects unsupported languages', async () => {
+ for (const target of ['en','ko','ja','zh','es','fr','de','ru','vi','th']) {
+  const fetchMock = vi.fn().mockResolvedValueOnce(new Response('{}')).mockResolvedValueOnce(new Response('[{"id":"guest"}]')).mockResolvedValueOnce(new Response(JSON.stringify({data:{translations:[{translatedText:'Translated'}]}})));
+  vi.stubGlobal('fetch',fetchMock);
+  expect((await onRequest({request:request({text:'안내',target}),env})).status).toBe(200);
+  expect(JSON.parse(fetchMock.mock.calls[2][1].body).target).toBe(target==='zh'?'zh-CN':target);
+ }
+ vi.stubGlobal('fetch',vi.fn().mockResolvedValueOnce(new Response('{}')).mockResolvedValueOnce(new Response('[{"id":"guest"}]')));
+ expect((await onRequest({request:request({text:'안내',target:'unsupported'}),env})).status).toBe(400);
+ expect(fetch).toHaveBeenCalledTimes(2);
+});
