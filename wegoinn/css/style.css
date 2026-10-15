@@ -2135,22 +2135,41 @@ html, body { overscroll-behavior-y: contain; }
 .pull-refresh.is-refreshing .icon { animation: pull-refresh-spin .8s linear infinite; }
 @keyframes pull-refresh-spin { to { transform: rotate(360deg); } }
 
-/* Top bar: logo with the guest's photo and name underneath on the left; online count, notifications
-   and language on the right (language last, at the far edge). Log out and Dark live in the footer. */
-.topbar { display: flex; flex-wrap: nowrap; align-items: center; justify-content: space-between; gap: 10px; }
-.topbar__id { display: grid; justify-items: start; gap: 4px; min-width: 0; }
-.topbar__brand { padding: 0; }
-.topbar__me { display: flex; align-items: center; gap: 8px; max-width: 100%; width: auto; padding: 0; border: 0; border-radius: 0; background: none; }
-.topbar__me .avatar { width: 32px; height: 32px; box-shadow: none; }
-.topbar__name { font-size: 13px; }
-.topbar__actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 8px; width: auto; margin-left: auto; }
-.topbar__actions .online-count { margin-left: 0; }
-.topbar__actions .lang-select { margin-left: auto; }
+/* Guest header: profile left, centered logo, controls right, notices on the bottom row. */
+.topbar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 10px 12px;
+}
+.topbar__brand { grid-column: 2; grid-row: 1; justify-self: center; padding: 0; }
+.topbar__me {
+  grid-column: 1; grid-row: 1;
+  display: flex; flex-direction: column; align-items: flex-start; justify-content: center;
+  gap: 5px; min-width: 0; max-width: 100%; width: 100%;
+  padding: 0; border: 0; border-radius: 0; background: none;
+}
+.topbar__me .avatar { width: 40px; height: 40px; border-radius: 50%; box-shadow: none; }
+.topbar__name {
+  display: block; max-width: 100%; color: #211715;
+  font-size: 14px; font-weight: 900; line-height: 1.3;
+  overflow-wrap: anywhere; white-space: normal;
+}
+.topbar__actions {
+  grid-column: 3; grid-row: 1;
+  display: flex; flex-direction: column; flex-wrap: nowrap; align-items: flex-end;
+  justify-content: center; gap: 8px; min-width: 0; width: 100%; margin-left: 0;
+}
+.topbar__actions .online-count { margin-left: 0; font-size: 11px; }
+.topbar__actions .lang-select { margin-left: 0; max-width: 100%; }
+.topbar__notice { grid-column: 1 / -1; display: flex; justify-content: center; padding-top: 8px; border-top: 1px solid rgba(255, 255, 255, .25); }
+.topbar__notice .pill-btn { min-height: 32px; gap: 6px; }
 @media (max-width: 600px) {
-  .topbar__actions { display: flex; gap: 6px; }
-  .topbar__actions > button { min-height: 32px; padding: 0 9px; font-size: 11px; }
-  .topbar__me .avatar { width: 28px; height: 28px; }
-  .topbar__name { font-size: 12px; }
+  .topbar { gap: 8px; }
+  .topbar__brand .wordmark__logo { width: clamp(100px, 32vw, 150px); }
+  .topbar__me .avatar { width: 36px; height: 36px; }
+  .topbar__name { font-size: 13px; }
+  .topbar__actions .online-count { flex-wrap: wrap; justify-content: flex-end; gap: 3px; white-space: normal; }
 }
 .app-foot__actions { display: flex; justify-content: center; gap: 8px; margin-top: 14px; }
 

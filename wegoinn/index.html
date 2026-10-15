@@ -105,17 +105,17 @@
   <!-- GUEST APP -->
   <div id="appView" class="app" hidden>
     <header class="topbar">
-      <div class="topbar__id">
-        <a class="wordmark topbar__brand" href="#top"><img class="wordmark__logo" src="img/logo-white.png" alt="Wegoinn" /></a>
-        <div class="topbar__me">
-          <span id="headerAvatar"></span>
-          <span id="headerNickname" class="topbar__name"></span>
-        </div>
+      <div class="topbar__me">
+        <span id="headerAvatar"></span>
+        <strong id="headerNickname" class="topbar__name"></strong>
       </div>
+      <a class="wordmark topbar__brand" href="#top"><img class="wordmark__logo" src="img/logo-white.png" alt="Wegoinn" /></a>
       <div class="topbar__actions">
         <div class="online-count" role="status" aria-live="polite" aria-atomic="true"><span>Online now</span> <strong id="onlineCount">…</strong></div>
-        <button id="notificationBtn" type="button" class="pill-btn">Notifications <span id="notificationCount">0</span></button>
         <select class="lang-select lang-select--on-pine" data-site-language aria-label="Language"><option value="en">English</option><option value="ko">한국어</option><option value="ja">日本語</option><option value="zh">中文</option></select>
+      </div>
+      <div class="topbar__notice">
+        <button id="notificationBtn" type="button" class="pill-btn">공지 <span id="notificationCount">0</span></button>
       </div>
     </header>
 
@@ -391,7 +391,7 @@
     </div>
   </div>
 
-  <div id="notificationSheet" class="sheet" hidden><div class="sheet__backdrop" data-close-sheet></div><div class="sheet__panel" role="dialog" aria-modal="true" aria-labelledby="notificationTitle" tabindex="-1"><button class="icon-btn sheet__close" type="button" data-close-sheet aria-label="Close">×</button><h2 id="notificationTitle">Notifications</h2><p>Notifications are saved here. Push notifications while the site is closed are not connected.</p><button id="markNotificationsRead" class="btn btn--ghost" type="button">Mark shown as read</button><div id="notificationList"></div></div></div>
+  <div id="notificationSheet" class="sheet" hidden><div class="sheet__backdrop" data-close-sheet></div><div class="sheet__panel" role="dialog" aria-modal="true" aria-labelledby="notificationTitle" tabindex="-1"><button class="icon-btn sheet__close" type="button" data-close-sheet aria-label="Close">×</button><h2 id="notificationTitle">공지</h2><p>Notifications are saved here. Push notifications while the site is closed are not connected.</p><button id="markNotificationsRead" class="btn btn--ghost" type="button">Mark shown as read</button><div id="notificationList"></div></div></div>
 
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
