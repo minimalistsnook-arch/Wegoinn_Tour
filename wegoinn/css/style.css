@@ -1475,10 +1475,10 @@ html { scroll-padding-top:calc(var(--measured-topbar-h, var(--topbar-h)) + 64px)
   border: 1px solid var(--line-strong);
   border-top: 4px solid var(--section-accent);
   border-radius: var(--r-lg);
-  background: var(--surface-soft);
+  background: var(--surface);
 }
-.layout > .block--guestbook { --section-accent: var(--copper); background: var(--tone-sand-b); }
-.layout > .block--chat { --section-accent: var(--ok); background: var(--ok-bg); }
+.layout > .block--guestbook { --section-accent: var(--copper); background: var(--surface); }
+.layout > .block--chat { --section-accent: var(--ok); background: var(--surface); }
 .block__head .eyebrow { color: var(--section-accent); }
 .block__head > div, .day-head > div, .hello__copy { min-width: 0; }
 .block__head { flex-wrap: wrap; }
@@ -2312,7 +2312,7 @@ html[data-theme="dark"] .chat-item__overlap { border-color: var(--surface); }
   font-weight: 700;
   line-height: 1.45;
 }
-#feed .post__body { align-items: center; gap: 14px; }
+#feed .post__body { align-items: flex-start; gap: 14px; } /* text starts at the top, beside the photo */
 #feed .post__thumbnail { flex: 0 0 76px; width: 76px; height: 76px; border-radius: 12px; background: #f3f3f5; }
 
 /* Author · time: one small grey line. */
