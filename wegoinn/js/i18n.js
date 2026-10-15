@@ -1,6 +1,9 @@
 import { isTranslationConfigured, translateText, checkTranslationService } from './translation.js';
 // Interface translations are local; guest-written content uses the authenticated API.
 const rows = [
+['Everyone at','투숙객 모두','みんな','所有住客'],
+['Only','열람 가능:','閲覧：','仅'],
+['staff can see this. Other guests never will.','직원만 확인할 수 있습니다. 다른 투숙객에게는 공개되지 않습니다.','スタッフのみ確認できます。他のゲストには公開されません。','仅工作人员可见，不向其他住客公开。'],
 ['Open post','방명록 보기','投稿を見る','查看留言'],
 ['View all communities','모임 전체 보기','すべてのコミュニティを見る','查看所有活动'],
 ['Upcoming communities','앞으로 열릴 모임','今後のコミュニティ','即将举行的活动'],
@@ -16,9 +19,9 @@ const rows = [
 ['Community creation is temporarily unavailable. Please contact staff.','현재 모임을 만들 수 없습니다. 직원에게 문의해 주세요.','現在コミュニティを作成できません。スタッフにお問い合わせください。','暂时无法创建活动，请联系工作人员。'],
 ['Mark shown as read','표시된 알림 읽음 처리','表示中の通知を既読にする','将显示的通知标为已读'],['Entering…','입장 중…','ログイン中…','正在进入…'],['Posting…','게시 중…','投稿中…','正在发布…'],['Sending…','전송 중…','送信中…','正在发送…'],['Creating…','저장 중…','保存中…','正在保存…'],
 ['Stay','머무르기','泊まる','入住'],['Meet','만나기','出会う','相遇'],['Remember','기억하기','思い出','留念'],['for','날짜','日付','日期'],['Sections','메뉴','メニュー','菜单'],
-['e.g. AGD12345678','예: AGD12345678','例：AGD12345678','例如：AGD12345678'],['e.g. SunnyMina','예: SunnyMina','例：SunnyMina','例如：SunnyMina'],['e.g. Hongdae Night Walk','예: 홍대 밤 산책','例：弘大ナイトウォーク','例如：弘大夜游'],['e.g. Wegoinn lobby','예: 위고인 로비','例：Wegoinn ロビー','例如：Wegoinn 大堂'],
+['e.g. AGD12345678','예: AGD12345678','例：AGD12345678','例如：AGD12345678'],['e.g. SunnyMina','예: SunnyMina','例：SunnyMina','例如：SunnyMina'],['e.g. Hongdae Night Walk','예: 홍대 밤 산책','例：弘大ナイトウォーク','例如：弘大夜游'],['e.g. hostel lobby','예: 위고인 로비','例：Wegoinn ロビー','例如：Wegoinn 大堂'],
 ['Street food, music, and a slow walk around Hongdae…','홍대에서 길거리 음식과 음악, 여유로운 산책…','弘大で屋台グルメ、音楽、ゆっくり散歩…','在弘大品尝街头美食、听音乐、悠闲散步…'],['Anyone who loves meeting new people!','새로운 사람들과 만나는 것을 좋아하는 누구나!','新しい出会いが好きな方ならどなたでも！','欢迎喜欢结识新朋友的任何人！'],
-['19:30  Meet at the Wegoinn lobby\n20:00  Walk to Hongdae\n21:00  Dinner together','19:30  위고인 로비에서 만남\n20:00  홍대로 이동\n21:00  함께 저녁 식사','19:30  Wegoinn ロビーに集合\n20:00  弘大へ移動\n21:00  一緒に夕食','19:30  Wegoinn 大堂集合\n20:00  前往弘大\n21:00  一起晚餐'],
+['19:30  Meet at the hostel lobby\n20:00  Walk to Hongdae\n21:00  Dinner together','19:30  위고인 로비에서 만남\n20:00  홍대로 이동\n21:00  함께 저녁 식사','19:30  Wegoinn ロビーに集合\n20:00  弘大へ移動\n21:00  一緒に夕食','19:30  Wegoinn 大堂集合\n20:00  前往弘大\n21:00  一起晚餐'],
 ['Delete this post?','게시글을 삭제할까요?','投稿を削除しますか？','删除此留言吗？'],['Delete this comment? Replies to it will be removed too.','댓글을 삭제할까요? 답글도 함께 삭제됩니다.','コメントを削除しますか？返信も削除されます。','删除此评论吗？回复也会一并删除。'],
 ['Please enter your reservation number and nickname.','예약번호와 닉네임을 입력하세요.','予約番号とニックネームを入力してください。','请输入预订编号和昵称。'],['Maximum participants must be 1 – 30.','최대 참가 인원은 1~30명입니다.','定員は1〜30人です。','最多参加人数应为1至30人。'],['Please enter the fee in KRW.','참가비를 원화로 입력하세요.','参加費を韓国ウォンで入力してください。','请以韩元输入参加费。'],['This community is already full.','모임 정원이 마감되었습니다.','このコミュニティは満員です。','活动人数已满。'],['You already sent a request.','이미 신청한 모임입니다.','すでに申請済みです。','你已经提交过申请。'],['No active application to withdraw','철회할 신청이 없습니다','取り下げ可能な申請がありません','没有可撤回的申请'],['Post deleted.','게시글을 삭제했습니다.','投稿を削除しました。','留言已删除。'],['Comment deleted.','댓글을 삭제했습니다.','コメントを削除しました。','评论已删除。'],['Your moment is on the wall ✨','이야기를 게시했습니다 ✨','投稿しました ✨','已发布留言 ✨'],['Write something or add a photo first.','내용을 입력하거나 사진을 추가하세요.','文章または写真を追加してください。','请先填写内容或添加照片。'],
 ['Content translation failed. Original text is shown.','게시글 번역에 실패해 원문을 표시합니다.','投稿の翻訳に失敗したため原文を表示します。','内容翻译失败，正在显示原文。'],

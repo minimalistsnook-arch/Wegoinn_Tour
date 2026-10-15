@@ -226,7 +226,7 @@
         <div class="card chat-card">
           <div class="chat-head">
             <div class="chat-head__text">
-              <p id="chatEyebrow" class="eyebrow">Everyone at Wegoinn</p>
+              <p id="chatEyebrow" class="eyebrow"><span>Everyone at</span> <img class="brand-logo--inline" src="img/logo.png" alt="Wegoinn" /></p>
               <h3 id="chatTitle">Global Chat</h3>
             </div>
             <button id="chatBackBtn" type="button" class="pill-btn" hidden><i data-icon="left"></i> Global Chat</button>
@@ -345,10 +345,10 @@
 
         <label class="field">
           <span class="field__label">Activity Schedule / Plan</span>
-          <textarea name="schedule" class="field__area" rows="4" maxlength="1000" placeholder="19:30  Meet at the Wegoinn lobby&#10;20:00  Walk to Hongdae&#10;21:00  Dinner together" required></textarea>
+          <textarea name="schedule" class="field__area" rows="4" maxlength="1000" placeholder="19:30  Meet at the hostel lobby&#10;20:00  Walk to Hongdae&#10;21:00  Dinner together" required></textarea>
         </label>
 
-        <label class="field"><span class="field__label">Meeting place</span><span class="field__box"><input name="meeting_place" type="text" maxlength="200" placeholder="e.g. Wegoinn lobby" required /></span></label>
+        <label class="field"><span class="field__label">Meeting place</span><span class="field__box"><input name="meeting_place" type="text" maxlength="200" placeholder="e.g. hostel lobby" required /></span></label>
         <label class="field"><span class="field__label">Map link</span><span class="field__box"><input name="map_url" type="text" maxlength="2000" placeholder="https://maps.google.com/…" /></span><small class="field__hint">Paste a Google, Naver or Kakao Maps share link. The location appears below.</small></label>
         <div id="mapLocationPreview" class="detail-block" aria-live="polite" hidden></div>
 
@@ -378,7 +378,7 @@
         <label class="field" id="communityReservationField" hidden>
           <span class="field__label">Reservation Number</span>
           <span class="field__box"><i data-icon="key"></i><input name="reservation_number" type="text" autocomplete="off" spellcheck="false" /></span>
-          <small class="field__hint"><i data-icon="shield"></i> Only Wegoinn staff can see this. Other guests never will.</small>
+          <small class="field__hint"><i data-icon="shield"></i> <span>Only</span> <img class="brand-logo--inline" src="img/logo.png" alt="Wegoinn" /> <span>staff can see this. Other guests never will.</span></small>
         </label>
 
         <button type="submit" class="btn btn--dark btn--block btn--lg">CREATE COMMUNITY</button>

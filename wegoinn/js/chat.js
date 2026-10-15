@@ -246,7 +246,7 @@ function showRoom(room) {
   state.unreadRooms.delete(room?.id ?? "");
   renderRooms();
   if (!room) setUnread(0);
-  els.eyebrow.textContent = room ? "Group chat" : "Everyone at Wegoinn";
+  els.eyebrow.innerHTML = room ? "Group chat" : '<span>Everyone at</span> <img class="brand-logo--inline" src="img/logo.png" alt="Wegoinn" />';
   els.title.textContent = room ? room.title : "Global Chat";
   // Reset the site translator's memory of the previous room's title.
   delete els.title.dataset.siteOriginal;
