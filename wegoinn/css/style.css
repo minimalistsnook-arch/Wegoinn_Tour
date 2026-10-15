@@ -177,8 +177,8 @@ p { margin: 0; }
 .wordmark__logo { display: block; width: 150px; max-width: 100%; height: auto; }
 .wordmark--xl .wordmark__logo { width: min(360px, 100%); }
 .brand-logo--inline { display: inline-block; width: 90px; height: auto; vertical-align: middle; flex-shrink: 0; }
-/* Keep the supplied red logo visible against the red header. */
-.topbar .wordmark { padding: 4px 8px; border-radius: 6px; background: #fff; }
+/* The supplied white logo sits directly on the red header. */
+.topbar .wordmark { padding: 4px 8px; }
 
 .eyebrow {
   display: inline-flex;
