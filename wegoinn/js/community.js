@@ -866,7 +866,7 @@ async function loadMine() {
   if (error) { $("#myCommunityList").textContent = errorMessage(error); return; }
   state.mine = data;
   renderMine();
-  setChatRooms(state.mine.filter(canChat).map((c) => ({ id: c.id, title: c.title, date: c.community_date, time: c.community_time })));
+  setChatRooms(state.mine.filter(canChat).map((c) => ({ id: c.id, title: c.title, date: c.community_date, time: c.community_time, image: c.image_url, place: c.meeting_place, members: c.approved_count })));
 }
 function renderMine() {
   $("#myCommunityList").innerHTML = state.mine.length ? state.mine.map(cardHtml).join("") : '<p class="empty-state">No communities yet.</p>';

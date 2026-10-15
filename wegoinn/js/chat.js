@@ -3,7 +3,7 @@
 // Messages are stored in chat_messages and pushed through Supabase Realtime;
 // "online now" uses Realtime Presence.
 import { supabase, errorMessage } from "./supabase.js";
-import { $, escapeHtml, avatarHtml, formatDate, formatTime, formatDateKey, shortTime, toast, setBusy, communityIsLocked } from "./utils.js";
+import { $, escapeHtml, avatarHtml, avatarTone, initials, formatDate, formatTime, formatDateKey, shortTime, toast, setBusy, communityIsLocked, debounce, displayLocale } from "./utils.js";
 import { detectLanguage } from "./translation.js";
 import { closeSheet } from "./sheet.js";
 import { icon } from "./icons.js";
@@ -29,7 +29,8 @@ const state = {
   pending: [],         // realtime rows that arrived while history was loading
   lastAt: null,        // created_at of the newest rendered message (for resync)
   channel: null,
-  rooms: [],           // community group chats this guest hosts or joined: { id, title, date, time }
+  rooms: [],           // community group chats this guest hosts or joined: { id, title, date, time, image, place, members }
+  summaries: new Map(), // room key ("" = Global Chat) → { last, unread } for the chat list
   unreadRooms: new Set(), // room ids ("" = Global Chat) with messages the guest hasn't opened yet
 };
 
@@ -57,6 +58,15 @@ export function initChat(me) {
     closeFullscreen: $("#chatCloseFullscreen"),
     rooms: $("#chatRooms"),
     earlier: $("#chatLoadEarlier"),
+    chatList: $("#chatList"),
+  });
+  els.chatList.addEventListener("click", (event) => {
+    const item = event.target.closest("[data-chat-room]");
+    if (!item) return;
+    const room = state.rooms.find((r) => r.id === item.dataset.chatRoom) || null;
+    fullscreen.open();
+    if ((room?.id ?? null) !== (state.room?.id ?? null)) { showRoom(room); loadMessages(); }
+    else markRead(room);
   });
   els.rooms.addEventListener("click", (event) => {
     const button = event.target.closest("[data-room]");
@@ -92,8 +102,12 @@ export function initChat(me) {
   document.addEventListener("visibilitychange", () => document.visibilityState === "visible" && syncMissed());
   watchVisibility();
   showRoom(null);
+  refreshChatList();
   return loadMessages();
 }
+
+// Set by setupFullscreenChat so the chat list can reopen a chat fullscreen.
+const fullscreen = { open: () => {}, isOpen: () => false };
 
 // Keep the chat inside the visible viewport when a phone keyboard opens.
 function setupFullscreenChat() {
@@ -117,6 +131,8 @@ function setupFullscreenChat() {
     els.section.style.removeProperty("--chat-viewport-height");
     els.section.classList.remove("is-pulling", "is-pulled-away");
     els.section.style.removeProperty("--chat-pull");
+    markRead(state.room);
+    refreshChatList();
   };
   const openFullscreen = () => {
     if (expanded) return;
@@ -128,7 +144,10 @@ function setupFullscreenChat() {
     setUnread(0);
     syncViewport();
     scrollToEnd(true);
+    markRead(state.room);
   };
+  fullscreen.open = openFullscreen;
+  fullscreen.isOpen = () => expanded;
   // Phone keyboards slide in over ~300ms and report their final size late (iOS especially), so re-measure
   // a few times and keep the field being typed in above the keyboard.
   els.input.addEventListener("focus", () => {
@@ -226,7 +245,85 @@ export function setChatRooms(rooms) {
   // Upcoming first (soonest on top), then past ones (most recent first).
   state.rooms = [...rooms].sort((a, b) => (upcoming(b) - upcoming(a)) || (upcoming(a) ? key(a).localeCompare(key(b)) : key(b).localeCompare(key(a))));
   renderRooms();
+  refreshChatList();
 }
+
+/* ---------------- Chat list (shown when the fullscreen chat is closed) ---------------- */
+
+// When each chat was last read on this device: { "": iso for Global Chat, [community id]: iso }.
+const READ_KEY = "wegoinn-chat-read";
+function readMarks() {
+  try { return JSON.parse(localStorage.getItem(READ_KEY)) || {}; } catch { return {}; }
+}
+function markRead(room) {
+  const marks = readMarks();
+  marks[room?.id ?? ""] = new Date().toISOString();
+  try { localStorage.setItem(READ_KEY, JSON.stringify(marks)); } catch { /* private mode: counts just reset */ }
+  const summary = state.summaries.get(room?.id ?? "");
+  if (summary) summary.unread = 0;
+}
+
+// Latest message and unread count (others' messages since this device last read the chat).
+async function loadSummary(room) {
+  const key = room?.id ?? "";
+  const marks = readMarks();
+  if (!marks[key]) markRead(room); // first time this chat is seen here: start counting from now
+  const since = readMarks()[key];
+  const scoped = (query) => (room ? query.eq("community_id", room.id) : query.is("community_id", null));
+  const [last, unread] = await Promise.all([
+    scoped(supabase.from("chat_messages").select(CHAT_COLUMNS)).order("created_at", { ascending: false }).limit(1),
+    scoped(supabase.from("chat_messages").select("id", { count: "exact", head: true })).neq("author_id", state.me.id).gt("created_at", since),
+  ]);
+  state.summaries.set(key, { last: last.data?.[0] || null, unread: unread.count || 0 });
+}
+
+const relativeTime = (iso) => {
+  const seconds = (new Date(iso) - Date.now()) / 1000;
+  const units = [["year", 31536000], ["month", 2592000], ["week", 604800], ["day", 86400], ["hour", 3600], ["minute", 60]];
+  const format = new Intl.RelativeTimeFormat(displayLocale(), { numeric: "auto" });
+  for (const [unit, size] of units) if (Math.abs(seconds) >= size) return format.format(Math.round(seconds / size), unit);
+  return format.format(0, "minute");
+};
+
+function chatItemHtml(room) {
+  const key = room?.id ?? "";
+  const { last, unread = 0 } = state.summaries.get(key) || {};
+  const title = room ? room.title : "Global Chat";
+  const pic = room
+    ? (room.image ? `<img src="${escapeHtml(room.image)}" alt="" loading="lazy" decoding="async" />` : `<span class="avatar avatar--${avatarTone(title)}">${escapeHtml(initials(title))}</span>`)
+    : `<img class="chat-item__logo" src="img/logo.png" alt="" />`;
+  const author = last?.author;
+  // The last speaker's photo overlaps the corner of a group chat's picture.
+  const overlap = room && author?.avatar_url?.startsWith("https://") ? `<img class="chat-item__overlap" src="${escapeHtml(author.avatar_url)}" alt="" loading="lazy" />` : "";
+  const place = room ? (room.place || "") : "Wegoinn";
+  const preview = last ? `${room && author?.nickname ? `${author.nickname}: ` : ""}${last.content}` : "No messages yet";
+  return `
+    <button type="button" class="chat-item" role="listitem" data-chat-room="${escapeHtml(key)}">
+      <span class="chat-item__pic">${pic}${overlap}</span>
+      <span class="chat-item__body">
+        <span class="chat-item__top">
+          <strong class="chat-item__name" ${room ? "data-user-content" : ""}>${escapeHtml(title)}</strong>
+          ${room ? `<span class="chat-item__count">${icon("users")}${room.members ?? ""}</span>` : `<span class="chat-item__count">${icon("globe")}</span>`}
+          <span class="chat-item__meta js-text">${[place, last ? relativeTime(last.created_at) : ""].filter(Boolean).map(escapeHtml).join(" · ")}</span>
+        </span>
+        <span class="chat-item__msg" ${last ? "data-user-content" : ""}>${escapeHtml(preview)}</span>
+      </span>
+      ${unread ? `<span class="chat-item__badge" aria-label="${unread} unread">${unread > 99 ? "99+" : unread}</span>` : ""}
+    </button>`;
+}
+
+function renderChatList() {
+  if (!els.chatList) return;
+  els.chatList.innerHTML = [null, ...state.rooms].map(chatItemHtml).join("");
+}
+
+async function refreshChatList() {
+  if (!els.chatList || !state.me) return;
+  renderChatList(); // show what we already know right away
+  await Promise.all([null, ...state.rooms].map((room) => loadSummary(room).catch(() => {})));
+  renderChatList();
+}
+const refreshChatListSoon = debounce(refreshChatList, 500);
 
 function renderRooms() {
   if (!els.rooms) return;
@@ -284,6 +381,7 @@ async function loadMessages() {
   state.pending.filter(inCurrentRoom).forEach(appendMessage);
   state.pending = [];
   scrollToEnd(true);
+  if (fullscreen.isOpen()) markRead(room);
 }
 
 // Operators can also moderate messages older than the initial 100-message window.
@@ -480,6 +578,8 @@ export async function syncMissed() {
 export async function onChatInsert(payload) {
   const row = payload.new;
   if (!row?.id) return;
+  if (fullscreen.isOpen() && inCurrentRoom(row)) markRead(state.room);
+  else refreshChatListSoon();
   if (!inCurrentRoom(row)) {
     // Another room this guest can read (RLS only delivers those): count it and dot its chip.
     if (row.author_id !== state.me?.id) {
