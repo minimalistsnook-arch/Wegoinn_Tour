@@ -809,7 +809,7 @@ async function submitCommunity(event) {
   if (!validateCommunityRequiredFields(f)) return;
 
   const max = Number(v("max_participants"));
-  if (!Number.isInteger(max) || max < 1 || max > 30) return toast("Maximum participants must be 1 – 30.", "error");
+  if (!Number.isInteger(max) || max < 2 || max > 30) return toast("Maximum participants must be 2 – 30.", "error");
   const min = Number(v("min_participants"));
   if (!Number.isInteger(min) || min < 1 || min > max) return toast("Minimum participants must be between 1 and the maximum.", "error");
 

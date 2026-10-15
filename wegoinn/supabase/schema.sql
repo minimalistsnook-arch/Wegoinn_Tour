@@ -1248,3 +1248,17 @@ grant execute on function public.community_members(uuid) to authenticated;
 
 notify pgrst, 'reload schema';
 commit;
+
+-- ============================================================
+-- The host always attends and takes one seat in approved_count.
+-- ============================================================
+create or replace function public.count_host_seat()
+returns trigger language plpgsql set search_path = public as $$
+begin
+ new.approved_count := 1;
+ return new;
+end $$;
+drop trigger if exists count_host_seat on public.communities;
+create trigger count_host_seat before insert on public.communities
+for each row execute function public.count_host_seat();
+revoke all on function public.count_host_seat() from public, anon, authenticated;
