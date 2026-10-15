@@ -51,11 +51,10 @@ it('uploads a photo and registers a photo-only guestbook entry', async () => {
   expect(document.querySelector('#postPreview').hidden).toBe(true);
 });
 
-it('hides history controls when only the latest story exists', async () => {
+it('keeps the composer inline when only the latest story exists', async () => {
   const input = document.querySelector('#postInput');
   input.value = 'Only story'; input.dispatchEvent(new Event('input'));
   document.querySelector('#publishPostBtn').click(); await settle();
   expect(document.querySelectorAll('[data-post-id]')).toHaveLength(1);
-  expect(document.querySelector('#loadMorePosts').hidden).toBe(true);
-  expect(document.querySelector('#collapsePosts').hidden).toBe(true);
+  expect(document.querySelector('#guestbookComposer').classList.contains('composer--dock')).toBe(false);
 });

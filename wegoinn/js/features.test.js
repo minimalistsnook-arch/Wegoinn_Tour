@@ -275,29 +275,14 @@ it('opens a text-only post without adding an empty photo area',async()=>{
  expect(document.querySelector('#guestbookDetail .post__text').textContent).toBe('Hello everyone');
  expect(document.querySelector('#guestbookDetail .post__detail-photo')).toBeNull();
 });
-it('loads older guestbook posts and retains the expanded range on refresh',async()=>{
+it('shows every guestbook post at once and keeps them all on refresh',async()=>{
  mock.posts=Array.from({length:25},(_,i)=>({id:String(i),content:`Post ${i}`,author_id:me.id,author:{nickname:'Host'},created_at:'2026-10-08T00:00:00Z',comments:[]}));
  await initGuestbook(me);
- expect(document.querySelectorAll('[data-post-id]')).toHaveLength(1);
- expect(document.querySelector('#loadMorePosts').getAttribute('aria-expanded')).toBe('false');
- expect(document.querySelector('#loadMorePosts').hidden).toBe(false);
- expect(document.querySelector('#guestbookComposer').classList.contains('composer--dock')).toBe(false);
- document.querySelector('#loadMorePosts').click(); await settle();
- expect(document.querySelectorAll('[data-post-id]')).toHaveLength(20);
+ expect(document.querySelectorAll('[data-post-id]')).toHaveLength(25);
+ expect(document.querySelector('#loadMorePosts')).toBeNull();
  expect(document.querySelector('#guestbookComposer').classList.contains('composer--dock')).toBe(true);
- expect(document.querySelector('#loadMorePosts').getAttribute('aria-expanded')).toBe('true');
- document.querySelector('#loadMorePosts').click(); await settle();
- expect(document.querySelectorAll('[data-post-id]')).toHaveLength(25);
- expect(document.querySelector('#loadMorePosts').hidden).toBe(true);
  await loadFeed();
  expect(document.querySelectorAll('[data-post-id]')).toHaveLength(25);
- document.querySelector('#collapsePosts').click();
- expect(document.querySelectorAll('[data-post-id]')).toHaveLength(1);
- expect(document.querySelector('#loadMorePosts').hidden).toBe(false);
- expect(document.querySelector('#collapsePosts').hidden).toBe(true);
- expect(document.querySelector('#guestbookComposer').classList.contains('composer--dock')).toBe(false);
- await loadFeed();
- expect(document.querySelectorAll('[data-post-id]')).toHaveLength(1);
 });
 it('shows unread notifications and marks only displayed unread IDs',async()=>{
  mock.notifications=[{id:'notice',kind:'approved',community_title:'Walk',created_at:'2026-10-08T00:00:00Z',read_at:null}];

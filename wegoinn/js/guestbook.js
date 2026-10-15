@@ -8,7 +8,8 @@ import { isNew } from "./news.js";
 import { openContentEditor } from "./moderation.js";
 import { openSheet, closeSheet } from './sheet.js';
 
-const FEED_LIMIT = 20;
+// Every post is shown at once (Supabase returns at most 1000 rows per request).
+const FEED_LIMIT = 1000;
 
 const POST_COLUMNS = `
   id, content, original_language, image_url, created_at, author_id,
@@ -18,11 +19,9 @@ const POST_COLUMNS = `
 
 const state = {
   me: null,
-  visibleLimit: 1,
   loading: false,
   posts: [],
   detailId: null,
-  hasMore: false,
   openComments: new Set(),
   replyingTo: null,        // top-level comment id currently being replied to
   draftImage: null,        // compressed File — the original is never kept
@@ -39,7 +38,6 @@ const els = {};
 
 export function initGuestbook(me) {
   state.me = me;
-  state.visibleLimit = 1;
   state.detailId = null;
   state.openComments.clear();
   Object.assign(els, {
@@ -84,22 +82,6 @@ export function initGuestbook(me) {
     if (state.refreshPending) setTimeout(() => !isTypingInFeed() && loadFeed(), 50);
   });
 
-  $("#loadMorePosts").addEventListener("click", async () => {
-    if (state.loading) return;
-    state.visibleLimit = state.visibleLimit === 1 ? FEED_LIMIT : state.visibleLimit + FEED_LIMIT;
-    await loadFeed();
-  });
-  $("#collapsePosts").addEventListener("click", () => {
-    if (state.loading) return;
-    const hasHistory = state.posts.length > 1 || state.hasMore;
-    state.visibleLimit = 1;
-    state.posts = state.posts.slice(0, 1);
-    renderFeed();
-    $("#loadMorePosts").hidden = !hasHistory;
-    $("#collapsePosts").hidden = true;
-    $("#loadMorePosts").setAttribute("aria-expanded", "false");
-    syncComposerDock();
-  });
   setupComposerDock();
   updateComposer();
   return loadFeed();
@@ -107,11 +89,11 @@ export function initGuestbook(me) {
 
 /* ---------------- Composer ---------------- */
 
-// Once the feed is expanded, keep the composer docked at the bottom while the Guestbook is in view.
+// Once the feed holds more than one post, keep the composer docked at the bottom while the Guestbook is in view.
 function syncComposerDock() {
   const section = $("#guestbook");
   const composer = $("#guestbookComposer");
-  const docked = state.visibleLimit > 1;
+  const docked = state.posts.length > 1;
   section.classList.toggle("is-expanded", docked);
   composer.classList.toggle("composer--dock", docked);
   if (!docked) {
@@ -231,29 +213,22 @@ export async function loadFeed() {
   if (state.loading) { state.refreshPending = true; return; }
   state.loading = true;
   state.refreshPending = false;
-  const more = $("#loadMorePosts");
-  more.disabled = true;
-  $("#collapsePosts").disabled = true;
   let result;
   try { result = await supabase
     .from("posts")
     .select(POST_COLUMNS)
     .order("created_at", { ascending: false })
     .order("id", { ascending: false })
-    .limit(state.visibleLimit + 1);
+    .limit(FEED_LIMIT);
   } catch (err) { result = { error: err }; }
-  finally { state.loading = false; more.disabled = false; $("#collapsePosts").disabled = false; }
+  finally { state.loading = false; }
   const { data, error } = result;
 
   if (error) {
     els.feed.innerHTML = `<div class="empty-state">${escapeHtml(errorMessage(error, "Couldn't load the guestbook."))}</div>`;
     return;
   }
-  state.hasMore = data.length > state.visibleLimit;
-  more.hidden = !state.hasMore;
-  more.setAttribute("aria-expanded", String(state.visibleLimit > 1));
-  $("#collapsePosts").hidden = state.visibleLimit === 1;
-  state.posts = data.slice(0, state.visibleLimit);
+  state.posts = data;
   renderFeed();
   syncComposerDock();
   if (state.refreshPending) scheduleFeedRefresh();

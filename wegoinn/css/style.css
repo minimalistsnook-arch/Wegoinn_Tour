@@ -1292,7 +1292,6 @@ h1 em, h2 em, h3 em { color: var(--copper); font-family: var(--font-serif); }
 .notification time { font-size:12px; color:#70645c; }
 #notificationSheet h2 { margin:20px 0 12px; }
 #notificationSheet .sheet__panel > p { margin-bottom:16px; }
-#loadMorePosts { margin-top:16px; }
 @media (max-width:600px) { .topbar { align-items:flex-start; gap:10px; } .topbar__me { gap:6px; } .topbar__me .pill-btn { padding:7px 9px; font-size:11px; } }
 .topbar { height:auto; min-height:calc(var(--topbar-h) + env(safe-area-inset-top)); padding-top:calc(8px + env(safe-area-inset-top)); padding-bottom:8px; gap:12px; }
 .topbar__brand { flex-shrink:0; }
@@ -1446,8 +1445,7 @@ html { scroll-padding-top:calc(var(--measured-topbar-h, var(--topbar-h)) + 64px)
 .my-communities summary { cursor: pointer; font-weight: 700; min-height: 28px; }
 #myCommunityList { max-height: 360px; }
 #guestbook .composer { margin-top: 16px; }
-#collapsePosts { margin-top: 8px; }
-/* After "Load more", the composer docks to the viewport bottom while the Guestbook is on screen. */
+/* With more than one post, the composer docks to the viewport bottom while the Guestbook is on screen. */
 #guestbook.is-expanded { padding-bottom: calc(var(--guestbook-composer-height, 150px) + 20px); }
 #guestbook .composer--dock {
   position: fixed;
