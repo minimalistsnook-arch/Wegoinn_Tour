@@ -172,6 +172,10 @@ p { margin: 0; }
   text-decoration: none;
 }
 .wordmark--xl { font-size: clamp(56px, 17vw, 84px); line-height: .95; letter-spacing: -.035em; }
+/* The Wegoinn logo image stands in for the wordmark text; it scales with the wordmark's font size. */
+.wordmark__logo { display: block; width: auto; height: 1.4em; }
+/* White on the red top bar. */
+.topbar .wordmark__logo { filter: brightness(0) invert(1); }
 
 .eyebrow {
   display: inline-flex;

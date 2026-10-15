@@ -77,6 +77,9 @@ p { margin: 0; }
 .icon { width: 17px; height: 17px; flex: none; }
 
 .wordmark { font-family: var(--font-serif); font-style: normal; font-weight: 700; font-size: 26px; letter-spacing: -.02em; }
+/* The Wegoinn logo image stands in for the wordmark text. */
+.wordmark__logo { display: block; width: auto; height: 1.4em; }
+.sidebar__brand .wordmark__logo { filter: brightness(0) invert(1); }
 .eyebrow { margin-bottom: 4px; color: var(--copper); font-size: 11px; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; }
 .muted { color: var(--muted); }
 
@@ -385,8 +388,7 @@ html[data-theme="dark"] .admin-login {
   .sidebar { padding: 22px 12px; }
   .sidebar__brand { justify-content: center; padding: 0 0 22px; }
   .sidebar__brand small, .sidebar__nav span, .sidebar__out span, .sidebar__me { display: none; }
-  .sidebar__brand .wordmark { display: block; font-size: 0; }
-  .sidebar__brand .wordmark::first-letter { font-size: 28px; }
+  .sidebar__brand .wordmark { display: block; font-size: 20px; }
   .sidebar__nav button, .sidebar__out { justify-content: center; padding: 12px; }
   .sidebar__nav .icon, .sidebar__out .icon { width: 20px; height: 20px; }
   .main { padding: 28px 28px 50px; }
