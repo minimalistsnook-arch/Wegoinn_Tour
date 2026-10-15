@@ -5,10 +5,11 @@ export function validateNickname(nickname) {
   return typeof nickname === "string" && nickname.trim().length >= 1 && nickname.trim().length <= 20;
 }
 
+// Spaces are fine: "2026 10 13", "2026. 10. 13." and "999 222" all work.
 export function normalizeStayDate(value) {
   const raw = value.trim();
-  if (raw === "999222") return raw;
-  const match = /^(\d{2}|\d{4})[-./](\d{1,2})[-./](\d{1,2})$/.exec(raw);
+  if (raw.replace(/\s+/g, "") === "999222") return "999222";
+  const match = /^(\d{2}|\d{4})\s*(?:[-./]\s*|\s+)(\d{1,2})\s*(?:[-./]\s*|\s+)(\d{1,2})\s*\.?$/.exec(raw);
   if (!match) throw new Error("날짜를 YYYY-MM-DD 또는 YY.MM.DD 형식으로 입력하세요.");
   const year = match[1].length === 2 ? 2000 + Number(match[1]) : Number(match[1]);
   const month = Number(match[2]), day = Number(match[3]);
@@ -35,7 +36,9 @@ export async function signInGuest(checkIn, checkOut, roomNumber, nickname, avata
   let arrival, departure;
   try { arrival = normalizeStayDate(checkIn); } catch (error) { throw new Error(`체크인 날짜: ${error.message}`); }
   try { departure = normalizeStayDate(checkOut); } catch (error) { throw new Error(`체크아웃 날짜: ${error.message}`); }
-  const name = nickname.trim();
+  // Spaces inside the nickname are kept; repeated spaces count as one so returning guests still match.
+  const name = nickname.trim().replace(/\s+/g, " ");
+  roomNumber = roomNumber.replace(/\s+/g, "");
   const admin = arrival === "999222" && departure === "999222";
   if (!validateNickname(name)) throw new Error("닉네임은 1~20자로 입력하세요.");
   if (!admin && (arrival === "999222" || departure === "999222")) throw new Error("운영자 로그인은 체크인과 체크아웃 날짜에 모두 999222를 입력해야 합니다.");
