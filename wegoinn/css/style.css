@@ -986,6 +986,26 @@ h1 em, h2 em, h3 em { color: var(--copper); font-family: var(--font-serif); }
   transform: translateX(-50%);
 }
 .cal-day.is-selected .cal-day__dot { background: var(--rose-700); }
+/* My communities: my profile photo in the day's corner; within the next few days it pulses. */
+.cal-day__me {
+  position: absolute;
+  top: 1px;
+  right: 1px;
+  z-index: 1;
+  width: clamp(16px, 4.6vw, 22px);
+  height: clamp(16px, 4.6vw, 22px);
+  border: 2px solid var(--surface);
+  border-radius: 50%;
+  object-fit: cover;
+  font-size: 9px;
+  box-shadow: none;
+}
+.cal-day.is-mine.is-past .cal-day__me { opacity: .45; }
+.cal-day.is-soon .cal-day__me { animation: cal-soon 1.6s ease-in-out infinite; }
+@keyframes cal-soon {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(200, 0, 13, .55); }
+  50% { box-shadow: 0 0 0 5px rgba(200, 0, 13, 0); }
+}
 
 .calendar__legend {
   display: flex;

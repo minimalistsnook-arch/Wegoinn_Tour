@@ -206,6 +206,9 @@ const isAdmin = () => state.me?.role === "admin";
 const canEdit = (c) => isAdmin() || (isHost(c) && !communityIsLocked(c));
 // Group chat: host and approved members (enforced again by chat_messages RLS).
 const canChat = (c) => isAdmin() || (c.status !== "cancelled" && (isHost(c) || state.myApplications.get(c.id) === "approved"));
+// My communities: ones I host or joined that are still on.
+const isMine = (c) => c.status !== "cancelled" && (isHost(c) || state.myApplications.get(c.id) === "approved");
+const SOON_DAYS = 3; // my communities this close (today included) pulse on the calendar
 // "approved" is shown as "joined": JOIN no longer waits for the host.
 const statusLabel = (status) => (status === "approved" ? "joined" : status);
 
@@ -224,6 +227,8 @@ function renderCalendar() {
     const d = new Date(start.getFullYear(), start.getMonth(), start.getDate() + i);
     const key = toDateKey(d);
     const count = byDate(key).length;
+    const mine = byDate(key).some(isMine);
+    const soon = mine && key >= todayKey && (parseDateKey(key) - parseDateKey(todayKey)) / 86400000 < SOON_DAYS;
     const classes = [
       "cal-day",
       d.getMonth() !== month && "is-outside",
@@ -231,16 +236,27 @@ function renderCalendar() {
       key === state.selectedDate && "is-selected",
       key < todayKey && "is-past",
       count && "has-events",
+      mine && "is-mine",
+      soon && "is-soon",
     ].filter(Boolean).join(" ");
 
-    const label = `${formatDateKey(key, { weekday: "long", month: "long", day: "numeric" })}${count ? `, ${count} ${count === 1 ? "community" : "communities"}` : ""}`;
+    const label = `${formatDateKey(key, { weekday: "long", month: "long", day: "numeric" })}${count ? `, ${count} ${count === 1 ? "community" : "communities"}` : ""}${mine ? ", including yours" : ""}`;
     cells.push(`
       <button type="button" class="${classes}" data-date="${key}" aria-label="${escapeHtml(label)}" aria-pressed="${key === state.selectedDate}">
         <span class="cal-day__num">${d.getDate()}</span>
         ${count ? `<span class="cal-day__dot" aria-hidden="true"></span>` : ""}
+        ${mine ? myCalendarPhoto() : ""}
       </button>`);
   }
   els.grid.innerHTML = cells.join("");
+}
+
+// My profile photo marks the days of my own communities.
+function myCalendarPhoto() {
+  const url = state.me.avatar_url;
+  return url?.startsWith("https://")
+    ? `<img class="cal-day__me" src="${escapeHtml(url)}" alt="" aria-hidden="true" loading="lazy" decoding="async" />`
+    : `<span class="cal-day__me avatar avatar--${avatarTone(state.me.nickname)}" aria-hidden="true">${escapeHtml((state.me.nickname || "?").trim()[0] || "?")}</span>`;
 }
 
 function onGridClick(event) {
