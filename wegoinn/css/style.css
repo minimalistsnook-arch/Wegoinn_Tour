@@ -2132,6 +2132,7 @@ html.chrome-hidden { scroll-padding-top: 12px; }
 .member-list { display: grid; margin: 0; padding: 0; list-style: none; }
 .member { display: flex; align-items: center; gap: 10px; min-width: 0; padding: 9px 0; }
 .member + .member { border-top: 1px solid var(--line); }
+.member__crown { flex: none; font-size: 20px; line-height: 1; }
 .member .avatar--sm { flex: none; width: 34px; height: 34px; }
 .member__name { min-width: 0; overflow: hidden; color: var(--ink); font-size: 15px; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
 .member .tag { margin-left: auto; padding: 3px 8px; font-size: 9px; }
