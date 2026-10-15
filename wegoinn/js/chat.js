@@ -76,7 +76,7 @@ export function initChat(me) {
     }
   });
   els.input.addEventListener("input", onInput);
-  setupMobileChat();
+  setupFullscreenChat();
   installOperatorLongPress(els.list, me, 'article[data-msg-id]', element => {
     const item = state.messages.get(element.dataset.msgId);
     if (!item) return;
@@ -96,12 +96,10 @@ export function initChat(me) {
 }
 
 // Keep the chat inside the visible viewport when a phone keyboard opens.
-function setupMobileChat() {
-  const mobile = window.matchMedia("(max-width: 600px)");
+function setupFullscreenChat() {
   let expanded = false;
   const syncViewport = () => {
     if (!expanded) return;
-    if (!mobile.matches) { closeFullscreen(); return; }
     const stick = nearBottom();
     const viewport = window.visualViewport;
     els.section.style.setProperty("--chat-viewport-top", `${viewport?.offsetTop || 0}px`);
@@ -118,8 +116,8 @@ function setupMobileChat() {
     els.section.style.removeProperty("--chat-viewport-top");
     els.section.style.removeProperty("--chat-viewport-height");
   };
-  els.input.addEventListener("focus", () => {
-    if (!mobile.matches || expanded) return;
+  const openFullscreen = () => {
+    if (expanded) return;
     expanded = true;
     els.section.classList.add("is-fullscreen");
     document.documentElement.classList.add("chat-fullscreen");
@@ -128,7 +126,13 @@ function setupMobileChat() {
     setUnread(0);
     syncViewport();
     scrollToEnd(true);
+  };
+  els.input.addEventListener("focus", openFullscreen);
+  document.addEventListener("section-change", ({ detail }) => {
+    if (detail === "chat") openFullscreen();
+    else closeFullscreen();
   });
+  if (location.hash === "#chat") openFullscreen();
   els.closeFullscreen.addEventListener("click", closeFullscreen);
   document.addEventListener("keydown", (event) => {
     if (expanded && event.key === "Escape") closeFullscreen();

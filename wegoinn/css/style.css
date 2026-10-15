@@ -1523,7 +1523,6 @@ html.chrome-hidden #guestbook .composer--dock:not(:focus-within) {
 }
 
 html.chat-fullscreen, html.chat-fullscreen body { overflow: hidden; overscroll-behavior: none; }
-@media (max-width: 600px) {
   .layout > #chat.is-fullscreen {
     position: fixed;
     top: var(--chat-viewport-top, 0px);
@@ -1554,7 +1553,6 @@ html.chat-fullscreen, html.chat-fullscreen body { overflow: hidden; overscroll-b
   #chat.is-fullscreen .chat-messages { padding: 12px 2px; }
   #chat.is-fullscreen .chat-msg__text { font-size: 16px; line-height: 1.55; }
   #chat.is-fullscreen .chat-composer textarea { max-height: min(120px, 25dvh); }
-}
 
 /* =====================================================================
    SECTION PAGES — Community, 방명록 and Chat are shown one at a time (app.js setupSectionNav).

@@ -137,15 +137,17 @@ it('keeps the fullscreen conversation and keyboard focus after sending', async (
   expect(document.activeElement).toBe(input);
   expect(input.value).toBe('');
 });
-it('keeps desktop chat inline and exits fullscreen when the viewport becomes wider', () => {
-  mock.mobile = true;
-  const input = document.querySelector('#chatInput');
-  mock.mobile = false; input.focus();
-  expect(document.querySelector('#chat').classList.contains('is-fullscreen')).toBe(false);
-  input.blur(); mock.mobile = true; input.focus();
-  expect(document.querySelector('#chat').classList.contains('is-fullscreen')).toBe(true);
-  mock.mobile = false; window.dispatchEvent(new Event('resize'));
-  expect(document.querySelector('#chat').classList.contains('is-fullscreen')).toBe(false);
+it('opens chat immediately on entry on desktop and mobile and closes when leaving', () => {
+  for (const mobile of [false, true]) {
+    mock.mobile = mobile;
+    document.dispatchEvent(new CustomEvent('section-change', { detail: 'chat' }));
+    expect(document.querySelector('#chat').classList.contains('is-fullscreen')).toBe(true);
+    expect(document.activeElement).not.toBe(document.querySelector('#chatInput'));
+    window.dispatchEvent(new Event('resize'));
+    expect(document.documentElement.classList.contains('chat-fullscreen')).toBe(true);
+    document.dispatchEvent(new CustomEvent('section-change', { detail: 'community' }));
+    expect(document.documentElement.classList.contains('chat-fullscreen')).toBe(false);
+  }
 });
 
 it('lists joined community chats under Live Chat and switches rooms from there', async () => {
