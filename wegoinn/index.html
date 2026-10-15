@@ -13,6 +13,7 @@
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
   <link rel="stylesheet" href="css/fonts.css" />
   <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="css/community-terms.css" />
 </head>
 <body data-app="guest">
   <p id="translationStatus" class="translation-status" role="status"></p>
@@ -121,6 +122,7 @@
         <a href="#community" class="is-active"><i data-icon="calendar"></i> Community <span id="communityNew" class="nav-badge" aria-label="New communities" hidden>0</span></a>
         <a href="#guestbook"><i data-icon="book"></i> 방명록 <span id="guestbookNew" class="nav-badge" aria-label="New posts" hidden>0</span></a>
         <a href="#chat"><i data-icon="message"></i> Chat <span id="chatUnread" class="nav-badge" hidden>0</span></a>
+        <a id="settingsTab" href="#settings" hidden>설정</a>
         <a id="accountsTab" href="#accounts" hidden>계정 관리</a>
       </div>
     </nav>
@@ -235,6 +237,7 @@
         <button id="refreshAccounts" class="btn btn--ghost" type="button">새로고침</button>
         <p id="accountError" role="alert" hidden></p><div id="accountList" aria-live="polite"></div>
       </section>
+      <section id="settings" class="block" data-section data-operator-only="true" hidden><div id="communityTermsSettings"></div></section>
     </main>
 
     <footer class="app-foot">

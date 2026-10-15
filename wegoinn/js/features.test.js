@@ -9,7 +9,7 @@ import { initGuestbook, loadFeed } from './guestbook.js';
 import { initNotifications } from './notifications.js';
 import { initSiteLanguage } from './i18n.js';
 const html = readFileSync(`${process.cwd()}/wegoinn/index.html`, 'utf8');
-const me = { id: '00000000-0000-0000-0000-000000000001', nickname: 'Host', role:'guest' };
+const me = { id: '00000000-0000-0000-0000-000000000001', nickname: 'Host', role:'guest', check_in:'2026-01-01', check_out:'2099-12-31' };
 const community = (overrides={}) => ({ id:'00000000-0000-0000-0000-000000000011', creator_id:me.id, title:'Walk', activity:'Explore', preferred_participants:'Everyone', schedule:'Lobby', community_date:'2099-01-01', community_time:'19:00:00', max_participants:8, participation_fee:0, approved_count:1, created_at:'2026-01-01T00:00:00Z', creator:{nickname:'Host'}, status:'active', meeting_place:'Lobby', map_url:'https://maps.google.com/', ...overrides });
 const settle = async () => { await new Promise(resolve=>setTimeout(resolve,30)); };
 beforeEach(() => {

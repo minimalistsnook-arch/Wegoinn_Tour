@@ -39,3 +39,12 @@ it('requires a fee only for paid communities and accepts completed forms', () =>
   form.elements.language.innerHTML = '<option value="en">English</option>';
   expect(validateCommunityRequiredFields(form)).toBe(true);
 });
+
+it('limits guest community dates to inclusive stay bounds and exempts admins', async () => {
+  const { communityDateWithinStay } = await import('./community-validation.js');
+  const guest = { role: 'guest', check_in: '2099-01-10', check_out: '2099-01-15' };
+  for (const date of ['2099-01-10', '2099-01-12', '2099-01-15']) expect(communityDateWithinStay(date, guest)).toBe(true);
+  for (const date of ['2099-01-09', '2099-01-16', '']) expect(communityDateWithinStay(date, guest)).toBe(false);
+  expect(communityDateWithinStay('2099-01-12', { role: 'guest' })).toBe(false);
+  expect(communityDateWithinStay('2099-12-31', { role: 'admin' })).toBe(true);
+});

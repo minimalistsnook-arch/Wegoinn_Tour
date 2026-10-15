@@ -112,7 +112,7 @@ function applyLanguage() {
   let node;
   while ((node = walker.nextNode())) {
     const parent = node.parentElement;
-    if (!parent || parent.closest('script,style,textarea,select,[data-user-content],.js-text,.avatar,#headerNickname,#greetingName,.post__who strong,.comment__head strong,.chat-msg__meta strong,.applicant__name,.detail-host,#translationStatus,code')) continue;
+    if (!parent || parent.closest('[translate="no"],script,style,textarea,select,[data-user-content],.js-text,.avatar,#headerNickname,#greetingName,.post__who strong,.comment__head strong,.chat-msg__meta strong,.applicant__name,.detail-host,#translationStatus,code')) continue;
     const current = node.textContent;
     const stored = originals.get(node);
     const original = stored && stored.rendered === current ? stored.original : current;

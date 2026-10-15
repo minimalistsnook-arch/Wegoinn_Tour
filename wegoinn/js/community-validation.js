@@ -60,3 +60,10 @@ export function validateCommunityRequiredFields(form) {
   }
   return !first;
 }
+
+// Date-only stay bounds include both the check-in and check-out day (KST).
+export function communityDateWithinStay(date, profile) {
+  if (profile?.role === 'admin') return true;
+  return Boolean(date && profile?.check_in && profile?.check_out
+    && date >= profile.check_in && date <= profile.check_out);
+}

@@ -12,7 +12,7 @@ import { isNew } from "./news.js";
 import { mountCommunityComments } from "./community-comments.js";
 import { moderationError } from "./moderation.js";
 import { compressImage, uploadImage, isImageUploadConfigured } from "./image-upload.js";
-import { validateCommunityRequiredFields } from "./community-validation.js";
+import { validateCommunityRequiredFields, communityDateWithinStay } from "./community-validation.js";
 import { t } from './i18n.js';
 
 const COMMUNITY_COLUMNS = `
@@ -799,7 +799,11 @@ function openCreateForm() {
   state.coverRemoved = false;
   updateMapPreview();
   f.elements.community_date.value = state.selectedDate;
-  f.elements.community_date.min = today();
+  const dateInput = f.elements.community_date;
+  dateInput.min = !isAdmin() && state.me.check_in > today() ? state.me.check_in : today();
+  dateInput.max = isAdmin() ? "" : (state.me.check_out || "");
+  if (dateInput.value < dateInput.min) dateInput.value = dateInput.min;
+  if (dateInput.max && dateInput.value > dateInput.max) dateInput.value = "";
   f.elements.deadline_date.min = today();
   toggleFeeAmount();
   openSheet("createSheet");
@@ -814,6 +818,12 @@ async function submitCommunity(event) {
   if (v("map_url") && !v("meeting_place")) await updateMapPreview();
 
   if (!validateCommunityRequiredFields(f)) return;
+  if (!communityDateWithinStay(v("community_date"), state.me)) {
+    f.elements.community_date.focus();
+    return toast(state.me.check_in && state.me.check_out
+      ? `모임 날짜는 숙박 기간(${state.me.check_in} ~ ${state.me.check_out}) 안에서 선택해 주세요.`
+      : "숙박 정보를 확인할 수 없습니다. 다시 로그인해 주세요.", "error");
+  }
 
   const max = Number(v("max_participants"));
   if (!Number.isInteger(max) || max < 2 || max > 30) return toast("Maximum participants must be 2 – 30.", "error");

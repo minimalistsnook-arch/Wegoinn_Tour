@@ -1,3 +1,4 @@
+import { renderTermsSettings } from './community-terms.js';
 // Admin dashboard.
 // The page only *displays* admin tools after get_my_profile() says role = 'admin'.
 // The real protection is in the database: every admin-only read/delete is
@@ -89,6 +90,7 @@ function enter(profile) {
 /* ---------------- Navigation ---------------- */
 
 const VIEWS = {
+  settings: { eyebrow: "Settings", title: "커뮤니티 이용 안내 설정", load: () => renderTermsSettings(els.content) },
   posts:        { eyebrow: "Guestbook",  title: "Guestbook posts",        load: loadPosts },
   comments:     { eyebrow: "Guestbook",  title: "Comments & replies",     load: loadComments },
   chat:         { eyebrow: "Chat",       title: "Chat messages",          load: loadChat },

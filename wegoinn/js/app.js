@@ -1,3 +1,4 @@
+import { ensureCommunityConsent, renderTermsSettings } from './community-terms.js';
 import { initSiteLanguage } from "./i18n.js";
 import { initNotifications, refreshNotifications } from "./notifications.js";
 import { supabase, errorMessage } from "./supabase.js";
@@ -184,7 +185,13 @@ let started = false;
 
 async function enterApp(profile) {
   if (started) return;
+  await ensureCommunityConsent();
   started = true;
+
+  if (profile.role !== "admin") {
+    const { data, error } = await supabase.rpc("get_my_stay").maybeSingle();
+    if (!error && data) profile = { ...profile, check_in: data.check_in, check_out: data.check_out };
+  }
 
   // Shown in the UI only — permissions are always decided by the database.
   $("#headerNickname").textContent = profile.role === "admin" ? `${profile.nickname} · 운영자` : profile.nickname;
@@ -201,6 +208,21 @@ async function enterApp(profile) {
   setupAutoHideHeader();
   setupPullToRefresh();
   initOperatorAccounts(profile);
+  $("#settingsTab").hidden = profile.role !== "admin";
+  if (profile.role === "admin") {
+    document.addEventListener("section-change", ({ detail }) => {
+      if (detail === "settings") renderTermsSettings($("#communityTermsSettings"));
+    });
+  }
+  let checkingConsent = false;
+  const recheckConsent = async () => {
+    if (document.hidden || checkingConsent) return;
+    checkingConsent = true;
+    try { await ensureCommunityConsent(); }
+    finally { checkingConsent = false; }
+  };
+  document.addEventListener("visibilitychange", recheckConsent);
+  setInterval(recheckConsent, 60000);
   watchSessionActivity();
   setupSectionNav(profile);
   initNews(profile);
