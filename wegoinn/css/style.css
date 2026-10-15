@@ -2361,3 +2361,47 @@ html[data-theme="dark"] #feed .post__comments:hover, html[data-theme="dark"] #fe
 
 /* In Korean the heading already reads 방명록, so drop the extra 방명록 accent. */
 html[lang="ko"] #guestbookHeading em { display: none; }
+
+/* Official Wegoinn communities (made by an operator): the hug picture replaces the day,
+   with a small date badge in the corner, a red ring and a gentle bounce so it stands out. */
+.cal-day.is-official { overflow: visible; }
+.cal-day__official {
+  position: absolute;
+  inset: 1px;
+  width: calc(100% - 2px);
+  height: calc(100% - 2px);
+  object-fit: contain;
+  border-radius: 14px;
+  background: var(--rose-50);
+  box-shadow: inset 0 0 0 2px var(--rose);
+  animation: cal-official 2.4s ease-in-out infinite;
+}
+.cal-day.is-official .cal-day__num {
+  position: absolute;
+  left: 1px;
+  bottom: 1px;
+  z-index: 1;
+  width: auto;
+  min-width: 18px;
+  aspect-ratio: auto;
+  padding: 1px 4px;
+  border-radius: 999px;
+  font-size: 10px;
+  line-height: 1.3;
+  color: var(--on-accent);
+  background: var(--rose);
+  box-shadow: none;
+  transform: none;
+}
+.cal-day.is-official .cal-day__dot { display: none; }
+.cal-day.is-official.is-selected .cal-day__official { box-shadow: inset 0 0 0 3px var(--pine); }
+.cal-day.is-official.is-past .cal-day__official { opacity: .5; animation: none; }
+@keyframes cal-official {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-2px); }
+}
+@media (prefers-reduced-motion: reduce) { .cal-day__official { animation: none; } }
+.calendar__guide--official { flex-wrap: wrap; color: var(--ink); }
+.calendar__guide--official img { flex: none; width: 26px; height: 26px; object-fit: contain; }
+.calendar__guide--official span { color: var(--muted); font-weight: 400; }
+.tag--official { color: var(--on-accent); background: var(--rose); letter-spacing: .02em; }

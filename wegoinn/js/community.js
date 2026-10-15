@@ -209,6 +209,9 @@ const canChat = (c) => isAdmin() || (c.status !== "cancelled" && (isHost(c) || s
 // My communities: ones I host or joined that are still on.
 const isMine = (c) => c.status !== "cancelled" && (isHost(c) || state.myApplications.get(c.id) === "approved");
 const SOON_DAYS = 3; // my communities this close (today included) pulse on the calendar
+// Communities an operator (admin) created: the hug picture stands in for the calendar day.
+const isOfficial = (c) => c.is_official && c.status !== "cancelled";
+const officialTag = (c) => c.is_official ? `<span class="tag tag--official" translate="no">WEGOINN OFFICIAL</span>` : "";
 // The create form asks for one "About" text. It is saved in the existing columns: all of it in
 // schedule, its start in activity (list previews) and this marker in preferred_participants.
 // Older communities keep their three separate answers.
@@ -238,6 +241,7 @@ function renderCalendar() {
     const key = toDateKey(d);
     const count = byDate(key).length;
     const mine = byDate(key).some(isMine);
+    const official = byDate(key).some(isOfficial);
     const soon = mine && key >= todayKey && (parseDateKey(key) - parseDateKey(todayKey)) / 86400000 < SOON_DAYS;
     const classes = [
       "cal-day",
@@ -248,11 +252,13 @@ function renderCalendar() {
       count && "has-events",
       mine && "is-mine",
       soon && "is-soon",
+      official && "is-official",
     ].filter(Boolean).join(" ");
 
-    const label = `${formatDateKey(key, { weekday: "long", month: "long", day: "numeric" })}${count ? `, ${count} ${count === 1 ? "community" : "communities"}` : ""}${mine ? ", including yours" : ""}`;
+    const label = `${formatDateKey(key, { weekday: "long", month: "long", day: "numeric" })}${count ? `, ${count} ${count === 1 ? "community" : "communities"}` : ""}${official ? ", official Wegoinn community" : ""}${mine ? ", including yours" : ""}`;
     cells.push(`
       <button type="button" class="${classes}" data-date="${key}" aria-label="${escapeHtml(label)}" aria-pressed="${key === state.selectedDate}">
+        ${official ? `<img class="cal-day__official" src="img/official-day.png" alt="" aria-hidden="true" decoding="async" />` : ""}
         <span class="cal-day__num">${d.getDate()}</span>
         ${count ? `<span class="cal-day__dot" aria-hidden="true"></span>` : ""}
         ${mine ? myCalendarPhoto() : ""}
@@ -358,6 +364,7 @@ function cardHtml(c) {
     else if (!notHeld(c)) minTag = `<span class="tag tag--pending">Not confirmed</span> <span><b>${min - c.approved_count}</b> more needed</span>`;
   }
   const tags = [
+    officialTag(c),
     isNew("community", c.created_at, c.creator_id) && `<span class="tag tag--new">NEW</span>`,
     communityIsLocked(c) && `<span class="tag">${c.status === "cancelled" ? "Cancelled" : notHeld(c) ? "Not held" : "Past"}</span>`,
     isHost(c) ? `<span class="tag tag--host">Hosting</span>` : status && `<span class="tag tag--${status}">${statusLabel(status)}</span>`,
@@ -420,7 +427,7 @@ function dayItemHtml(c) {
   else if (canJoin(c)) action = `<button type="button" class="btn btn--sm btn--primary meeting-item__action" data-action="join" data-id="${c.id}">JOIN</button>`;
   const confirm = c.status !== "cancelled" && !locked && min > 1
     ? `<span class="tag tag--${meetsMin(c) ? "approved" : "pending"}">${meetsMin(c) ? "Confirmed" : "Not confirmed"}</span>` : "";
-  const tags = `${isNew("community", c.created_at, c.creator_id) ? `<span class="tag tag--new">NEW</span>` : ""}${dayStatusHtml(c)}${confirm}`;
+  const tags = `${officialTag(c)}${isNew("community", c.created_at, c.creator_id) ? `<span class="tag tag--new">NEW</span>` : ""}${dayStatusHtml(c)}${confirm}`;
   return `
     <article class="meeting-item" data-id="${c.id}">
       <div class="meeting-item__thumb tone--${avatarTone(c.title)}" aria-hidden="true" data-user-content>${c.image_url

@@ -1262,3 +1262,18 @@ drop trigger if exists count_host_seat on public.communities;
 create trigger count_host_seat before insert on public.communities
 for each row execute function public.count_host_seat();
 revoke all on function public.count_host_seat() from public, anon, authenticated;
+
+-- ============================================================
+-- Official Wegoinn communities: created by an operator (admin).
+-- ============================================================
+alter table public.communities add column if not exists is_official boolean not null default false;
+create or replace function public.mark_official_community()
+returns trigger language plpgsql security definer set search_path = public as $$
+begin
+ new.is_official := exists (select 1 from public.profiles p where p.id = new.creator_id and p.role = 'admin');
+ return new;
+end $$;
+drop trigger if exists mark_official_community on public.communities;
+create trigger mark_official_community before insert on public.communities
+for each row execute function public.mark_official_community();
+revoke all on function public.mark_official_community() from public, anon, authenticated;
