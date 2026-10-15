@@ -209,6 +209,16 @@ const canChat = (c) => isAdmin() || (c.status !== "cancelled" && (isHost(c) || s
 // My communities: ones I host or joined that are still on.
 const isMine = (c) => c.status !== "cancelled" && (isHost(c) || state.myApplications.get(c.id) === "approved");
 const SOON_DAYS = 3; // my communities this close (today included) pulse on the calendar
+// The create form asks for one "About" text. It is saved in the existing columns: all of it in
+// schedule, its start in activity (list previews) and this marker in preferred_participants.
+// Older communities keep their three separate answers.
+const ABOUT_MARK = "—";
+const isCombined = (c) => c.preferred_participants === ABOUT_MARK;
+const aboutText = (c) => isCombined(c) ? c.schedule : [
+  c.activity && `What we'll do: ${c.activity}`,
+  c.preferred_participants && `Who: ${c.preferred_participants}`,
+  c.schedule && `Plan:\n${c.schedule}`,
+].filter(Boolean).join("\n\n").slice(0, 1000);
 // "approved" is shown as "joined": JOIN no longer waits for the host.
 const statusLabel = (status) => (status === "approved" ? "joined" : status);
 
@@ -502,9 +512,10 @@ async function renderDetail() {
       ${canEdit(c) ? `<div class="community-card__actions"><button class="btn btn--ghost" type="button" data-action="edit" data-id="${c.id}">Edit community</button>${isAdmin() ? `<button class="btn btn--soft" type="button" data-action="delete-community" data-id="${c.id}">Delete community</button>` : `<button class="btn btn--soft" type="button" data-action="cancel" data-id="${c.id}">Cancel community</button>`}</div>` : ""}
       ${!isHost(c) && !communityIsLocked(c) && ["pending","approved"].includes(state.myApplications.get(c.id)) ? `<button class="btn btn--ghost" type="button" data-action="withdraw" data-id="${c.id}">Leave community</button>` : ""}
 
+      ${isCombined(c) ? `<section class="detail-block"><h3>About</h3><p data-user-content class="detail-plan">${escapeHtml(c.schedule)}</p></section>` : `
       <section class="detail-block"><h3>What we'll do</h3><p data-user-content>${escapeHtml(c.activity)}</p></section>
       <section class="detail-block"><h3>Who we'd love to meet</h3><p data-user-content>${escapeHtml(c.preferred_participants)}</p></section>
-      <section class="detail-block"><h3>Plan</h3><p data-user-content class="detail-plan">${escapeHtml(c.schedule)}</p></section>
+      <section class="detail-block"><h3>Plan</h3><p data-user-content class="detail-plan">${escapeHtml(c.schedule)}</p></section>`}
       <section class="detail-block"><h3>Meeting place</h3><p data-user-content>${escapeHtml(c.meeting_place || "Not specified")}</p>${mapLocation(c.map_url)?.coordinates ? `<p>${escapeHtml(mapLocation(c.map_url).coordinates)}</p>` : ""}${safeMapUrl(c.map_url) ? `<a class="btn btn--ghost" href="${escapeHtml(safeMapUrl(c.map_url))}" target="_blank" rel="noopener noreferrer">Open map</a>` : ""}</section>
       ${c.participation_fee > 0 ? `<p class="fee-note">${icon("ticket")} The fee is paid directly to the host — not through this app.</p>` : ""}
 
@@ -563,10 +574,11 @@ async function renderMembers(c) {
   list.innerHTML = members.length ? `<ul class="member-list">${members.map((m) => {
     const name = m.nickname ?? "Guest";
     return `<li class="member">
+      ${m.is_host ? `<span class="member__crown" aria-hidden="true">👑</span>` : ""}
       ${avatarHtml(name, "avatar--sm", m.avatar_url)}
       <span class="member__name" data-user-content>${escapeHtml(name)}</span>
       ${m.is_me ? `<span class="you-tag">you</span>` : ""}
-      ${m.is_host ? `<span class="tag tag--host">Hosting</span>` : ""}
+      ${m.is_host ? `<span class="tag tag--host" translate="no">host</span>` : ""}
     </li>`;
   }).join("")}</ul>` : `<p class="muted">No one has joined yet.</p>`;
 }
@@ -813,7 +825,8 @@ async function submitCommunity(event) {
   if (state.coverLoading) return toast("Your photo is still being prepared. Please try again in a moment.", "error");
   const submit = f.querySelector('[type="submit"]');
   setBusy(submit, true, "Creating…");
-  const details = Object.fromEntries(["title", "activity", "preferred_participants", "schedule", "community_date", "community_time", "meeting_place", "map_url"].map((name) => [name, v(name)]));
+  const details = Object.fromEntries(["title", "community_date", "community_time", "meeting_place", "map_url"].map((name) => [name, v(name)]));
+  Object.assign(details, { activity: v("about").slice(0, 500).trim(), preferred_participants: ABOUT_MARK, schedule: v("about") });
   details.map_url = resolvedMap?.input === v("map_url") ? mapLink(resolvedMap.info.url) : mapLink(v("map_url"));
   details.max_participants = max;
   details.min_participants = min;
@@ -860,7 +873,8 @@ function openEditForm(c) {
   els.form.querySelector("[type=submit]").textContent = "Save changes";
   $("#communityReservationField").hidden = true;
   els.form.elements.reservation_number.required = false;
-  for (const key of ["title","activity","preferred_participants","schedule","community_date","community_time","max_participants","meeting_place","map_url"]) els.form.elements[key].value = c[key] ?? "";
+  for (const key of ["title","community_date","community_time","max_participants","meeting_place","map_url"]) els.form.elements[key].value = c[key] ?? "";
+  els.form.elements.about.value = aboutText(c);
   els.form.elements.min_participants.value = minOf(c);
   // Communities created before deadlines existed accepted requests until the start.
   const { date, time } = c.application_deadline ? splitDeadline(c) : { date: c.community_date, time: shortTime(c.community_time) };

@@ -128,7 +128,7 @@ describe('community workflows',()=>{
    const form=document.querySelector('#communityForm');
    expect(document.querySelector('#communityReservationField').hidden).toBe(true);
    expect(form.elements.reservation_number.required).toBe(false);
-   for (const [key,value] of Object.entries({title:'Walk',activity:'Explore',preferred_participants:'Everyone',schedule:'Lobby',community_date:'2099-01-01',community_time:'19:00',deadline_date:'2099-01-01',deadline_time:'12:00',language:'ko',max_participants:'8',meeting_place:'Lobby'})) form.elements[key].value=value;
+   for (const [key,value] of Object.entries({title:'Walk',about:'Explore',community_date:'2099-01-01',community_time:'19:00',deadline_date:'2099-01-01',deadline_time:'12:00',language:'ko',max_participants:'8',meeting_place:'Lobby'})) form.elements[key].value=value;
    form.dispatchEvent(new Event('submit',{bubbles:true,cancelable:true})); await settle();
    expect(mock.rpc).toHaveBeenCalledWith('create_community_v2',expect.objectContaining({p_reservation_number:null,p_details:expect.objectContaining({title:'Walk',meeting_place:'Lobby'})}));
  });
@@ -136,7 +136,7 @@ describe('community workflows',()=>{
    await initCommunity(me);
    document.querySelector('#openCreateCommunity').click();
    const form=document.querySelector('#communityForm');
-   for (const [key,value] of Object.entries({title:'Walk',activity:'Explore',preferred_participants:'Everyone',schedule:'Lobby',community_date:'2099-01-01',community_time:'19:00',deadline_date:'2099-01-01',deadline_time:'12:00',language:'ko',max_participants:'8',min_participants:'9',meeting_place:'Lobby'})) form.elements[key].value=value;
+   for (const [key,value] of Object.entries({title:'Walk',about:'Explore',community_date:'2099-01-01',community_time:'19:00',deadline_date:'2099-01-01',deadline_time:'12:00',language:'ko',max_participants:'8',min_participants:'9',meeting_place:'Lobby'})) form.elements[key].value=value;
    form.dispatchEvent(new Event('submit',{bubbles:true,cancelable:true})); await settle();
    expect(mock.rpc).not.toHaveBeenCalled();
    form.elements.min_participants.value='3';
@@ -157,7 +157,7 @@ describe('community workflows',()=>{
    await initCommunity(me);
    document.querySelector('#openCreateCommunity').click();
    const form=document.querySelector('#communityForm');
-   for (const [key,value] of Object.entries({title:'Walk',activity:'Explore',preferred_participants:'Everyone',schedule:'Lobby',community_date:'2099-01-01',community_time:'19:00',deadline_date:'2099-01-01',deadline_time:'20:00',language:'ja',max_participants:'8',min_participants:'1',meeting_place:'Lobby'})) form.elements[key].value=value;
+   for (const [key,value] of Object.entries({title:'Walk',about:'Explore',community_date:'2099-01-01',community_time:'19:00',deadline_date:'2099-01-01',deadline_time:'20:00',language:'ja',max_participants:'8',min_participants:'1',meeting_place:'Lobby'})) form.elements[key].value=value;
    form.dispatchEvent(new Event('submit',{bubbles:true,cancelable:true})); await settle();
    expect(mock.rpc).not.toHaveBeenCalled();
    form.elements.deadline_time.value='18:00';
@@ -182,7 +182,7 @@ describe('community workflows',()=>{
    input.dispatchEvent(new Event('change')); await settle();
    expect(document.querySelector('#communityImagePreview').hidden).toBe(false);
    const form=document.querySelector('#communityForm');
-   for (const [key,value] of Object.entries({title:'Walk',activity:'Explore',preferred_participants:'Everyone',schedule:'Lobby',community_date:'2099-01-01',community_time:'19:00',deadline_date:'2099-01-01',deadline_time:'18:00',language:'ko',max_participants:'8',min_participants:'1',meeting_place:'Lobby'})) form.elements[key].value=value;
+   for (const [key,value] of Object.entries({title:'Walk',about:'Explore',community_date:'2099-01-01',community_time:'19:00',deadline_date:'2099-01-01',deadline_time:'18:00',language:'ko',max_participants:'8',min_participants:'1',meeting_place:'Lobby'})) form.elements[key].value=value;
    mock.rpc.mockResolvedValueOnce({data:'new-id',error:null});
    const url='https://x.supabase.co/storage/v1/object/public/post-images/u/cover.webp';
    mock.communities=[community({image_url:url})];
@@ -231,7 +231,7 @@ describe('community workflows',()=>{
    await initCommunity(me);
    document.querySelector('#openCreateCommunity').click();
    const form=document.querySelector('#communityForm');
-   for (const [key,value] of Object.entries({title:'Walk',activity:'Explore',preferred_participants:'Everyone',schedule:'Lobby',community_date:'2099-01-01',community_time:'19:00',deadline_date:'2099-01-01',deadline_time:'12:00',language:'ko',max_participants:'8',meeting_place:'Lobby'})) form.elements[key].value=value;
+   for (const [key,value] of Object.entries({title:'Walk',about:'Explore',community_date:'2099-01-01',community_time:'19:00',deadline_date:'2099-01-01',deadline_time:'12:00',language:'ko',max_participants:'8',meeting_place:'Lobby'})) form.elements[key].value=value;
    mock.rpc.mockResolvedValueOnce({data:null,error:{code:'PGRST202',message:'Could not find the function public.create_community_v2 in the schema cache'}});
    form.dispatchEvent(new Event('submit',{bubbles:true,cancelable:true})); await settle();
    expect(mock.rpc).toHaveBeenCalledTimes(1);
