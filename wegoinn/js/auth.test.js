@@ -31,10 +31,18 @@ describe('stay login',()=>{
   mocks.rpc.mockReturnValue({single:async()=>({data:null,error:{code:'PGRST202',message:'Could not find the function public.register_stay_guest in the schema cache'}})});
   await expect(signInGuest('26.10.13','26.10.25','701','손님',new File(['x'],'a.webp'))).rejects.toMatchObject({code:'PGRST202',loginStage:'profile'});
  });
- it('refuses a guest account without a profile photo',async()=>{
-  await expect(signInGuest('26.10.13','26.10.25','701','손님')).rejects.toThrow('프로필 사진');
-  expect(mocks.signInAnonymously).not.toHaveBeenCalled();
-  expect(mocks.rpc).not.toHaveBeenCalled();
+ it('restores the existing account without uploading a photo',async()=>{
+  mocks.from.mockReturnValue({select:()=>({eq:()=>({maybeSingle:async()=>({data:{avatar_url:'https://x/existing.webp'}})})})});
+  const profile=await signInGuest('26.10.13','26.10.25','701','손님');
+  expect(profile).toMatchObject({id:'existing-profile',avatar_url:'https://x/existing.webp'});
+  expect(mocks.rpc).toHaveBeenCalledWith('login_stay_guest',{p_check_in:'2026-10-13',p_check_out:'2026-10-25',p_room_number:'701',p_nickname:'손님'});
+  expect(mocks.rpc).not.toHaveBeenCalledWith('register_stay_guest',expect.anything());
+ });
+ it('does not create an account when existing login details do not match',async()=>{
+  mocks.rpc.mockReturnValue({single:async()=>({data:null,error:{message:'기존 계정과 일치하지 않습니다.'}})});
+  await expect(signInGuest('26.10.13','26.10.25','701','틀린ID')).rejects.toThrow('일치하지 않습니다');
+  expect(mocks.rpc).toHaveBeenCalledTimes(1);
+  expect(fetch).not.toHaveBeenCalled();
  });
  it('creates the account when a photo is added',async()=>{
   const { uploadImage } = await import('./image-upload.js');

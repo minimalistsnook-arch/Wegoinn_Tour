@@ -41,15 +41,13 @@ export async function signInGuest(checkIn, checkOut, roomNumber, nickname, avata
   if (!admin && (arrival === "999222" || departure === "999222")) throw new Error("운영자 로그인은 체크인과 체크아웃 날짜에 모두 999222를 입력해야 합니다.");
   if (!admin && !roomNumber.trim()) throw new Error("객실 번호를 입력하세요.");
   if (!admin && departure <= arrival) throw new Error("체크아웃 날짜는 체크인 날짜보다 이후여야 합니다.");
-  // Every guest needs a profile photo; checked before any server call so no photo-less account is created.
-  if (!admin && !avatarFile) throw new Error(PHOTO_REQUIRED_MESSAGE);
   const sessionResult = await loginStep("session", () => supabase.auth.getSession());
   const session = sessionResult.data.session;
   if (session) await loginStep("session", () => supabase.auth.signOut({ scope: "local" }));
   await loginStep("auth", () => supabase.auth.signInAnonymously());
 
   const { data } = await loginStep("profile", () => supabase
-    .rpc("register_stay_guest", { p_check_in: arrival, p_check_out: departure, p_room_number: roomNumber.trim(), p_nickname: name })
+    .rpc(!admin && !avatarFile ? "login_stay_guest" : "register_stay_guest", { p_check_in: arrival, p_check_out: departure, p_room_number: roomNumber.trim(), p_nickname: name })
     .single());
 
   // Upload needs the profile to exist (storage policy), so it runs after register_stay_guest.
