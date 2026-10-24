@@ -1435,6 +1435,16 @@ html { scroll-padding-top:calc(var(--measured-topbar-h, var(--topbar-h)) + 64px)
 .chat-msg__delete .icon { width: 15px; height: 15px; }
 .chat-msg:hover .chat-msg__delete, .chat-msg__delete:focus-visible { opacity: 1; }
 @media (hover: none) { .chat-msg__delete { opacity: .55; } }
+/* Operator messages: a notice everyone can spot. */
+.chat-msg__staff { padding: 1px 6px; border-radius: 999px; background: var(--danger); color: #fff; font-size: 10px; font-weight: 800; }
+.chat-msg__notice { display: flex; align-items: flex-start; gap: 6px; }
+.chat-msg--mine .chat-msg__notice { flex-direction: row-reverse; }
+.chat-msg__notice-badge { display: inline-flex; flex-direction: column; align-items: center; flex-shrink: 0; gap: 1px; color: var(--danger); font-size: 10px; font-weight: 800; }
+.chat-notice-art { width: 34px; height: 34px; filter: drop-shadow(0 2px 4px rgba(200, 0, 13, .3)); }
+.chat-msg--notice .chat-msg__text,
+.chat-msg--notice.chat-msg--mine .chat-msg__text { border: 1.5px solid var(--danger); background: var(--danger-50); color: var(--danger); font-weight: 800; }
+.chat-item__notice { display: inline-flex; align-items: center; gap: 3px; color: var(--danger); font-weight: 800; vertical-align: middle; }
+.chat-item__notice .chat-notice-art { width: 16px; height: 16px; filter: none; }
 
 .chat-composer { flex-shrink: 0; display: flex; align-items: flex-end; gap: 8px; padding-top: 10px; border-top: 1px solid var(--line); }
 .chat-composer textarea {

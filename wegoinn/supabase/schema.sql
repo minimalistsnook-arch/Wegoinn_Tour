@@ -872,6 +872,9 @@ alter table public.profiles add column if not exists avatar_url text
 -- Other guests may see the photo next to the nickname.
 grant select (avatar_url) on public.profiles to authenticated;
 
+-- Chat shows operator messages as notices (same as migrations/20261024_operator_chat_notice.sql).
+grant select (role) on public.profiles to authenticated;
+
 -- The only write path: a guest may point avatar_url at a file in their own storage folder.
 create or replace function public.set_my_avatar(p_avatar_url text)
 returns void language plpgsql security definer set search_path = public as $$

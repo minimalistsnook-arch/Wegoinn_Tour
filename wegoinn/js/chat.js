@@ -10,7 +10,7 @@ import { icon } from "./icons.js";
 import { openContentEditor, moderationError } from "./moderation.js";
 
 const HISTORY_LIMIT = 100;
-const CHAT_COLUMNS = "id, community_id, author_id, content, created_at, author:profiles ( nickname, avatar_url )";
+const CHAT_COLUMNS = "id, community_id, author_id, content, created_at, author:profiles ( nickname, avatar_url, role )";
 
 const state = {
   me: null,
@@ -25,6 +25,7 @@ const state = {
   unread: 0,
   nicknames: new Map(),
   avatars: new Map(),
+  roles: new Map(),    // author id → profiles.role ("admin" = operator, shown as a notice)
   loading: false,      // history for the open room is being fetched
   pending: [],         // realtime rows that arrived while history was loading
   lastAt: null,        // created_at of the newest rendered message (for resync)
@@ -43,6 +44,7 @@ export function initChat(me) {
   state.me = me;
   state.nicknames.set(me.id, me.nickname);
   state.avatars.set(me.id, me.avatar_url);
+  state.roles.set(me.id, me.role);
   Object.assign(els, {
     section: $("#chat"),
     back: $("#chatBackBtn"),
@@ -297,6 +299,7 @@ function chatItemHtml(room) {
   const overlap = room && author?.avatar_url?.startsWith("https://") ? `<img class="chat-item__overlap" src="${escapeHtml(author.avatar_url)}" alt="" loading="lazy" />` : "";
   const place = room ? (room.place || "") : "Wegoinn";
   const preview = last ? `${room && author?.nickname ? `${author.nickname}: ` : ""}${last.content}` : "No messages yet";
+  const notice = author?.role === "admin" ? `<span class="chat-item__notice" translate="no">${noticeArt}공지</span> ` : "";
   return `
     <button type="button" class="chat-item" role="listitem" data-chat-room="${escapeHtml(key)}">
       <span class="chat-item__pic">${pic}${overlap}</span>
@@ -306,7 +309,7 @@ function chatItemHtml(room) {
           ${room ? `<span class="chat-item__count">${icon("users")}${room.members ?? ""}</span>` : `<span class="chat-item__count">${icon("globe")}</span>`}
           <span class="chat-item__meta js-text">${[place, last ? relativeTime(last.created_at) : ""].filter(Boolean).map(escapeHtml).join(" · ")}</span>
         </span>
-        <span class="chat-item__msg" ${last ? "data-user-content" : ""}>${escapeHtml(preview)}</span>
+        <span class="chat-item__msg">${notice}<span ${last ? "data-user-content" : ""}>${escapeHtml(preview)}</span></span>
       </span>
       ${unread ? `<span class="chat-item__badge" aria-label="${unread} unread">${unread > 99 ? "99+" : unread}</span>` : ""}
     </button>`;
@@ -423,6 +426,7 @@ function appendMessage(row) {
   const nickname = row.author?.nickname ?? state.nicknames.get(row.author_id) ?? "Guest";
   state.nicknames.set(row.author_id, nickname);
   if (row.author) state.avatars.set(row.author_id, row.author.avatar_url);
+  if (row.author?.role) state.roles.set(row.author_id, row.author.role);
   els.list.querySelector(".chat-empty")?.remove();
 
   const day = formatDate(row.created_at);
@@ -433,16 +437,27 @@ function appendMessage(row) {
   els.list.insertAdjacentHTML("beforeend", messageHtml(row));
 }
 
+// Megaphone illustration in front of operator messages.
+const noticeArt = `<svg class="chat-notice-art" viewBox="0 0 32 32" aria-hidden="true" focusable="false">
+  <circle cx="16" cy="16" r="16" fill="#e5141f"/>
+  <path d="M7.5 13.2h3.8l8.2-4.7v15l-8.2-4.7H7.5a1.6 1.6 0 0 1-1.6-1.6v-2.4a1.6 1.6 0 0 1 1.6-1.6z" fill="#fff"/>
+  <path d="m10.2 18.9 1.6 5h2.6l-1.5-5" fill="#ffd6d8"/>
+  <path d="M22.6 13a4.2 4.2 0 0 1 0 6M24.9 10.6a7.6 7.6 0 0 1 0 10.8" fill="none" stroke="#fff" stroke-width="1.7" stroke-linecap="round"/>
+</svg>`;
+
 function messageHtml(row) {
   const mine = row.author_id === state.me.id;
   const admin = state.me.role === "admin";
   const nickname = row.author?.nickname ?? state.nicknames.get(row.author_id) ?? "Guest";
-  return `<article class="chat-msg ${mine ? "chat-msg--mine" : ""}" data-msg-id="${escapeHtml(row.id)}">
+  // Messages written by an operator stand out for everyone as a notice.
+  const notice = (row.author?.role ?? state.roles.get(row.author_id)) === "admin";
+  const text = `<p class="chat-msg__text" data-user-content>${escapeHtml(row.content)}</p>`;
+  return `<article class="chat-msg ${mine ? "chat-msg--mine" : ""} ${notice ? "chat-msg--notice" : ""}" data-msg-id="${escapeHtml(row.id)}">
       ${mine ? "" : avatarHtml(nickname, "avatar--sm", state.avatars.get(row.author_id))}
       <div class="chat-msg__body">
         ${admin ? accountDetailHtml(row.author_id) : ""}
-        <div class="chat-msg__meta"><strong>${escapeHtml(mine ? "you" : nickname)}</strong><time>${escapeHtml(formatTime(row.created_at))}</time></div>
-        <p class="chat-msg__text" data-user-content>${escapeHtml(row.content)}</p>
+        <div class="chat-msg__meta"><strong>${escapeHtml(mine ? "you" : nickname)}</strong>${notice ? `<span class="chat-msg__staff" translate="no">운영진</span>` : ""}<time>${escapeHtml(formatTime(row.created_at))}</time></div>
+        ${notice ? `<div class="chat-msg__notice"><span class="chat-msg__notice-badge" translate="no">${noticeArt}<b>공지</b></span>${text}</div>` : text}
         <div class="chat-msg__actions">
           ${admin ? `<button type="button" class="link-btn" data-reply-msg="${escapeHtml(row.id)}">Reply</button><button type="button" class="link-btn" data-edit-msg="${escapeHtml(row.id)}">Edit message</button>` : ""}
           ${mine || admin ? `<button type="button" class="icon-btn icon-btn--quiet chat-msg__delete" data-delete-msg="${escapeHtml(row.id)}" aria-label="Delete message">${icon("trash")}</button>` : ""}
@@ -591,11 +606,12 @@ export async function onChatInsert(payload) {
   }
   if (!state.visible && row.author_id !== state.me?.id && !state.ids.has(row.id)) setUnread(state.unread + 1);
   if (state.loading) { state.pending.push(row); return; }
-  if (!state.nicknames.has(row.author_id)) {
-    const { data } = await supabase.from("profiles").select("nickname, avatar_url").eq("id", row.author_id).maybeSingle();
+  if (!state.nicknames.has(row.author_id) || !state.roles.has(row.author_id)) {
+    const { data } = await supabase.from("profiles").select("nickname, avatar_url, role").eq("id", row.author_id).maybeSingle();
     if (data) {
       state.nicknames.set(row.author_id, data.nickname);
       state.avatars.set(row.author_id, data.avatar_url);
+      state.roles.set(row.author_id, data.role);
     }
   }
   const stick = nearBottom();

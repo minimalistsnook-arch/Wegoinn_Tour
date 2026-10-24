@@ -223,3 +223,20 @@ it('returns a pulled-down group chat to its community Info without interrupting 
   expect(document.documentElement.classList.contains('chat-fullscreen')).toBe(false);
   document.removeEventListener('chat-return-info', returned);
 });
+
+it('shows operator messages to every guest as a bold red notice with a megaphone', async () => {
+  mock.rows = [
+    { id: 'n1', community_id: null, author_id: 'op', content: 'Breakfast moves to 8am', created_at: '2026-10-09T09:00:00Z', author: { nickname: 'Staff', role: 'admin' } },
+    { id: 'g1', community_id: null, author_id: 'u2', content: 'ok', created_at: '2026-10-09T09:01:00Z', author: { nickname: 'Emma', role: 'guest' } },
+  ];
+  await openChat();
+  const notice = document.querySelector('[data-msg-id="n1"]');
+  expect(notice.classList.contains('chat-msg--notice')).toBe(true);
+  expect(notice.querySelector('.chat-msg__notice-badge .chat-notice-art')).not.toBeNull();
+  expect(notice.querySelector('.chat-msg__text').textContent).toBe('Breakfast moves to 8am');
+  expect(notice.querySelector('.chat-msg__staff').textContent).toBe('운영진');
+  expect(document.querySelector('[data-msg-id="g1"]').classList.contains('chat-msg--notice')).toBe(false);
+  // Realtime rows carry no author: the operator's role is remembered from history.
+  await onChatInsert({ new: { id: 'n2', community_id: null, author_id: 'op', content: 'Checkout at 11', created_at: '2026-10-09T09:02:00Z' } });
+  expect(document.querySelector('[data-msg-id="n2"]').classList.contains('chat-msg--notice')).toBe(true);
+});
