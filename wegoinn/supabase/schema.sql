@@ -941,7 +941,8 @@ insert into public.hostel_rooms values
 ('811','Standard Family',4),
 ('608','Deluxe',4),
 ('806','Dormitory',6),
-('807','Dormitory',6)
+('807','Dormitory',6),
+('000','Staff',100) -- staff log in like guests (role stays 'guest')
 on conflict(room_number) do update set room_type=excluded.room_type, capacity=excluded.capacity;
 alter table public.profiles drop constraint if exists profiles_nickname_check;
 alter table public.profiles add constraint profiles_nickname_check check(char_length(btrim(nickname)) between 1 and 20);
