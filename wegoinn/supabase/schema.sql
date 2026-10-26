@@ -1,5 +1,5 @@
 -- =====================================================================
--- Wegoinn Guestbook & Community — Supabase schema + RLS
+-- Wego Out Guestbook & Community — Supabase schema + RLS
 -- Run once in Supabase Dashboard → SQL Editor.
 --
 -- Security model
@@ -1268,7 +1268,7 @@ for each row execute function public.count_host_seat();
 revoke all on function public.count_host_seat() from public, anon, authenticated;
 
 -- ============================================================
--- Official Wegoinn communities: created by an operator (admin).
+-- Official Wego Out communities: created by an operator (admin).
 -- ============================================================
 alter table public.communities add column if not exists is_official boolean not null default false;
 create or replace function public.mark_official_community()

@@ -305,7 +305,7 @@ function chatItemHtml(room) {
   const author = last?.author;
   // The last speaker's photo overlaps the corner of a group chat's picture.
   const overlap = room && author?.avatar_url?.startsWith("https://") ? `<img class="chat-item__overlap" src="${escapeHtml(author.avatar_url)}" alt="" loading="lazy" />` : "";
-  const place = room ? (room.place || "") : "Wegoinn";
+  const place = room ? (room.place || "") : "Wego Out";
   const preview = last ? `${room && author?.nickname ? `${author.nickname}: ` : ""}${last.content}` : "No messages yet";
   const notice = author?.role === "admin" ? `<span class="chat-item__notice" translate="no">${noticeArt}공지</span> ` : "";
   return `
@@ -354,7 +354,7 @@ function showRoom(room) {
   state.unreadRooms.delete(room?.id ?? "");
   renderRooms();
   if (!room) setUnread(0);
-  els.eyebrow.innerHTML = room ? "Group chat" : '<span>Everyone at</span> <img class="brand-logo--inline" src="img/logo.png" alt="Wegoinn" />';
+  els.eyebrow.innerHTML = room ? "Group chat" : '<span>Everyone at</span> <img class="brand-logo--inline" src="img/logo.png" alt="Wego Out" />';
   els.title.textContent = room ? room.title : "Global Chat";
   // Reset the site translator's memory of the previous room's title.
   delete els.title.dataset.siteOriginal;

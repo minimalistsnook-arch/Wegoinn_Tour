@@ -1,5 +1,5 @@
 /* =====================================================================
-   Wegoinn — Guest app
+   Wego Out — Guest app
    Clean white background with pine red accents and copper highlights. Light and dark via html[data-theme].
    ===================================================================== */
 
@@ -172,11 +172,11 @@ p { margin: 0; }
   text-decoration: none;
 }
 .wordmark--xl { font-size: clamp(56px, 17vw, 84px); line-height: .95; letter-spacing: -.035em; }
-/* The Wegoinn logo image stands in for the wordmark text; it scales with the wordmark's font size. */
+/* The Wego Out logo image stands in for the wordmark text; it scales with the wordmark's font size. */
 .wordmark { display: inline-block; max-width: 100%; }
-.wordmark__logo { display: block; width: 150px; max-width: 100%; height: auto; }
-.wordmark--xl .wordmark__logo { width: min(360px, 100%); }
-.brand-logo--inline { display: inline-block; width: 90px; height: auto; vertical-align: middle; flex-shrink: 0; }
+.wordmark__logo { display: block; width: 115px; max-width: 100%; height: auto; }
+.wordmark--xl .wordmark__logo { width: min(276px, 100%); }
+.brand-logo--inline { display: inline-block; width: 69px; height: auto; vertical-align: middle; flex-shrink: 0; }
 /* The supplied white logo sits directly on the red header. */
 .topbar .wordmark { padding: 4px 8px; }
 
@@ -2244,7 +2244,7 @@ html, body { overscroll-behavior-y: contain; }
 .topbar__actions .lang-select { margin-left: 0; max-width: 100%; }
 @media (max-width: 600px) {
   .topbar { gap: 8px; }
-  .topbar__brand .wordmark__logo { width: clamp(100px, 32vw, 150px); }
+  .topbar__brand .wordmark__logo { width: clamp(77px, 25vw, 115px); }
   .topbar__me .avatar { width: 36px; height: 36px; }
   .topbar__name { font-size: 13px; }
   .topbar__actions .online-count { flex-wrap: wrap; justify-content: flex-end; gap: 3px; white-space: normal; }
@@ -2386,7 +2386,7 @@ html[data-theme="dark"] #feed .post__comments:hover, html[data-theme="dark"] #fe
 /* In Korean the heading already reads 방명록, so drop the extra 방명록 accent. */
 html[lang="ko"] #guestbookHeading em { display: none; }
 
-/* Official Wegoinn communities (made by an operator): the hug picture replaces the day,
+/* Official Wego Out communities (made by an operator): the hug picture replaces the day,
    with a small date badge in the corner, a red ring and a gentle bounce so it stands out. */
 .cal-day.is-official { overflow: visible; }
 .cal-day__official {

@@ -9,4 +9,4 @@ await mkdir(output, { recursive: true });
 for (const file of files) {
   await cp(new URL(file, source), new URL(file, output), { recursive: true, filter: (path) => !/\.(test|spec)\.js$/.test(path) });
 }
-console.log('Wegoinn guest/admin pages and assets built into dist/');
+console.log('Wego Out guest/admin pages and assets built into dist/');

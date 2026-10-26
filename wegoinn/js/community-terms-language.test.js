@@ -39,7 +39,7 @@ it('includes the entire original notice in all ten languages without requiring a
   expect(text).toContain('09:00'); expect(text).toContain('22:00');
   for (let section=1; section<=6; section++) expect(text).toContain(`### ${section}.`);
   expect(text.match(/^### /gm)).toHaveLength(8);
-  expect(text.trim().endsWith('Wegoinn Hostel')).toBe(true);
+  expect(text.trim().endsWith('Wego Out')).toBe(true);
   expect(text.split(/\n\s*\n/).length).toBe(ORIGINAL_TERMS.split(/\n\s*\n/).length);
   if (language !== 'ko') expect(text).toBe(ORIGINAL_TERMS_TRANSLATIONS[language]);
  }

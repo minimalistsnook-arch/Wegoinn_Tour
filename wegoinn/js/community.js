@@ -211,7 +211,7 @@ const isMine = (c) => c.status !== "cancelled" && (isHost(c) || state.myApplicat
 const SOON_DAYS = 3; // my communities this close (today included) pulse on the calendar
 // Communities an operator (admin) created: the hug picture stands in for the calendar day.
 const isOfficial = (c) => c.is_official && c.status !== "cancelled";
-const officialTag = (c) => c.is_official ? `<span class="tag tag--official" translate="no">Wegoinn OFFICIAL</span>` : "";
+const officialTag = (c) => c.is_official ? `<span class="tag tag--official" translate="no">Wego Out OFFICIAL</span>` : "";
 // The create form asks for one "About" text. It is saved in the existing columns: all of it in
 // schedule, its start in activity (list previews) and this marker in preferred_participants.
 // Older communities keep their three separate answers.
@@ -255,7 +255,7 @@ function renderCalendar() {
       official && "is-official",
     ].filter(Boolean).join(" ");
 
-    const label = `${formatDateKey(key, { weekday: "long", month: "long", day: "numeric" })}${count ? `, ${count} ${count === 1 ? "community" : "communities"}` : ""}${official ? ", official Wegoinn community" : ""}${mine ? ", including yours" : ""}`;
+    const label = `${formatDateKey(key, { weekday: "long", month: "long", day: "numeric" })}${count ? `, ${count} ${count === 1 ? "community" : "communities"}` : ""}${official ? ", official Wego Out community" : ""}${mine ? ", including yours" : ""}`;
     cells.push(`
       <button type="button" class="${classes}" data-date="${key}" aria-label="${escapeHtml(label)}" aria-pressed="${key === state.selectedDate}">
         ${official ? `<img class="cal-day__official" src="img/official-day.png" alt="" aria-hidden="true" decoding="async" />` : ""}

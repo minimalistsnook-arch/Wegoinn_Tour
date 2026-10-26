@@ -26,15 +26,15 @@ alter table public.community_terms_versions enable row level security;
 alter table public.community_terms_acceptances enable row level security;
 revoke all on public.community_terms_versions,public.community_terms_acceptances from anon,authenticated;
 
-insert into public.community_terms_versions(body) select '# Welcome to Wegoinn Community! 🎉
-### 위고인 커뮤니티에 오신 것을 진심으로 환영합니다.
+insert into public.community_terms_versions(body) select '# Welcome to Wego Out Community! 🎉
+### Wego Out 커뮤니티에 오신 것을 진심으로 환영합니다.
 
-위고인 커뮤니티는 투숙객 여러분이 자유롭게 소통하고, 새로운 친구를 만나며, 즐거운 추억을 나눌 수 있도록 마련된 공간입니다.
+Wego Out 커뮤니티는 투숙객 여러분이 자유롭게 소통하고, 새로운 친구를 만나며, 즐거운 추억을 나눌 수 있도록 마련된 공간입니다.
 
 모두가 안전하고 즐겁게 커뮤니티를 이용할 수 있도록 아래 안내사항을 꼭 확인해 주세요.
 
 ### 1. 커뮤니티 운영 안내
-위고인 커뮤니티는 투숙객 간의 자율적인 소통과 교류를 위한 공간으로, 위고인호스텔의 공식 숙박 서비스와는 별도로 운영됩니다.
+Wego Out 커뮤니티는 투숙객 간의 자율적인 소통과 교류를 위한 공간으로, Wego Out의 공식 숙박 서비스와는 별도로 운영됩니다.
 
 ### 2. 커뮤니티 이용 목적
 본 커뮤니티는 자유로운 대화, 정보 공유 및 다양한 모임을 통해 투숙객 간의 교류를 돕기 위해 마련되었습니다.
@@ -42,14 +42,14 @@ insert into public.community_terms_versions(body) select '# Welcome to Wegoinn C
 ### 3. 이용자 간 분쟁 및 책임
 커뮤니티 내에서 이용자 간 발생하는 갈등, 불쾌한 경험, 금전 거래 및 기타 개인적인 분쟁에 대해서는 원칙적으로 해당 이용자 간에 해결해야 합니다.
 
-위고인호스텔은 관련 법령에 따라 부담하는 책임을 제외하고, 이용자 간의 개인적인 활동이나 거래에서 발생하는 문제에 대해 책임을 지지 않습니다.
+Wego Out은 관련 법령에 따라 부담하는 책임을 제외하고, 이용자 간의 개인적인 활동이나 거래에서 발생하는 문제에 대해 책임을 지지 않습니다.
 
 ### 4. 모임 참여 및 비용 안내
 커뮤니티에서 진행되는 일부 모임 및 활동에는 참가비가 발생할 수 있습니다.
 
 모임 참여 전 반드시 주최자, 참가비, 일정 및 세부 내용을 확인해 주세요.
 
-**위고인호스텔이 직접 주최하는 공식 모임은 별도로 표시됩니다.** 공식 표시가 없는 모임은 이용자가 자율적으로 주최하는 활동입니다.
+**Wego Out이 직접 주최하는 공식 모임은 별도로 표시됩니다.** 공식 표시가 없는 모임은 이용자가 자율적으로 주최하는 활동입니다.
 
 ### 5. 숙박 관련 문의 및 요청
 객실 이용 중 불편사항, 서비스 요청, 숙박 관련 문의는 아래 공식 연락처를 이용해 주세요.
@@ -72,11 +72,11 @@ insert into public.community_terms_versions(body) select '# Welcome to Wegoinn C
 
 위 안내사항을 충분히 확인하고 동의하시는 경우, 아래 **''동의하고 시작하기''** 버튼을 눌러 커뮤니티를 이용해 주세요.
 
-여러분의 배려와 참여로 더욱 따뜻하고 즐거운 위고인 커뮤니티가 만들어지길 바랍니다.
+여러분의 배려와 참여로 더욱 따뜻하고 즐거운 Wego Out 커뮤니티가 만들어지길 바랍니다.
 
 **감사합니다.**
 
-Wegoinn Hostel' where not exists(select 1 from public.community_terms_versions);
+Wego Out' where not exists(select 1 from public.community_terms_versions);
 
 create or replace function public.has_community_consent() returns boolean
 language sql stable security definer set search_path=public as $$

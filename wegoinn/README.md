@@ -1,6 +1,6 @@
-# Wegoinn Guestbook & Community
+# Wego Out Guestbook & Community
 
-Wegoinn Hostel 투숙객 전용 모바일 웹앱 — 방명록(Guestbook)과 날짜별 소모임(Community Calendar).
+Wego Out 투숙객 전용 모바일 웹앱 — 방명록(Guestbook)과 날짜별 소모임(Community Calendar).
 HTML · CSS · Vanilla JS (ES Modules) + Supabase (Auth / PostgreSQL / RLS / Realtime).
 
 ---
@@ -31,10 +31,10 @@ HTML · CSS · Vanilla JS (ES Modules) + Supabase (Auth / PostgreSQL / RLS / Rea
 **Guest (index.html, Mobile First)**
 
 ```
-Header (Wegoinn · 내 닉네임)
+Header (Wego Out · 내 닉네임)
 Section 탭 (Guestbook / Community — 스크롤 위치 표시)
 Hello, {Nickname}
-01 Wegoinn GUESTBOOK
+01 Wego Out GUESTBOOK
    ├ Create Post (텍스트 + 사진)
    └ Post Feed (닉네임 · 내용 · 사진 · 날짜/시간 · Translated/Original · 댓글/답글)
 02 COMMUNITY CALENDAR
