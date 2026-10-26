@@ -22,3 +22,10 @@ it('lists dates and activity, protects the current account and shows SQL errors'
  mock.rpc.mockResolvedValue({error:{code:'PGRST202'}});await loadAccounts();
  expect(document.querySelector('#accountError').hidden).toBe(false);
 });
+it('marks the shared staff room 000 as staff',async()=>{
+ mock.rpc.mockResolvedValue({data:[{id:'admin',nickname:'Op',role:'admin'},{id:'staff',nickname:'Mina',role:'guest',room_number:'000',stay_active:true}]});
+ await initOperatorAccounts({id:'admin',role:'admin'});
+ const row=document.querySelector('[data-delete-account="staff"]').closest('article');
+ expect(row.querySelector('.tag').textContent).toBe('Staff 직원');
+ expect(row.textContent).toContain('객실 000 (Staff 직원)');
+});

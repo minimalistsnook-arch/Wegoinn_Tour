@@ -240,3 +240,27 @@ it('shows operator messages to every guest as a bold red notice with a megaphone
   await onChatInsert({ new: { id: 'n2', community_id: null, author_id: 'op', content: 'Checkout at 11', created_at: '2026-10-09T09:02:00Z' } });
   expect(document.querySelector('[data-msg-id="n2"]').classList.contains('chat-msg--notice')).toBe(true);
 });
+it('collects every operator notice of the open chat in one sheet', async () => {
+  mock.rows = [{ id: 'n1', community_id: null, content: 'Breakfast moves to 8:30 <b>', created_at: '2026-10-09T09:00:00Z', author: { role: 'admin' } }];
+  mock.query = [];
+  document.getElementById('chatNoticesBtn').click();
+  await settle();
+  expect(mock.query).toContainEqual(['eq', 'author.role', 'admin']);
+  expect(mock.query).toContainEqual(['is', 'community_id', null]);
+  expect(document.getElementById('chatNoticesSheet').hidden).toBe(false);
+  expect(document.getElementById('chatNoticesRoom').textContent).toBe('Global Chat');
+  expect(document.querySelector('#chatNoticesList .chat-notice-item__text').textContent).toBe('Breakfast moves to 8:30 <b>');
+  mock.rows = [];
+  await openChat({ id: 'c1', title: 'Night Walk' });
+  mock.query = [];
+  document.getElementById('chatNoticesBtn').click();
+  await settle();
+  expect(mock.query).toContainEqual(['eq', 'community_id', 'c1']);
+  expect(document.getElementById('chatNoticesList').textContent).toContain('No notices yet.');
+});
+it('lets the fullscreen chat shrink with the keyboard instead of keeping the page min-height', () => {
+  const css = readFileSync(`${process.cwd()}/wegoinn/css/style.css`, 'utf8');
+  const rule = css.match(/\.layout > #chat\.is-fullscreen \{[^}]*\}/)[0];
+  expect(rule).toContain('height: var(--chat-viewport-height, 100dvh)');
+  expect(rule).toMatch(/min-height: 0;/);
+});

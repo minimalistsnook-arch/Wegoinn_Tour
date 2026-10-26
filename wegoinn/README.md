@@ -34,7 +34,7 @@ HTML · CSS · Vanilla JS (ES Modules) + Supabase (Auth / PostgreSQL / RLS / Rea
 Header (Wegoinn · 내 닉네임)
 Section 탭 (Guestbook / Community — 스크롤 위치 표시)
 Hello, {Nickname}
-01 WEGOINN GUESTBOOK
+01 Wegoinn GUESTBOOK
    ├ Create Post (텍스트 + 사진)
    └ Post Feed (닉네임 · 내용 · 사진 · 날짜/시간 · Translated/Original · 댓글/답글)
 02 COMMUNITY CALENDAR

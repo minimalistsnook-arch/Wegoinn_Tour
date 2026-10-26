@@ -35,11 +35,11 @@ it('includes the entire original notice in all ten languages without requiring a
  mock.configured.mockResolvedValue(false);
  for (const [language] of TERMS_LANGUAGES) {
   const text = await translateTerms(ORIGINAL_TERMS, language);
-  expect(text).toContain('Wegoinnteam@gmail.com');
+  expect(text).toContain('wegoinnteam@gmail.com');
   expect(text).toContain('09:00'); expect(text).toContain('22:00');
   for (let section=1; section<=6; section++) expect(text).toContain(`### ${section}.`);
   expect(text.match(/^### /gm)).toHaveLength(8);
-  expect(text.trim().endsWith('WEGO INN HOSTEL')).toBe(true);
+  expect(text.trim().endsWith('Wegoinn Hostel')).toBe(true);
   expect(text.split(/\n\s*\n/).length).toBe(ORIGINAL_TERMS.split(/\n\s*\n/).length);
   if (language !== 'ko') expect(text).toBe(ORIGINAL_TERMS_TRANSLATIONS[language]);
  }

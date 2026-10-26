@@ -4,9 +4,13 @@ import { moderationError } from './moderation.js';
 let me;
 let accounts = new Map();
 let loading = false;
+// Room 000 is the shared login staff use to take part as a regular guest.
+const STAFF_ROOM = '000';
+const roleLabel = p => p.role === 'admin' ? '운영자' : p.room_number === STAFF_ROOM ? 'Staff 직원' : '손님';
+const roomLabel = p => p.room_number === STAFF_ROOM ? `${STAFF_ROOM} (Staff 직원)` : p.room_number;
 export function accountSummary(id) {
  const p = accounts.get(id);
- return p ? `${p.nickname} · 객실 ${p.room_number || '운영자'} · Check in ${p.check_in || '미등록'} · Check out ${p.check_out || '미등록'}` : '';
+ return p ? `${p.nickname} · 객실 ${roomLabel(p) || '운영자'} · Check in ${p.check_in || '미등록'} · Check out ${p.check_out || '미등록'}` : '';
 }
 export function accountDetailHtml(id) {
  return `<small class="operator-account-info" data-operator-account="${escapeHtml(id || '')}" data-user-content>${escapeHtml(accountSummary(id))}</small>`;
@@ -32,8 +36,8 @@ export async function loadAccounts() {
   $('#accountError').hidden = true;
   document.querySelectorAll('[data-operator-account]').forEach(el => { el.textContent = accountSummary(el.dataset.operatorAccount); });
   $('#accountList').innerHTML = (data || []).map(p => `<article class="account-row">
-   <strong data-user-content>${escapeHtml(p.nickname)}</strong> <span class="tag">${p.role === 'admin' ? '운영자' : '손님'}${p.id === me.id ? ' · 현재 계정' : ''}</span>
-   <p>${p.is_online ? '● 접속 중' : p.stay_active ? '접속 확인 안 됨' : '체크아웃 완료'} · 객실 ${escapeHtml(p.room_number || '—')}</p>
+   <strong data-user-content>${escapeHtml(p.nickname)}</strong> <span class="tag">${roleLabel(p)}${p.id === me.id ? ' · 현재 계정' : ''}</span>
+   <p>${p.is_online ? '● 접속 중' : p.stay_active ? '접속 확인 안 됨' : '체크아웃 완료'} · 객실 ${escapeHtml(roomLabel(p) || '—')}</p>
    <p>Check in: ${escapeHtml(p.check_in || '미등록')}<br>Check out: ${escapeHtml(p.check_out || '미등록')}</p>
    <p>최근 활동: ${p.last_seen_at ? escapeHtml(new Date(p.last_seen_at).toLocaleString('ko-KR')) : '기록 없음'}</p>
    <button class="btn btn--soft" type="button" data-delete-account="${escapeHtml(p.id)}" ${p.id === me.id ? 'disabled' : ''}>계정 삭제</button>

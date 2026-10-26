@@ -45,7 +45,7 @@ it('enforces consent in DB access, records versions, and restricts notice editin
  expect((await db.query('select * from profiles')).rows).toHaveLength(1);
  await db.query('select set_my_avatar($1)', ['https://example.supabase.co/storage/v1/object/public/post-images/00000000-0000-0000-0000-000000000011/avatar.webp']);
  await db.exec("insert into storage.objects(bucket_id,name) values('post-images','00000000-0000-0000-0000-000000000011/avatar.webp')");
- expect(state.body).toContain('Wegoinnteam@gmail.com');
+ expect(state.body).toContain('wegoinnteam@gmail.com');
  await expect(db.exec("insert into posts(content) values('Bypass')")).rejects.toThrow();
  await expect(db.query('select accept_community_terms($1)', [state.version+1])).rejects.toThrow();
  await expect(db.query('select publish_community_terms($1,$2)', ['x'.repeat(200),state.version])).rejects.toThrow('운영자');

@@ -5,12 +5,15 @@
 import { supabase, errorMessage } from "./supabase.js";
 import { $, escapeHtml, avatarHtml, avatarTone, initials, formatDate, formatTime, formatDateKey, shortTime, toast, setBusy, communityIsLocked, debounce, displayLocale } from "./utils.js";
 import { detectLanguage } from "./translation.js";
-import { closeSheet } from "./sheet.js";
+import { openSheet, closeSheet } from "./sheet.js";
 import { icon } from "./icons.js";
 import { openContentEditor, moderationError } from "./moderation.js";
 
 const HISTORY_LIMIT = 100;
 const CHAT_COLUMNS = "id, community_id, author_id, content, created_at, author:profiles ( nickname, avatar_url, role )";
+// Notices = messages written by an operator; the inner join lets the database filter on the author's role.
+const NOTICE_COLUMNS = "id, community_id, content, created_at, author:profiles!inner ( role )";
+const NOTICE_LIMIT = 500;
 
 const state = {
   me: null,
@@ -61,7 +64,12 @@ export function initChat(me) {
     rooms: $("#chatRooms"),
     earlier: $("#chatLoadEarlier"),
     chatList: $("#chatList"),
+    notices: $("#chatNoticesBtn"),
+    noticesRoom: $("#chatNoticesRoom"),
+    noticesList: $("#chatNoticesList"),
   });
+  els.notices.insertAdjacentHTML("afterbegin", noticeArt);
+  els.notices.addEventListener("click", openNotices);
   els.chatList.addEventListener("click", (event) => {
     const item = event.target.closest("[data-chat-room]");
     if (!item) return;
@@ -412,6 +420,32 @@ async function loadEarlierMessages() {
     requestAnimationFrame(() => { els.list.scrollTop = top + els.list.scrollHeight - height; });
   } catch (error) { toast(moderationError(error), "error"); }
   finally { state.earlierBusy = false;setBusy(els.earlier, false); }
+}
+
+/* ---------------- Notices (every operator message in the open chat, newest first) ---------------- */
+
+async function openNotices() {
+  const room = state.room;
+  els.noticesRoom.textContent = room ? room.title : "Global Chat";
+  els.noticesRoom.toggleAttribute("data-user-content", Boolean(room));
+  els.noticesList.innerHTML = `<span class="loader"></span>`;
+  openSheet("chatNoticesSheet");
+  let query = supabase.from("chat_messages").select(NOTICE_COLUMNS).eq("author.role", "admin");
+  query = room ? query.eq("community_id", room.id) : query.is("community_id", null);
+  const { data, error } = await query.order("created_at", { ascending: false }).order("id", { ascending: false }).limit(NOTICE_LIMIT);
+  if (room !== state.room) return;
+  if (error) {
+    els.noticesList.innerHTML = `<p class="chat-empty">${escapeHtml(errorMessage(error, "Notices could not be loaded."))}</p>`;
+    return;
+  }
+  els.noticesList.innerHTML = data.length ? data.map(noticeHtml).join("") : `<p class="chat-empty">No notices yet.</p>`;
+}
+
+function noticeHtml(row) {
+  return `<article class="chat-notice-item">
+      <div class="chat-notice-item__meta">${noticeArt}<b translate="no">공지</b><time>${escapeHtml(formatDate(row.created_at))} · ${escapeHtml(formatTime(row.created_at))}</time></div>
+      <p class="chat-notice-item__text" data-user-content>${escapeHtml(row.content)}</p>
+    </article>`;
 }
 
 function inCurrentRoom(row) {

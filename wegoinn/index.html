@@ -119,7 +119,7 @@
 
     <nav class="section-nav" aria-label="Sections">
       <div class="section-nav__inner">
-        <a href="#community" class="is-active"><i data-icon="calendar"></i> Community <span id="communityNew" class="nav-badge" aria-label="New communities" hidden>0</span></a>
+        <a href="#community" class="is-active"><i data-icon="calendar"></i> Wego Out <span id="communityNew" class="nav-badge" aria-label="New communities" hidden>0</span></a>
         <a href="#guestbook"><i data-icon="book"></i> 방명록 <span id="guestbookNew" class="nav-badge" aria-label="New posts" hidden>0</span></a>
         <a href="#chat"><i data-icon="message"></i> Chat <span id="chatUnread" class="nav-badge" hidden>0</span></a>
         <a id="settingsTab" href="#settings" hidden>설정</a>
@@ -132,8 +132,8 @@
       <section id="community" class="block block--community" aria-labelledby="communityHeading" data-section>
         <div class="block__head">
           <div>
-            <p class="eyebrow">01 — Community Calendar</p>
-            <h2 id="communityHeading">Community <em>Calendar</em></h2>
+            <p class="eyebrow">01 — Wego Out Calendar</p>
+            <h2 id="communityHeading">Wego Out <em>Calendar</em></h2>
           </div>
         </div>
 
@@ -168,7 +168,7 @@
         </button>
       </section>
 
-      <!-- WEGOINN GUESTBOOK -->
+      <!-- Wegoinn GUESTBOOK -->
       <section id="guestbook" class="block block--guestbook" aria-labelledby="guestbookHeading" data-section>
         <div class="block__head">
           <div>
@@ -220,6 +220,7 @@
               <h3 id="chatTitle">Global Chat</h3>
             </div>
             <button id="chatBackBtn" type="button" class="pill-btn" hidden><i data-icon="left"></i> Global Chat</button>
+            <button id="chatNoticesBtn" type="button" class="pill-btn chat-notices-btn" aria-haspopup="dialog" aria-controls="chatNoticesSheet"><span>Notices</span></button>
             <button id="chatCloseFullscreen" type="button" class="icon-btn" aria-label="Close fullscreen chat" hidden><i data-icon="close"></i></button>
           </div>
           <div id="chatRooms" class="chat-rooms" role="group" aria-label="My chats" hidden></div>
@@ -260,6 +261,18 @@
       <button class="btn btn--ghost btn--block" type="button" data-close-sheet>닫기</button>
     </div>
   </div>
+  <!-- CHAT NOTICES — every operator notice posted in the open chat -->
+  <div id="chatNoticesSheet" class="sheet" hidden>
+    <div class="sheet__backdrop" data-close-sheet></div>
+    <div class="sheet__panel" role="dialog" aria-modal="true" aria-labelledby="chatNoticesTitle" tabindex="-1">
+      <span class="sheet__grabber" aria-hidden="true"></span>
+      <button class="icon-btn sheet__close" type="button" data-close-sheet aria-label="Close"><i data-icon="close"></i></button>
+      <p id="chatNoticesRoom" class="eyebrow"></p>
+      <h2 id="chatNoticesTitle">Notices</h2>
+      <div id="chatNoticesList" class="chat-notices" aria-live="polite"></div>
+    </div>
+  </div>
+
   <!-- COMMUNITY DETAIL -->
   <div id="communitySheet" class="sheet" hidden>
     <div class="sheet__backdrop" data-close-sheet></div>

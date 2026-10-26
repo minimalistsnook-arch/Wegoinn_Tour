@@ -1,5 +1,5 @@
 /* =====================================================================
-   WEGOINN — Guest app
+   Wegoinn — Guest app
    Clean white background with pine red accents and copper highlights. Light and dark via html[data-theme].
    ===================================================================== */
 
@@ -1445,6 +1445,16 @@ html { scroll-padding-top:calc(var(--measured-topbar-h, var(--topbar-h)) + 64px)
 .chat-msg--notice.chat-msg--mine .chat-msg__text { border: 1.5px solid var(--danger); background: var(--danger-50); color: var(--danger); font-weight: 800; }
 .chat-item__notice { display: inline-flex; align-items: center; gap: 3px; color: var(--danger); font-weight: 800; vertical-align: middle; }
 .chat-item__notice .chat-notice-art { width: 16px; height: 16px; filter: none; }
+/* Notice collection: a button in the chat head opens every notice of the open chat. */
+.chat-notices-btn { flex-shrink: 0; gap: 4px; color: var(--danger); border-color: var(--danger); }
+.chat-notices-btn .chat-notice-art { width: 18px; height: 18px; filter: none; }
+.chat-notices { display: grid; gap: 10px; margin-top: 14px; }
+.chat-notices > .loader, .chat-notices > .chat-empty { margin: 24px auto; }
+.chat-notice-item { padding: 12px 14px; border: 1.5px solid var(--danger); border-radius: 14px; background: var(--danger-50); }
+.chat-notice-item__meta { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; color: var(--danger); font-size: 12px; }
+.chat-notice-item__meta .chat-notice-art { width: 20px; height: 20px; filter: none; }
+.chat-notice-item__meta time { margin-left: auto; color: var(--muted); font-weight: 600; }
+.chat-notice-item__text { color: var(--danger); font-weight: 800; line-height: 1.5; white-space: pre-wrap; overflow-wrap: anywhere; }
 
 .chat-composer { flex-shrink: 0; display: flex; align-items: flex-end; gap: 8px; padding-top: 10px; border-top: 1px solid var(--line); }
 .chat-composer textarea {
@@ -1600,12 +1610,16 @@ html.chat-fullscreen, html.chat-fullscreen body { overflow: hidden; overscroll-b
     right: 0;
     z-index: 90;
     height: var(--chat-viewport-height, 100dvh);
+    /* Override the page min-height ([data-section]) so the chat shrinks with the keyboard and the composer stays above it. */
+    min-height: 0;
     margin: 0;
     padding: env(safe-area-inset-top) max(10px, env(safe-area-inset-right)) env(safe-area-inset-bottom) max(10px, env(safe-area-inset-left));
     border: 0;
     border-radius: 0;
     background: var(--surface);
   }
+  /* While typing the keyboard covers the home-indicator area, so drop that bottom gap. */
+  .layout > #chat.is-fullscreen:focus-within { padding-bottom: 0; }
   #chat.is-fullscreen > .block__head { display: none; }
   #chat.is-fullscreen .chat-card {
     height: 100%;
@@ -2414,4 +2428,4 @@ html[lang="ko"] #guestbookHeading em { display: none; }
 .calendar__guide--official { flex-wrap: wrap; color: var(--ink); }
 .calendar__guide--official img { flex: none; width: 26px; height: 26px; object-fit: contain; }
 .calendar__guide--official span { color: var(--muted); font-weight: 400; }
-.tag--official { color: var(--on-accent); background: var(--rose); letter-spacing: .02em; }
+.tag--official { color: var(--on-accent); background: var(--rose); letter-spacing: .02em; text-transform: none; }

@@ -26,7 +26,7 @@ alter table public.community_terms_versions enable row level security;
 alter table public.community_terms_acceptances enable row level security;
 revoke all on public.community_terms_versions,public.community_terms_acceptances from anon,authenticated;
 
-insert into public.community_terms_versions(body) select '# Welcome to WEGO INN Community! 🎉
+insert into public.community_terms_versions(body) select '# Welcome to Wegoinn Community! 🎉
 ### 위고인 커뮤니티에 오신 것을 진심으로 환영합니다.
 
 위고인 커뮤니티는 투숙객 여러분이 자유롭게 소통하고, 새로운 친구를 만나며, 즐거운 추억을 나눌 수 있도록 마련된 공간입니다.
@@ -55,7 +55,7 @@ insert into public.community_terms_versions(body) select '# Welcome to WEGO INN 
 객실 이용 중 불편사항, 서비스 요청, 숙박 관련 문의는 아래 공식 연락처를 이용해 주세요.
 
 - **1층 리셉션:** 09:00 ~ 22:00
-- **이메일:** Wegoinnteam@gmail.com
+- **이메일:** wegoinnteam@gmail.com
 
 커뮤니티에서는 숙박 관련 민원이나 서비스 요청을 접수·처리하지 않으므로 양해 부탁드립니다.
 
@@ -76,7 +76,7 @@ insert into public.community_terms_versions(body) select '# Welcome to WEGO INN 
 
 **감사합니다.**
 
-WEGO INN HOSTEL' where not exists(select 1 from public.community_terms_versions);
+Wegoinn Hostel' where not exists(select 1 from public.community_terms_versions);
 
 create or replace function public.has_community_consent() returns boolean
 language sql stable security definer set search_path=public as $$
