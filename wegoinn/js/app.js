@@ -1,5 +1,5 @@
 import { ensureCommunityConsent, renderTermsSettings } from './community-terms.js';
-import { initSiteLanguage } from "./i18n.js";
+import { initSiteLanguage, t } from "./i18n.js";
 import { initNotifications, refreshNotifications } from "./notifications.js";
 import { supabase, errorMessage } from "./supabase.js";
 import { isSupabaseConfigured } from "./config.js";
@@ -71,7 +71,7 @@ function showLogoutReason() {
   const reason = storage.get(LOGOUT_REASON);
   if (!reason) return;
   storage.set(LOGOUT_REASON, null);
-  $("#loginError").textContent = reason;
+  $("#loginError").textContent = t(reason);
   $("#loginError").hidden = false;
 }
 
@@ -181,6 +181,23 @@ $("#loginForm").addEventListener("submit", async (event) => {
   const loginError = $("#loginError");
   loginError.hidden = true;
   loginError.textContent = "";
+  const missing = [
+    [checkIn, "Check in date"],
+    [checkOut, "Check out date"],
+    [room, "Room number"],
+    [nickname, "Nickname"],
+  ].filter(([input]) => !input.value.trim());
+  if (missing.length) {
+    loginError.replaceChildren(document.createTextNode(t("Please fill in:")));
+    for (const [, label] of missing) {
+      const item = document.createElement("span");
+      item.textContent = label;
+      loginError.append(document.createTextNode(" · "), item);
+    }
+    loginError.hidden = false;
+    missing[0][0].focus();
+    return;
+  }
   const button = form.querySelector('[type="submit"]');
   setBusy(button, true, "Entering…");
   try {
@@ -189,7 +206,7 @@ $("#loginForm").addEventListener("submit", async (event) => {
     setAvatar(null);
     await enterApp(profile);
   } catch (err) {
-    const message = loginErrorMessage(err);
+    const message = t(loginErrorMessage(err));
     loginError.textContent = message;
     loginError.hidden = false;
     toast(message, "error");

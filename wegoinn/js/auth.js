@@ -18,7 +18,7 @@ export function normalizeStayDate(value) {
   return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
 }
 
-async function loginStep(stage, run) {
+async function loginStep(stage, run, loginFunction) {
   try {
     const result = await run();
     if (result?.error) throw result.error;
@@ -28,6 +28,7 @@ async function loginStep(stage, run) {
     error.code = cause?.code;
     error.status = cause?.status;
     error.loginStage = stage;
+    error.loginFunction = loginFunction;
     throw error;
   }
 }
@@ -49,15 +50,16 @@ export async function signInGuest(checkIn, checkOut, roomNumber, nickname, avata
   if (session) await loginStep("session", () => supabase.auth.signOut({ scope: "local" }));
   await loginStep("auth", () => supabase.auth.signInAnonymously());
 
+  const loginFunction = !admin && !avatarFile ? "login_stay_guest" : "register_stay_guest";
   const { data } = await loginStep("profile", () => supabase
-    .rpc(!admin && !avatarFile ? "login_stay_guest" : "register_stay_guest", { p_check_in: arrival, p_check_out: departure, p_room_number: roomNumber.trim(), p_nickname: name })
-    .single());
+    .rpc(loginFunction, { p_check_in: arrival, p_check_out: departure, p_room_number: roomNumber.trim(), p_nickname: name })
+    .single(), loginFunction);
 
   // Upload needs the profile to exist (storage policy), so it runs after register_stay_guest.
   let avatarUrl = await getMyAvatarUrl(data.id);
   if (avatarFile) {
     avatarUrl = await loginStep("avatar", () => uploadImage(avatarFile));
-    await loginStep("avatar", () => supabase.rpc("set_my_avatar", { p_avatar_url: avatarUrl }));
+    await loginStep("avatar", () => supabase.rpc("set_my_avatar", { p_avatar_url: avatarUrl }), "set_my_avatar");
   }
   // Staff may already have checked this guest out in the Guest Log sheet (column M = "x").
   if ((await checkStayStatus())?.active === false) {

@@ -1,6 +1,9 @@
+import { translateLoginMessage } from './login-translations.js';
 import { isTranslationConfigured, translateText, checkTranslationService } from './translation.js';
 // Interface translations are local; guest-written content uses the authenticated API.
 const rows = [
+['(new guests only)','(처음 방문한 손님만)','(初めての方のみ)','（仅新住客）'],
+['First visit: add a photo. Returning guests: use the same dates, room number and nickname; no new photo needed.','처음 방문: 프로필 사진을 추가하세요. 재방문: 기존 숙박 날짜, 객실 번호, 닉네임을 그대로 입력하세요. 사진은 다시 추가하지 않아도 됩니다.','初めての方は写真を追加してください。再ログインには同じ宿泊日・部屋番号・ニックネームを入力してください。写真の再追加は不要です。','首次登录请添加照片。再次登录请输入原来的入住退房日期、房间号和昵称，无需重新添加照片。'],
 ['Everyone at','투숙객 모두','みんな','所有住客'],
 ['Only','열람 가능:','閲覧：','仅'],
 ['staff can see this. Other guests never will.','직원만 확인할 수 있습니다. 다른 투숙객에게는 공개되지 않습니다.','スタッフのみ確認できます。他のゲストには公開されません。','仅工作人员可见，不向其他住客公开。'],
@@ -68,6 +71,8 @@ const dictionary = new Map(rows.map(row => [row[0], row]));
 let language = 'en';
 export const siteLanguage = () => language;
 export function t(value) {
+  const loginMessage = translateLoginMessage(value, language);
+  if (loginMessage !== value) return loginMessage;
   if (language === 'en') return value;
   const hit = dictionary.get(value);
   if (hit) return hit[languages.indexOf(language)];
