@@ -7,6 +7,7 @@ vi.mock('./supabase.js',()=>({supabase:{from:()=>{
  chain.then=(resolve,reject)=>Promise.resolve({data:mock.rows,error:null}).then(resolve,reject);
  return chain;
 }},errorMessage:error=>error.message}));
+vi.mock('./moderation.js',()=>({openContentEditor:vi.fn(),moderationError:error=>error.message}));
 import { mountCommunityComments } from './community-comments.js';
 const community={id:'community',creator_id:'host'};
 beforeEach(()=>{
@@ -31,9 +32,25 @@ describe('community operator comments',()=>{
   expect(root.querySelector('[data-edit-community-comment]')).toBeNull();
   expect(root.querySelector('[data-delete-community-comment]')).toBeNull();
  });
- it('allows another guest to read the thread without exposing writing or management controls',async()=>{
+ it('allows another guest to read the thread and write without joining',async()=>{
   const root=document.querySelector('#comments');await mountCommunityComments(root,community,{id:'visitor',role:'guest'});
-  expect(root.textContent).toContain('Staff note');expect(root.querySelector('form')).toBeNull();
+  expect(root.textContent).toContain('Staff note');expect(root.querySelector('form')).not.toBeNull();
   expect(root.querySelector('[data-edit-community-comment]')).toBeNull();
  });
+});
+
+it('posts replies under the selected comment and can cancel replying', async()=>{
+ const root=document.querySelector('#comments');
+ await mountCommunityComments(root,community,{id:'visitor',role:'guest'});
+ root.querySelector('[data-reply-community-comment]').click();
+ await new Promise(resolve=>setTimeout(resolve,10));
+ expect(root.querySelector('[data-reply-context]')).not.toBeNull();
+ const form=root.querySelector('form');form.elements.content.value='Can I ask a question?';
+ form.dispatchEvent(new Event('submit',{bubbles:true,cancelable:true}));
+ await new Promise(resolve=>setTimeout(resolve,10));
+ expect(mock.insert).toHaveBeenCalledWith({community_id:'community',parent_id:'comment',content:'Can I ask a question?'});
+ expect(root.querySelector('[data-reply-context]')).toBeNull();
+ mock.rows.push({id:'reply',parent_id:'comment',content:'Sure!',created_at:'2026-10-26T00:00:00Z',author_id:'host',author:{nickname:'Host'}});
+ await mountCommunityComments(root,community,{id:'visitor',role:'guest'});
+ expect(root.querySelector('.comment--reply').textContent).toContain('Sure!');
 });
